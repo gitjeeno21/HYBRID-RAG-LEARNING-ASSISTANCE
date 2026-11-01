@@ -1,0 +1,21 @@
+# Direct dependencies only. Transitive packages (torch, transformers,
+# langchain-core, numpy, ...) are pulled in automatically by pip.
+# Version floors are the versions this project was tested with (Python 3.11).
+
+# Query/generation
+groq>=1.7.0                    # hosted LLM API (no local model memory needed)
+python-dotenv>=1.2.0           # loads GROQ_API_KEY from .env
+
+# Vector store and embeddings (CPU-friendly)
+chromadb>=1.5.0
+langchain-chroma>=1.1.0
+langchain-huggingface>=1.2.0
+sentence-transformers>=6.2.0   # provides all-MiniLM-L6-v2
+langchain-text-splitters>=1.1.0
+
+# Document loading
+langchain-community>=0.4.0     # PyPDFLoader (emits a sunset warning; works)
+pypdf>=6.21.0                  # PDF parsing backend used by PyPDFLoader
+
+# Web UI
+streamlit>=1.66.0

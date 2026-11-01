@@ -1,0 +1,182 @@
+[
+  {
+    "id": "q01",
+    "question": "What BLEU score did the big Transformer model achieve on the WMT 2014 English-to-German translation task?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["28.4", "BLEU"],
+    "reference_answer": "28.4 BLEU, a new state of the art for English-to-German in this paper.",
+    "source_page": 8,
+    "type": "numeric"
+  },
+  {
+    "id": "q02",
+    "question": "How many attention heads does the base Transformer use, and what is the dimension of each head?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["h = 8", "dmodel/h = 64"],
+    "reference_answer": "h = 8 parallel attention heads, with dk = dv = dmodel/h = 64.",
+    "source_page": 5,
+    "type": "numeric"
+  },
+  {
+    "id": "q03",
+    "question": "How long did training the big Transformer model take, and on how many GPUs?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["3.5 days", "8 P100"],
+    "reference_answer": "3.5 days (300,000 steps) on 8 NVIDIA P100 GPUs.",
+    "source_page": 8,
+    "type": "numeric"
+  },
+  {
+    "id": "q04",
+    "question": "In which three ways is multi-head attention applied inside the Transformer?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["encoder-decoder attention", "self-attention"],
+    "reference_answer": "As encoder-decoder attention, as encoder self-attention, and as masked decoder self-attention.",
+    "source_page": 5,
+    "type": "conceptual"
+  },
+  {
+    "id": "q05",
+    "question": "Why does scaled dot-product attention divide the dot products by the square root of dk?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["gradients", "softmax"],
+    "reference_answer": "For large dk the dot products grow large, pushing softmax into regions with extremely small gradients; scaling counteracts this.",
+    "source_page": 4,
+    "type": "conceptual"
+  },
+  {
+    "id": "q06",
+    "question": "What is the per-layer computational complexity of self-attention compared with a recurrent layer?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["O(n2", "recurrent"],
+    "reference_answer": "Self-attention is O(n^2 * d) per layer, a recurrent layer is O(n * d^2).",
+    "source_page": 6,
+    "type": "conceptual"
+  },
+  {
+    "id": "q07",
+    "question": "How many sentence pairs were in the WMT 2014 English-German training set, and what was the vocabulary size?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["4.5 million", "37000"],
+    "reference_answer": "About 4.5 million sentence pairs, byte-pair encoded with a shared vocabulary of about 37,000 tokens.",
+    "source_page": 7,
+    "type": "numeric"
+  },
+  {
+    "id": "q08",
+    "question": "Which optimizer and learning-rate warmup schedule were used to train the Transformer?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["Adam", "warmup_steps = 4000"],
+    "reference_answer": "Adam with beta1 = 0.9, beta2 = 0.98, eps = 1e-9, linear warmup for 4000 steps then inverse-square-root decay.",
+    "source_page": 7,
+    "type": "factual"
+  },
+  {
+    "id": "q09",
+    "question": "What are the model dimension and the feed-forward inner dimension of the base Transformer?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["dmodel = 512", "2048"],
+    "reference_answer": "dmodel = 512 and the position-wise feed-forward inner layer has dimension dff = 2048.",
+    "source_page": 5,
+    "type": "numeric"
+  },
+  {
+    "id": "q10",
+    "question": "What F1 score did the 4-layer Transformer reach on WSJ Section 23 constituency parsing when trained only on the WSJ training set?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["91.3", "constituency"],
+    "reference_answer": "91.3 F1 (WSJ only, discriminative); 92.7 in the semi-supervised setting.",
+    "source_page": 10,
+    "type": "numeric"
+  },
+  {
+    "id": "q11",
+    "question": "What percentile did GPT-4 score on the simulated bar exam, and how did GPT-3.5 compare?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["top 10%", "bottom 10%"],
+    "reference_answer": "GPT-4 scored around the top 10% of test takers; GPT-3.5 scored in the bottom 10%.",
+    "source_page": 1,
+    "type": "numeric"
+  },
+  {
+    "id": "q12",
+    "question": "What accuracy did GPT-4 achieve on the MMLU benchmark, and how many subjects does MMLU cover?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["86.4", "57 subjects"],
+    "reference_answer": "86.4% compared with 70.0% for GPT-3.5; MMLU covers 57 subjects.",
+    "source_page": 7,
+    "type": "numeric"
+  },
+  {
+    "id": "q13",
+    "question": "What HumanEval pass rate did GPT-4 achieve, and what does the HumanEval benchmark measure?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["67.0", "Python"],
+    "reference_answer": "67.0% pass rate at 0-shot; HumanEval measures the ability to synthesize Python functions.",
+    "source_page": 7,
+    "type": "numeric"
+  },
+  {
+    "id": "q14",
+    "question": "What score did GPT-4 get on GSM-8K, and what caveat does the report give about that result?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["92.0", "training set"],
+    "reference_answer": "92.0% with 5-shot chain-of-thought, but part of the GSM-8K training set was included in GPT-4's pre-training mix.",
+    "source_page": 7,
+    "type": "factual"
+  },
+  {
+    "id": "q15",
+    "question": "How much does the GPT-4 technical report disclose about the model's architecture and size?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["no further details", "architecture"],
+    "reference_answer": "It discloses almost nothing: no further details about architecture (including model size), hardware, training compute, dataset construction or training method.",
+    "source_page": 2,
+    "type": "conceptual"
+  },
+  {
+    "id": "q16",
+    "question": "On what percentage of prompts were GPT-4's responses preferred over GPT-3.5, and on how many prompts was this measured?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["70.2%", "5,214"],
+    "reference_answer": "Preferred on 70.2% of 5,214 prompts submitted to ChatGPT and the OpenAI API.",
+    "source_page": 7,
+    "type": "numeric"
+  },
+  {
+    "id": "q17",
+    "question": "In how many of the languages tested did GPT-4 beat the English-language state of the art on translated MMLU?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["24 of 26"],
+    "reference_answer": "24 of the 26 languages considered.",
+    "source_page": 1,
+    "type": "numeric"
+  },
+  {
+    "id": "q18",
+    "question": "How was GPT-4 fine-tuned after pre-training?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["Reinforcement Learning from Human Feedback", "RLHF"],
+    "reference_answer": "It was fine-tuned using Reinforcement Learning from Human Feedback (RLHF).",
+    "source_page": 2,
+    "type": "conceptual"
+  },
+  {
+    "id": "q19",
+    "question": "How did OpenAI predict GPT-4's final loss before training finished, and with models trained using how much less compute?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["10,000x", "scaling law"],
+    "reference_answer": "They fitted a scaling law to models trained with at most 10,000x less compute and predicted final loss with high accuracy.",
+    "source_page": 2,
+    "type": "conceptual"
+  },
+  {
+    "id": "q20",
+    "question": "According to the introduction, which risk areas does the accompanying system card discuss?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["over-reliance", "proliferation"],
+    "reference_answer": "Bias, disinformation, over-reliance, privacy, cybersecurity and proliferation, among others (introduction, not the system card itself).",
+    "source_page": 2,
+    "type": "conceptual"
+  }
+]
