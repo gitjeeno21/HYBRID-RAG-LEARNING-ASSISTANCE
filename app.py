@@ -7,7 +7,8 @@ with "filename, p. X" AND its similarity score, sends them to Groq (key from
 .env), and streams the generated answer — with page citations — back to the UI.
 Each answer then gets a trust label (High / Medium / Low) plus a one-line reason
 from trust.py, computed from the retrieval scores and one extra LLM support
-check. The label is a heuristic, not a measured accuracy.
+check. The label is a heuristic, not a measured accuracy. Quiz Mode separately
+generates source-grounded study questions from one selected PDF.
 
 Run with: streamlit run app.py
 """
@@ -19,6 +20,7 @@ import streamlit as st
 from dotenv import load_dotenv
 from groq import Groq
 from langchain_chroma import Chroma
+from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 
 import trust
@@ -35,6 +37,7 @@ from config import (
     source_filename,
 )
 from ingest import best_chunk_config, load_documents, split_documents
+from quiz import generate_quiz
 
 load_dotenv()
 
@@ -126,6 +129,19 @@ def retrieve_chunks(question: str) -> list[dict]:
             }
         )
     return chunks
+
+
+def retrieve_quiz_chunks(pdf_name: str, topic: str) -> list[Document]:
+    """Retrieve quiz evidence only from the PDF selected in the sidebar.
+
+    The Chroma metadata filter prevents a similarly worded passage in another
+    paper from leaking into this quiz. TOP_K stays the same as normal retrieval.
+    """
+    return get_vector_store().similarity_search(
+        topic,
+        k=TOP_K,
+        filter={"filename": pdf_name},
+    )
 
 
 def format_context(chunks: list[dict]) -> str:
@@ -295,48 +311,103 @@ eval_summary = load_eval_summary()
 render_sidebar(eval_summary)
 
 st.title("Autonomous RAG Agent")
-st.caption("Ask anything about the documents in your knowledge base.")
 
-# 1. Initialize chat history and display it on every rerun.
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-        # Replay the stored trust label too; recomputing it would cost another
-        # LLM call on every rerun just to redraw old messages.
-        if message.get("trust"):
-            render_trust(message["trust"])
-        if message.get("chunks"):
-            render_retrieved_context(message["chunks"])
-
-if question := st.chat_input("Ask a question about your documents:"):
-    st.session_state.messages.append({"role": "user", "content": question})
-    with st.chat_message("user"):
-        st.markdown(question)
-
-    with st.chat_message("assistant"):
-        # 2. One spinner covers retrieval and answer generation.
-        with st.spinner("Searching database & generating answer..."):
-            chunks = retrieve_chunks(question)
-            context = format_context(chunks)
-            answer = st.write_stream(stream_answer(context, question))
-            # 3. Trust meter: exactly ONE extra LLM call per answer (a support
-            # check), plus the free retrieval-strength signal from the scores
-            # above. It runs after the answer has streamed, so a slow or
-            # rate-limited check never delays the text the user is reading.
-            trust_result = trust.assess(question, answer, chunks)
-        # 4. Label the answer, then show the raw chunks it was built from.
-        render_trust(trust_result)
-        render_retrieved_context(chunks)
-
-    # 5. Persist the answer, its chunks and its trust label for history replay.
-    st.session_state.messages.append(
-        {
-            "role": "assistant",
-            "content": answer,
-            "chunks": chunks,
-            "trust": trust_result,
-        }
+# Quiz Mode is a separate interaction path, so a study request cannot
+# accidentally be submitted as a normal chat question.
+quiz_mode = st.sidebar.toggle("Quiz Mode", value=False)
+if quiz_mode:
+    st.header("Quiz Mode")
+    st.caption(
+        "Generate five practice questions grounded only in retrieved text from "
+        "one selected PDF."
     )
+    pdf_files = list_knowledge_base()
+    if not pdf_files:
+        st.warning("No PDFs are available in the knowledge base.")
+    else:
+        # Keep quiz inputs in the sidebar as requested, alongside the mode switch.
+        selected_pdf = st.sidebar.selectbox("Quiz source PDF", pdf_files)
+        topic = st.sidebar.text_input("Quiz topic")
+
+        if st.button("Generate 5-question quiz", key="generate_quiz"):
+            if not topic.strip():
+                st.warning("Enter a topic before generating a quiz.")
+            else:
+                # Retrieval is scoped to the chosen PDF; the single LLM prompt
+                # receives only these passages and their citation-helper labels.
+                with st.spinner("Retrieving passages and generating your quiz..."):
+                    quiz_chunks = retrieve_quiz_chunks(selected_pdf, topic.strip())
+                    quiz_text = generate_quiz(
+                        selected_pdf,
+                        topic.strip(),
+                        quiz_chunks,
+                    )
+                # Store the selected inputs with the result so reruns do not
+                # show a stale quiz after the user changes PDF or topic.
+                st.session_state["quiz_result"] = {
+                    "pdf": selected_pdf,
+                    "topic": topic.strip(),
+                    "text": quiz_text,
+                    "chunks": [
+                        {
+                            "citation": citation(chunk.metadata),
+                            "text": chunk.page_content,
+                        }
+                        for chunk in quiz_chunks
+                    ],
+                }
+
+        result = st.session_state.get("quiz_result")
+        if (
+            result
+            and result["pdf"] == selected_pdf
+            and result["topic"] == topic.strip()
+        ):
+            st.markdown(result["text"])
+            with st.expander("Retrieved passages used for this quiz"):
+                for passage in result["chunks"]:
+                    st.markdown(f"**{passage['citation']}**")
+                    st.text(passage["text"])
+else:
+    st.caption("Ask anything about the documents in your knowledge base.")
+    # 1. Initialize chat history and display it on every rerun.
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+            # Replay the stored trust label too; recomputing it would cost
+            # another LLM call on every rerun just to redraw old messages.
+            if message.get("trust"):
+                render_trust(message["trust"])
+            if message.get("chunks"):
+                render_retrieved_context(message["chunks"])
+
+    if question := st.chat_input("Ask a question about your documents:"):
+        st.session_state.messages.append({"role": "user", "content": question})
+        with st.chat_message("user"):
+            st.markdown(question)
+
+        with st.chat_message("assistant"):
+            # One spinner covers retrieval and answer generation.
+            with st.spinner("Searching database & generating answer..."):
+                chunks = retrieve_chunks(question)
+                context = format_context(chunks)
+                answer = st.write_stream(stream_answer(context, question))
+                # Trust uses exactly one additional support-check call and the
+                # already available retrieval scores.
+                trust_result = trust.assess(question, answer, chunks)
+            render_trust(trust_result)
+            render_retrieved_context(chunks)
+
+        # Persist the answer and diagnostics so reruns can replay them without
+        # repeating generation or the trust check.
+        st.session_state.messages.append(
+            {
+                "role": "assistant",
+                "content": answer,
+                "chunks": chunks,
+                "trust": trust_result,
+            }
+        )
