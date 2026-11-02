@@ -3,8 +3,27 @@
 from collections.abc import Callable, Sequence
 
 from langchain_core.documents import Document
+from rank_bm25 import BM25Okapi
 
 from config import citation
+from hybrid import VectorSearchStore, hybrid_search
+
+
+def retrieve_quiz_chunks(
+    vector_store: VectorSearchStore,
+    bm25: BM25Okapi,
+    chunks: Sequence[Document],
+    pdf_name: str,
+    topic: str,
+) -> list[Document]:
+    """Retrieve quiz evidence with hybrid search restricted to the chosen PDF."""
+    return hybrid_search(
+        topic,
+        vector_store,
+        bm25,
+        list(chunks),
+        metadata_filter={"filename": pdf_name},
+    )
 
 QUIZ_PROMPT_TEMPLATE = (
     "Create a practice quiz using ONLY the retrieved text below. Do not use "

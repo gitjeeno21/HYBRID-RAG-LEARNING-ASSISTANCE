@@ -5,7 +5,12 @@ import unittest
 from langchain_core.documents import Document
 
 from compare import build_compare_prompt, generate_comparison, retrieve_paper_contexts
-from config import TOP_K
+from hybrid import (
+    CANDIDATES_PER_METHOD,
+    build_bm25,
+    hybrid_search_with_scores,
+)
+from quiz import retrieve_quiz_chunks
 
 
 class FakeVectorStore:
@@ -13,22 +18,43 @@ class FakeVectorStore:
 
     def __init__(self) -> None:
         self.calls: list[tuple[str, int, dict]] = []
-
-    def similarity_search(self, question: str, k: int, filter: dict) -> list[Document]:
-        self.calls.append((question, k, filter))
-        pdf_name = filter["filename"]
-        if pdf_name == "paper_one.pdf":
-            page_content = "Paper one uses a recurrent approach."
-            page = 2
-        else:
-            page_content = "Paper two uses a self-attention approach."
-            page = 5
-        return [
+        self.documents = [
             Document(
-                page_content=page_content,
-                metadata={"filename": pdf_name, "page": page - 1},
-            )
+                page_content="Paper one uses a recurrent approach.",
+                metadata={"filename": "paper_one.pdf", "page": 1},
+            ),
+            Document(
+                page_content="Paper two uses a self-attention approach.",
+                metadata={"filename": "paper_two.pdf", "page": 4},
+            ),
         ]
+
+    def similarity_search(
+        self,
+        question: str,
+        k: int,
+        filter: dict | None = None,
+    ) -> list[Document]:
+        self.calls.append((question, k, filter or {}))
+        documents = self.documents
+        if filter:
+            documents = [
+                document
+                for document in documents
+                if all(
+                    document.metadata.get(key) == value
+                    for key, value in filter.items()
+                )
+            ]
+        return documents[:k]
+
+    def similarity_search_with_relevance_scores(
+        self,
+        question: str,
+        k: int,
+        filter: dict | None = None,
+    ) -> list[tuple[Document, float]]:
+        return [(document, 0.8) for document in self.similarity_search(question, k, filter)]
 
 
 class CompareModeTests(unittest.TestCase):
@@ -51,14 +77,25 @@ class CompareModeTests(unittest.TestCase):
 
     def test_isolated_retrieval_and_single_mocked_generation(self) -> None:
         store = FakeVectorStore()
+        bm25 = build_bm25(store.documents)
         names = ["paper_one.pdf", "paper_two.pdf"]
-        contexts = retrieve_paper_contexts(store, "What differs?", names)
+        contexts = retrieve_paper_contexts(
+            store, bm25, store.documents, "What differs?", names
+        )
 
         self.assertEqual(
             store.calls,
             [
-                ("What differs?", TOP_K, {"filename": "paper_one.pdf"}),
-                ("What differs?", TOP_K, {"filename": "paper_two.pdf"}),
+                (
+                    "What differs?",
+                    CANDIDATES_PER_METHOD,
+                    {"filename": "paper_one.pdf"},
+                ),
+                (
+                    "What differs?",
+                    CANDIDATES_PER_METHOD,
+                    {"filename": "paper_two.pdf"},
+                ),
             ],
         )
         self.assertEqual(
@@ -89,6 +126,47 @@ class CompareModeTests(unittest.TestCase):
         self.assertIn("Paper 1: paper_one.pdf", paper_one)
         self.assertNotIn("Paper two uses a self-attention approach.", paper_one)
         self.assertNotIn("Paper one uses a recurrent approach.", paper_two)
+
+    def test_quiz_retrieval_uses_filtered_hybrid_search(self) -> None:
+        store = FakeVectorStore()
+        bm25 = build_bm25(store.documents)
+
+        results = retrieve_quiz_chunks(
+            store,
+            bm25,
+            store.documents,
+            "paper_two.pdf",
+            "What differs?",
+        )
+
+        self.assertEqual(
+            [document.metadata["filename"] for document in results],
+            ["paper_two.pdf"],
+        )
+        self.assertEqual(
+            store.calls,
+            [
+                (
+                    "What differs?",
+                    CANDIDATES_PER_METHOD,
+                    {"filename": "paper_two.pdf"},
+                )
+            ],
+        )
+
+    def test_chat_hybrid_results_keep_dense_scores_for_trust(self) -> None:
+        store = FakeVectorStore()
+        bm25 = build_bm25(store.documents)
+
+        results = hybrid_search_with_scores(
+            "What differs?",
+            store,
+            bm25,
+            store.documents,
+        )
+
+        self.assertTrue(results)
+        self.assertTrue(all(score == 0.8 for _, score in results))
 
 
 if __name__ == "__main__":

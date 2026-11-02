@@ -23,6 +23,7 @@ from groq import Groq
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
+from rank_bm25 import BM25Okapi
 
 import trust
 from compare import generate_comparison, retrieve_paper_contexts
@@ -39,7 +40,8 @@ from config import (
     source_filename,
 )
 from ingest import best_chunk_config, load_documents, split_documents
-from quiz import generate_quiz
+from hybrid import build_bm25, hybrid_search_with_scores
+from quiz import generate_quiz, retrieve_quiz_chunks
 
 load_dotenv()
 
@@ -98,6 +100,22 @@ def get_vector_store() -> Chroma:
 
 
 @st.cache_resource
+def get_hybrid_resources() -> tuple[list[Document], BM25Okapi]:
+    """Build the in-memory BM25 sidecar over the active dense index's chunks."""
+    store = get_vector_store()
+    documents = load_documents()
+    chunk_size, chunk_overlap = best_chunk_config()
+    chunks = split_documents(documents, chunk_size, chunk_overlap)
+    indexed_count = store._collection.count()
+    if indexed_count != len(chunks):
+        raise RuntimeError(
+            "The dense index and BM25 corpus do not match: "
+            f"index={indexed_count} chunks, local corpus={len(chunks)} chunks"
+        )
+    return chunks, build_bm25(chunks)
+
+
+@st.cache_resource
 def get_llm_client() -> Groq:
     """Return a Groq client that reads GROQ_API_KEY from .env."""
     return Groq()
@@ -107,43 +125,27 @@ def get_llm_client() -> Groq:
 # Retrieval with similarity scores
 # ---------------------------------------------------------------------------
 def retrieve_chunks(question: str) -> list[dict]:
-    """Return the top-k chunks for `question`, each with citation AND score.
-
-    WHY similarity_search_with_relevance_scores instead of similarity_search:
-    Chroma returns a cosine-similarity score in [0, 1] alongside each document
-    when this method is used. Exposing the score in the UI lets the user judge
-    how confident the retrieval step is — a score near 0 means the question is
-    probably outside the corpus.
-    """
-    # Returns list of (Document, score) tuples; score is cosine similarity.
-    results = get_vector_store().similarity_search_with_relevance_scores(
-        question, k=TOP_K
+    """Return hybrid top-k chunks with citations and dense scores when present."""
+    chunks, bm25 = get_hybrid_resources()
+    results = hybrid_search_with_scores(
+        question,
+        get_vector_store(),
+        bm25,
+        chunks,
+        n_results=TOP_K,
     )
-    chunks = []
+    retrieved = []
     for doc, score in results:
-        chunks.append(
+        retrieved.append(
             {
                 "filename": source_filename(doc.metadata),
                 "citation": citation(doc.metadata),
                 "text": doc.page_content,
-                # Round to 3 decimal places; raw float has noisy trailing digits.
-                "score": round(score, 3),
+                # BM25-only fused results have no dense similarity score.
+                "score": round(score, 3) if score is not None else None,
             }
         )
-    return chunks
-
-
-def retrieve_quiz_chunks(pdf_name: str, topic: str) -> list[Document]:
-    """Retrieve quiz evidence only from the PDF selected in the sidebar.
-
-    The Chroma metadata filter prevents a similarly worded passage in another
-    paper from leaking into this quiz. TOP_K stays the same as normal retrieval.
-    """
-    return get_vector_store().similarity_search(
-        topic,
-        k=TOP_K,
-        filter={"filename": pdf_name},
-    )
+    return retrieved
 
 
 def format_context(chunks: list[dict]) -> str:
@@ -373,8 +375,11 @@ if compare_mode:
                 # The helper makes one filename-filtered search per paper; one
                 # combined prompt then avoids a separate LLM call for each.
                 with st.spinner("Retrieving both papers and generating comparison..."):
+                    chunks, bm25 = get_hybrid_resources()
                     contexts = retrieve_paper_contexts(
                         get_vector_store(),
+                        bm25,
+                        chunks,
                         question.strip(),
                         selected_pdfs,
                     )
@@ -435,7 +440,14 @@ elif quiz_mode:
                 # Retrieval is scoped to the chosen PDF; the single LLM prompt
                 # receives only these passages and their citation-helper labels.
                 with st.spinner("Retrieving passages and generating your quiz..."):
-                    quiz_chunks = retrieve_quiz_chunks(selected_pdf, topic.strip())
+                    chunks, bm25 = get_hybrid_resources()
+                    quiz_chunks = retrieve_quiz_chunks(
+                        get_vector_store(),
+                        bm25,
+                        chunks,
+                        selected_pdf,
+                        topic.strip(),
+                    )
                     quiz_text = generate_quiz(
                         selected_pdf,
                         topic.strip(),

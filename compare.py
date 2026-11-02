@@ -1,41 +1,35 @@
 """Retrieve and compare evidence from two PDFs in one LLM request."""
 
 from collections.abc import Callable, Mapping, Sequence
-from typing import Protocol
 
 from langchain_core.documents import Document
+from rank_bm25 import BM25Okapi
 
-from config import TOP_K, citation
-
-
-class SearchableVectorStore(Protocol):
-    """The small vector-store surface needed for independently filtered search."""
-
-    def similarity_search(
-        self,
-        query: str,
-        k: int,
-        filter: dict[str, str],
-    ) -> list[Document]: ...
+from config import citation
+from hybrid import VectorSearchStore, hybrid_search
 
 
 def retrieve_paper_contexts(
-    vector_store: SearchableVectorStore,
+    vector_store: VectorSearchStore,
+    bm25: BM25Okapi,
+    chunks: Sequence[Document],
     question: str,
     pdf_names: Sequence[str],
 ) -> dict[str, list[Document]]:
-    """Run isolated filename-filtered retrieval for each of two selected PDFs."""
+    """Run isolated hybrid retrieval for each of two selected PDFs."""
     if len(pdf_names) != 2 or pdf_names[0] == pdf_names[1]:
         raise ValueError("Compare Mode requires two distinct PDF filenames")
 
     contexts: dict[str, list[Document]] = {}
     for pdf_name in pdf_names:
-        # A separate filtered search prevents passages from one PDF entering
-        # the other paper's evidence, even when both discuss the same topic.
-        contexts[pdf_name] = vector_store.similarity_search(
+        # A separate metadata-filtered hybrid search prevents dense or BM25
+        # passages from one paper entering the other's evidence.
+        contexts[pdf_name] = hybrid_search(
             question,
-            k=TOP_K,
-            filter={"filename": pdf_name},
+            vector_store,
+            bm25,
+            list(chunks),
+            metadata_filter={"filename": pdf_name},
         )
     return contexts
 

@@ -34,18 +34,12 @@ Usage:
 import json
 import re
 from datetime import datetime, timezone
+from typing import Protocol
 
+from langchain_core.documents import Document
 from rank_bm25 import BM25Okapi
 
-from config import BASE_DIR, TOP_K, source_filename
-# Reuse the existing retrieval code rather than reimplementing it: build_chunks
-# and get_vector_store guarantee BM25 works on exactly the chunks the dense
-# index holds, and question_is_hit is the SAME hit-rate definition used by
-# evaluator.py (top-k chunk from the expected PDF containing an expected
-# keyword). Importing evaluator does not call any API; it only constructs a
-# Groq client object at import time.
-from evaluator import build_chunks, get_vector_store, question_is_hit
-from ingest import load_documents
+from config import BASE_DIR, TOP_K, page_number, source_filename
 
 QUESTIONS_PATH = BASE_DIR / "eval_questions.json"
 RESULTS_PATH = BASE_DIR / "hybrid_results.json"
@@ -58,6 +52,24 @@ RRF_K = 60
 # disagreement between the lists decide the result, while a deep candidate pool
 # gives RRF something to actually re-rank. 10 is a conventional choice.
 CANDIDATES_PER_METHOD = 10
+
+
+class VectorSearchStore(Protocol):
+    """The Chroma search methods needed by hybrid retrieval."""
+
+    def similarity_search(
+        self,
+        query: str,
+        k: int,
+        filter: dict[str, str] | None = None,
+    ) -> list[Document]: ...
+
+    def similarity_search_with_relevance_scores(
+        self,
+        query: str,
+        k: int,
+        filter: dict[str, str] | None = None,
+    ) -> list[tuple[Document, float]]: ...
 
 
 # ---------------------------------------------------------------------------
@@ -77,7 +89,7 @@ def tokenize(text: str) -> list[str]:
     return _TOKEN_RE.findall(text.lower())
 
 
-def build_bm25(chunks: list) -> BM25Okapi:
+def build_bm25(chunks: list[Document]) -> BM25Okapi:
     """Build a BM25 index over the chunk texts.
 
     BM25Okapi is the standard variant (term frequency saturation + document
@@ -127,35 +139,107 @@ def reciprocal_rank_fusion(rankings: list[list[int]], k: int = RRF_K) -> list[in
 
 def hybrid_search(
     query: str,
-    store,
+    store: VectorSearchStore,
     bm25: BM25Okapi,
-    chunks: list,
+    chunks: list[Document],
     n_results: int = TOP_K,
-) -> list:
-    """Return the top-n chunks from BM25 + dense via RRF.
+    metadata_filter: dict[str, str] | None = None,
+) -> list[Document]:
+    """Return top-n chunks from BM25 + dense via RRF.
 
-    The dense half uses plain similarity_search on the existing Chroma
-    collection -- the same call the current app makes -- so the only thing this
-    function adds is the lexical list and the fusion.
+    The optional metadata filter is applied to both retrieval methods so
+    paper-specific queries cannot mix evidence across PDFs.
     """
-    dense_docs = store.similarity_search(query, k=CANDIDATES_PER_METHOD)
-
-    # Map dense Documents back to positions in the BM25 corpus. Matching on
-    # page_content is safe here because both sides are produced by the same
-    # deterministic splitter, and the count check in evaluate() would expose
-    # any drift.
-    position = {}
-    for i, chunk in enumerate(chunks):
-        position.setdefault(chunk.page_content, i)
-    dense_idx = [
-        position[doc.page_content]
-        for doc in dense_docs
-        if doc.page_content in position
+    return [
+        document
+        for document, _ in _hybrid_search(
+            query, store, bm25, chunks, n_results, metadata_filter, False
+        )
     ]
 
-    lexical_idx = bm25_ranking(bm25, query, CANDIDATES_PER_METHOD)
+
+def hybrid_search_with_scores(
+    query: str,
+    store: VectorSearchStore,
+    bm25: BM25Okapi,
+    chunks: list[Document],
+    n_results: int = TOP_K,
+    metadata_filter: dict[str, str] | None = None,
+) -> list[tuple[Document, float | None]]:
+    """Return fused chunks and dense similarity scores where available."""
+    return _hybrid_search(
+        query, store, bm25, chunks, n_results, metadata_filter, True
+    )
+
+
+def _hybrid_search(
+    query: str,
+    store: VectorSearchStore,
+    bm25: BM25Okapi,
+    chunks: list[Document],
+    n_results: int,
+    metadata_filter: dict[str, str] | None,
+    include_dense_scores: bool,
+) -> list[tuple[Document, float | None]]:
+    """Share fusion logic while preserving dense scores for the chat trust meter."""
+    if metadata_filter:
+        # Rebuild BM25 over just the selected paper so its lexical ranking and
+        # dense ranking both operate on an isolated candidate corpus.
+        eligible = [
+            (index, chunk)
+            for index, chunk in enumerate(chunks)
+            if all(chunk.metadata.get(key) == value
+                   for key, value in metadata_filter.items())
+        ]
+        if not eligible:
+            return []
+        filtered_chunks = [chunk for _, chunk in eligible]
+        filtered_bm25 = build_bm25(filtered_chunks)
+        lexical_local = bm25_ranking(
+            filtered_bm25, query, CANDIDATES_PER_METHOD
+        )
+        lexical_idx = [eligible[index][0] for index in lexical_local]
+    else:
+        lexical_idx = bm25_ranking(bm25, query, CANDIDATES_PER_METHOD)
+
+    search_filter = {"filter": metadata_filter} if metadata_filter else {}
+    if include_dense_scores:
+        dense_results = store.similarity_search_with_relevance_scores(
+            query, k=CANDIDATES_PER_METHOD, **search_filter
+        )
+        dense_docs = [document for document, _ in dense_results]
+        dense_scores = {
+            _document_key(document): float(score)
+            for document, score in dense_results
+        }
+    else:
+        dense_docs = store.similarity_search(
+            query, k=CANDIDATES_PER_METHOD, **search_filter
+        )
+        dense_scores = {}
+
+    # Include source and page in the identity so duplicate text from separate
+    # documents cannot be assigned to the wrong BM25 position.
+    position = {_document_key(chunk): index for index, chunk in enumerate(chunks)}
+    dense_idx = [
+        position[_document_key(document)]
+        for document in dense_docs
+        if _document_key(document) in position
+    ]
     fused = reciprocal_rank_fusion([dense_idx, lexical_idx])
-    return [chunks[i] for i in fused[:n_results]]
+    return [
+        (chunks[index], dense_scores.get(_document_key(chunks[index])))
+        for index in fused[:n_results]
+    ]
+
+
+def _document_key(document: Document) -> tuple[str, str, str]:
+    """Identify a chunk by source, page, and text across Chroma and BM25."""
+    return (
+        source_filename(document.metadata),
+        page_number(document.metadata),
+        document.page_content,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -204,6 +288,11 @@ def evaluate() -> dict:
     Runs once, writes hybrid_results.json, and prints the comparison. No LLM
     calls: every number here is deterministic retrieval.
     """
+    # Keep evaluation dependencies lazy: importing hybrid search from the
+    # Streamlit app should not construct evaluator.py's Groq client.
+    from evaluator import build_chunks, get_vector_store, question_is_hit
+    from ingest import load_documents
+
     documents = load_documents()
     # Reuses the persisted 1500/50 index when present, so this does not
     # re-embed the corpus.
