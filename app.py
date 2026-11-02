@@ -41,7 +41,12 @@ from config import (
 )
 from ingest import best_chunk_config, load_documents, split_documents
 from hybrid import build_bm25, hybrid_search_with_scores
-from quiz import generate_quiz, retrieve_quiz_chunks
+from quiz import (
+    generate_quiz,
+    make_quiz_state,
+    retrieve_quiz_chunks,
+    submit_quiz_state,
+)
 
 load_dotenv()
 
@@ -448,37 +453,119 @@ elif quiz_mode:
                         selected_pdf,
                         topic.strip(),
                     )
-                    quiz_text = generate_quiz(
+                    quiz = generate_quiz(
                         selected_pdf,
                         topic.strip(),
                         quiz_chunks,
                     )
-                # Store the selected inputs with the result so reruns do not
-                # show a stale quiz after the user changes PDF or topic.
-                st.session_state["quiz_result"] = {
-                    "pdf": selected_pdf,
-                    "topic": topic.strip(),
-                    "text": quiz_text,
-                    "chunks": [
-                        {
-                            "citation": citation(chunk.metadata),
-                            "text": chunk.page_content,
-                        }
-                        for chunk in quiz_chunks
-                    ],
-                }
+                if quiz["covered"]:
+                    # Preserve questions, evidence, and answers across reruns.
+                    st.session_state["quiz_state"] = make_quiz_state(
+                        selected_pdf,
+                        topic.strip(),
+                        quiz,
+                        quiz_chunks,
+                    )
+                else:
+                    st.session_state["quiz_state"] = {
+                        "pdf": selected_pdf,
+                        "topic": topic.strip(),
+                        "questions": [],
+                        "answers": [],
+                        "grade": None,
+                        "context": "",
+                        "chunks": [],
+                    }
 
-        result = st.session_state.get("quiz_result")
+        quiz_state = st.session_state.get("quiz_state")
         if (
-            result
-            and result["pdf"] == selected_pdf
-            and result["topic"] == topic.strip()
+            quiz_state
+            and quiz_state["pdf"] == selected_pdf
+            and quiz_state["topic"] == topic.strip()
         ):
-            st.markdown(result["text"])
-            with st.expander("Retrieved passages used for this quiz"):
-                for passage in result["chunks"]:
-                    st.markdown(f"**{passage['citation']}**")
-                    st.text(passage["text"])
+            if not quiz_state["questions"]:
+                st.info(
+                    "The retrieved passages do not cover this topic well enough "
+                    "to make a grounded quiz."
+                )
+            elif quiz_state["grade"] is None:
+                st.subheader("Answer the questions")
+                # The attempt-specific widget keys preserve typed answers over
+                # reruns without mixing them into a newly generated quiz.
+                with st.form(
+                    f"quiz_answers_{quiz_state['attempt_id']}",
+                    clear_on_submit=False,
+                ):
+                    answer_keys = []
+                    for index, question_item in enumerate(
+                        quiz_state["questions"], start=1
+                    ):
+                        st.markdown(f"**{index}. {question_item['question']}**")
+                        answer_key = (
+                            f"quiz_answer_{quiz_state['attempt_id']}_{index}"
+                        )
+                        answer_keys.append(answer_key)
+                        st.text_area(
+                            "Your answer",
+                            key=answer_key,
+                            height=90,
+                        )
+                    submitted = st.form_submit_button("Submit answers for grading")
+
+                if submitted:
+                    user_answers = [
+                        st.session_state.get(answer_key, "")
+                        for answer_key in answer_keys
+                    ]
+                    with st.spinner("Grading answers against the retrieved paper..."):
+                        st.session_state["quiz_state"] = submit_quiz_state(
+                            quiz_state,
+                            user_answers,
+                        )
+                    st.rerun()
+            else:
+                grade = quiz_state["grade"]
+                score = grade["score"]
+                score_label = (
+                    str(int(score)) if float(score).is_integer() else str(score)
+                )
+                st.subheader(f"Final score: {score_label}/{grade['maximum']}")
+                st.caption("Correct = 1 point, Partial = 0.5 points, Incorrect = 0.")
+
+                missed = []
+                for index, (question_item, user_answer, result_item) in enumerate(
+                    zip(
+                        quiz_state["questions"],
+                        quiz_state["answers"],
+                        grade["results"],
+                    ),
+                    start=1,
+                ):
+                    st.markdown(
+                        f"**{index}. {question_item['question']} — "
+                        f"{result_item['grade']}**"
+                    )
+                    st.markdown(f"Your answer: {user_answer or '_No answer_'}")
+                    st.markdown(result_item["feedback"])
+                    if result_item["grade"] != "Correct":
+                        missed.append((question_item, result_item))
+
+                if missed:
+                    st.subheader("Missed questions and source answers")
+                    for question_item, result_item in missed:
+                        st.markdown(f"- **{question_item['question']}**")
+                        st.markdown(
+                            f"  Correct answer: {result_item['correct_answer']} "
+                            f"({result_item['source']})"
+                        )
+                else:
+                    st.success("All answers were graded correct.")
+
+            if quiz_state["chunks"]:
+                with st.expander("Retrieved passages used for this quiz"):
+                    for passage in quiz_state["chunks"]:
+                        st.markdown(f"**{passage['citation']}**")
+                        st.text(passage["text"])
 else:
     st.caption("Ask anything about the documents in your knowledge base.")
     # 1. Initialize chat history and display it on every rerun.
