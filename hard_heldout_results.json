@@ -1,0 +1,97 @@
+{
+  "generated_at": "2026-11-02T16:55:00+00:00",
+  "set": "heldout_hard",
+  "settings": {
+    "dense_chunk_size": 1500,
+    "dense_chunk_overlap": 50,
+    "indexed_chunks": 281,
+    "rrf_k": 60,
+    "candidates_per_method": 10,
+    "top_k": 3,
+    "retrieval_only": true,
+    "local_embeddings_only": true
+  },
+  "question_count": 10,
+  "results": {
+    "dense": {
+      "hits": 7,
+      "total": 10,
+      "hit_rate": 0.7,
+      "missed": [
+        "q35",
+        "q38",
+        "q39"
+      ]
+    },
+    "hybrid": {
+      "hits": 7,
+      "total": 10,
+      "hit_rate": 0.7,
+      "missed": [
+        "q35",
+        "q39",
+        "q40"
+      ]
+    }
+  },
+  "per_question": {
+    "q31": {
+      "type": "conceptual",
+      "dense": true,
+      "hybrid": true
+    },
+    "q32": {
+      "type": "conceptual",
+      "dense": true,
+      "hybrid": true
+    },
+    "q33": {
+      "type": "conceptual",
+      "dense": true,
+      "hybrid": true
+    },
+    "q34": {
+      "type": "factual",
+      "dense": true,
+      "hybrid": true
+    },
+    "q35": {
+      "type": "conceptual",
+      "dense": false,
+      "hybrid": false
+    },
+    "q36": {
+      "type": "conceptual",
+      "dense": true,
+      "hybrid": true
+    },
+    "q37": {
+      "type": "conceptual",
+      "dense": true,
+      "hybrid": true
+    },
+    "q38": {
+      "type": "conceptual",
+      "dense": false,
+      "hybrid": true
+    },
+    "q39": {
+      "type": "conceptual",
+      "dense": false,
+      "hybrid": false
+    },
+    "q40": {
+      "type": "factual",
+      "dense": true,
+      "hybrid": false
+    }
+  },
+  "changed": {
+    "miss_to_hit": [
+      "q38"
+    ],
+    "hit_to_miss": [
+      "q40"
+    ]
+  }
+}

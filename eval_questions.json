@@ -270,6 +270,106 @@
     "type": "conceptual"
   },
   {
+    "id": "q31",
+    "question": "What role does positional information play in a model that otherwise processes tokens without recurrence or convolution?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["positional encodings", "input embeddings"],
+    "reference_answer": "Because the architecture has no recurrence or convolution, it adds positional encodings to input embeddings to represent token order; the encoding dimension matches the embeddings so they can be summed.",
+    "source_page": 6,
+    "type": "conceptual",
+    "set": "heldout_hard"
+  },
+  {
+    "id": "q32",
+    "question": "How does the decoder prevent its predictions from depending on target tokens that have not yet been generated?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["masking", "offset by one position"],
+    "reference_answer": "The decoder masks attention to later positions and offsets output embeddings by one position, so a prediction depends only on already-known outputs.",
+    "source_page": 3,
+    "type": "conceptual",
+    "set": "heldout_hard"
+  },
+  {
+    "id": "q33",
+    "question": "What feature of the attention stack lets distant input positions exchange information without a chain of recurrent updates?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["maximum path length", "O(1)"],
+    "reference_answer": "Self-attention lets positions connect directly within a layer, giving a maximum path length of O(1), while recurrent layers have a maximum path length of O(n).",
+    "source_page": 6,
+    "type": "conceptual",
+    "set": "heldout_hard"
+  },
+  {
+    "id": "q34",
+    "question": "Which two kinds of sublayer are repeated in each encoder layer?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["multi-head self-attention", "feed-forward network"],
+    "reference_answer": "Each encoder layer contains a multi-head self-attention mechanism and a position-wise fully connected feed-forward network.",
+    "source_page": 3,
+    "type": "factual",
+    "set": "heldout_hard"
+  },
+  {
+    "id": "q35",
+    "question": "How does the decoder use information from the input sequence while producing target representations?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["queries come from the previous decoder layer", "keys and values come from the output of the encoder"],
+    "reference_answer": "An added multi-head attention sublayer takes queries from the previous decoder layer and keys and values from the encoder output, allowing every decoder position to attend to all input positions.",
+    "source_page": 5,
+    "type": "conceptual",
+    "set": "heldout_hard"
+  },
+  {
+    "id": "q36",
+    "question": "What does the report attribute GPT-4's exam results to, and how strong is the apparent contribution of post-training feedback?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["pre-training", "not significantly affected by RLHF"],
+    "reference_answer": "The authors say exam capabilities stem primarily from pre-training and are not significantly affected by RLHF.",
+    "source_page": 6,
+    "type": "conceptual",
+    "set": "heldout_hard"
+  },
+  {
+    "id": "q37",
+    "question": "Why did the report track held-out code prediction loss instead of a different benchmark metric when scaling compute?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["less noisy", "training compute"],
+    "reference_answer": "The report used final loss because it tends to be less noisy than other measures across different amounts of training compute.",
+    "source_page": 3,
+    "type": "conceptual",
+    "set": "heldout_hard"
+  },
+  {
+    "id": "q38",
+    "question": "What caveat should readers keep in mind when interpreting some percentile results in the exam comparison?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["lower end of the range", "wide scoring bins"],
+    "reference_answer": "The report conservatively gives the lower end of percentile ranges; wide scoring bins can create artifacts, such as a perfect AP Biology score appearing at the 85th percentile because 15 percent of test takers also achieve it.",
+    "source_page": 6,
+    "type": "conceptual",
+    "set": "heldout_hard"
+  },
+  {
+    "id": "q39",
+    "question": "How did the authors limit look-ahead when forecasting GPT-4's coding performance?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["registered predictions", "prior to training"],
+    "reference_answer": "They registered the predictions before training finished and used only information available prior to training.",
+    "source_page": 4,
+    "type": "conceptual",
+    "set": "heldout_hard"
+  },
+  {
+    "id": "q40",
+    "question": "On the Uniform Bar Examination comparison, how did GPT-4's score without image input compare to its regular score?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["298 / 400", "~90th"],
+    "reference_answer": "GPT-4 with and without vision scored 298 out of 400, around the 90th percentile.",
+    "source_page": 5,
+    "type": "factual",
+    "set": "heldout_hard"
+  },
+  {
     "id": "t01",
     "question": "What was OpenAI's revenue in 2024?",
     "should_refuse": true,
