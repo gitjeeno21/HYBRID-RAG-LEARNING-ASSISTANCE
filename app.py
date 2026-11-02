@@ -8,7 +8,8 @@ with "filename, p. X" AND its similarity score, sends them to Groq (key from
 Each answer then gets a trust label (High / Medium / Low) plus a one-line reason
 from trust.py, computed from the retrieval scores and one extra LLM support
 check. The label is a heuristic, not a measured accuracy. Quiz Mode separately
-generates source-grounded study questions from one selected PDF.
+generates source-grounded study questions from one selected PDF. Compare Mode
+retrieves separately from two PDFs and compares them in one LLM request.
 
 Run with: streamlit run app.py
 """
@@ -24,6 +25,7 @@ from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 
 import trust
+from compare import generate_comparison, retrieve_paper_contexts
 from config import (
     CHROMA_DIR,
     COLLECTION_NAME,
@@ -238,6 +240,18 @@ def list_knowledge_base() -> list[str]:
     return sorted(p.name for p in Path(PDF_DIR).glob("*.pdf"))
 
 
+def _activate_quiz_mode() -> None:
+    """Turn off comparison when the user selects the quiz workflow."""
+    if st.session_state["quiz_mode"]:
+        st.session_state["compare_mode"] = False
+
+
+def _activate_compare_mode() -> None:
+    """Turn off quiz mode when the user selects the comparison workflow."""
+    if st.session_state["compare_mode"]:
+        st.session_state["quiz_mode"] = False
+
+
 # ---------------------------------------------------------------------------
 # Sidebar — real numbers from eval_results.json
 # ---------------------------------------------------------------------------
@@ -312,10 +326,95 @@ render_sidebar(eval_summary)
 
 st.title("Autonomous RAG Agent")
 
-# Quiz Mode is a separate interaction path, so a study request cannot
-# accidentally be submitted as a normal chat question.
-quiz_mode = st.sidebar.toggle("Quiz Mode", value=False)
-if quiz_mode:
+# Each workflow has its own sidebar switch; callbacks keep the two specialized
+# modes mutually exclusive so one form cannot shadow the other.
+quiz_mode = st.sidebar.toggle(
+    "Quiz Mode",
+    value=False,
+    key="quiz_mode",
+    on_change=_activate_quiz_mode,
+)
+compare_mode = st.sidebar.toggle(
+    "Compare Mode",
+    value=False,
+    key="compare_mode",
+    on_change=_activate_compare_mode,
+)
+
+if compare_mode:
+    st.header("Compare Mode")
+    st.caption(
+        "Compare evidence from two PDFs. Each paper is retrieved separately, "
+        "then both contexts are sent in one request."
+    )
+    pdf_files = list_knowledge_base()
+    if len(pdf_files) < 2:
+        st.warning("Add at least two PDFs to the knowledge base to compare them.")
+    else:
+        # Restrict the comparison to exactly two distinct source documents.
+        selected_pdfs = st.sidebar.multiselect(
+            "Papers to compare (select two)",
+            pdf_files,
+            default=pdf_files[:2],
+            max_selections=2,
+            key="compare_pdfs",
+        )
+        question = st.sidebar.text_input(
+            "Comparison question",
+            key="compare_question",
+        )
+
+        if st.button("Compare papers", key="generate_comparison"):
+            if len(selected_pdfs) != 2:
+                st.warning("Select exactly two PDFs before comparing.")
+            elif not question.strip():
+                st.warning("Enter a question before comparing the papers.")
+            else:
+                # The helper makes one filename-filtered search per paper; one
+                # combined prompt then avoids a separate LLM call for each.
+                with st.spinner("Retrieving both papers and generating comparison..."):
+                    contexts = retrieve_paper_contexts(
+                        get_vector_store(),
+                        question.strip(),
+                        selected_pdfs,
+                    )
+                    comparison_text = generate_comparison(
+                        question.strip(),
+                        contexts,
+                    )
+                # Keep the evidence alongside the answer for transparent replay.
+                st.session_state["comparison_result"] = {
+                    "pdfs": selected_pdfs,
+                    "question": question.strip(),
+                    "text": comparison_text,
+                    "contexts": {
+                        pdf_name: [
+                            {
+                                "citation": citation(chunk.metadata),
+                                "text": chunk.page_content,
+                            }
+                            for chunk in chunks
+                        ]
+                        for pdf_name, chunks in contexts.items()
+                    },
+                }
+
+        result = st.session_state.get("comparison_result")
+        if (
+            result
+            and result["pdfs"] == selected_pdfs
+            and result["question"] == question.strip()
+        ):
+            st.markdown(result["text"])
+            with st.expander("Retrieved passages for each paper"):
+                for pdf_name, passages in result["contexts"].items():
+                    st.markdown(f"### {pdf_name}")
+                    if not passages:
+                        st.info("No passages were retrieved from this paper.")
+                    for passage in passages:
+                        st.markdown(f"**{passage['citation']}**")
+                        st.text(passage["text"])
+elif quiz_mode:
     st.header("Quiz Mode")
     st.caption(
         "Generate five practice questions grounded only in retrieved text from "
