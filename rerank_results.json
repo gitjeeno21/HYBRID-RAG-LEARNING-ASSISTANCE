@@ -1,0 +1,1715 @@
+{
+  "generated_at": "2026-11-02T17:07:28+00:00",
+  "settings": {
+    "index": "chroma_db_eval_1500_50",
+    "indexed_chunks": 281,
+    "dense_chunk_size": 1500,
+    "dense_chunk_overlap": 50,
+    "rrf_k": 60,
+    "candidates_per_method": 10,
+    "top_k": 3,
+    "reranker_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+    "retrieval_only": true,
+    "local_models_only": true
+  },
+  "metric_definitions": {
+    "primary": "Top 3 contains a chunk from the expected PDF with any expected keyword.",
+    "secondary": "Top 3 contains a chunk from the expected PDF whose page is within 1 of the expected page."
+  },
+  "question_counts": {
+    "q1-q20": 20,
+    "q21-q30": 10,
+    "q31-q40": 10,
+    "q41-q50": 10
+  },
+  "questions": {
+    "q1-q20": [
+      {
+        "id": "q01",
+        "question": "What BLEU score did the big Transformer model achieve on the WMT 2014 English-to-German translation task?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "28.4",
+          "BLEU"
+        ],
+        "reference_answer": "28.4 BLEU, a new state of the art for English-to-German in this paper.",
+        "source_page": 8,
+        "type": "numeric"
+      },
+      {
+        "id": "q02",
+        "question": "How many attention heads does the base Transformer use, and what is the dimension of each head?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "h = 8",
+          "dmodel/h = 64"
+        ],
+        "reference_answer": "h = 8 parallel attention heads, with dk = dv = dmodel/h = 64.",
+        "source_page": 5,
+        "type": "numeric"
+      },
+      {
+        "id": "q03",
+        "question": "How long did training the big Transformer model take, and on how many GPUs?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "3.5 days",
+          "8 P100"
+        ],
+        "reference_answer": "3.5 days (300,000 steps) on 8 NVIDIA P100 GPUs.",
+        "source_page": 8,
+        "type": "numeric"
+      },
+      {
+        "id": "q04",
+        "question": "In which three ways is multi-head attention applied inside the Transformer?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "encoder-decoder attention",
+          "self-attention"
+        ],
+        "reference_answer": "As encoder-decoder attention, as encoder self-attention, and as masked decoder self-attention.",
+        "source_page": 5,
+        "type": "conceptual"
+      },
+      {
+        "id": "q05",
+        "question": "Why does scaled dot-product attention divide the dot products by the square root of dk?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "gradients",
+          "softmax"
+        ],
+        "reference_answer": "For large dk the dot products grow large, pushing softmax into regions with extremely small gradients; scaling counteracts this.",
+        "source_page": 4,
+        "type": "conceptual"
+      },
+      {
+        "id": "q06",
+        "question": "What is the per-layer computational complexity of self-attention compared with a recurrent layer?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "O(n2",
+          "recurrent"
+        ],
+        "reference_answer": "Self-attention is O(n^2 * d) per layer, a recurrent layer is O(n * d^2).",
+        "source_page": 6,
+        "type": "conceptual"
+      },
+      {
+        "id": "q07",
+        "question": "How many sentence pairs were in the WMT 2014 English-German training set, and what was the vocabulary size?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "4.5 million",
+          "37000"
+        ],
+        "reference_answer": "About 4.5 million sentence pairs, byte-pair encoded with a shared vocabulary of about 37,000 tokens.",
+        "source_page": 7,
+        "type": "numeric"
+      },
+      {
+        "id": "q08",
+        "question": "Which optimizer and learning-rate warmup schedule were used to train the Transformer?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "Adam",
+          "warmup_steps = 4000"
+        ],
+        "reference_answer": "Adam with beta1 = 0.9, beta2 = 0.98, eps = 1e-9, linear warmup for 4000 steps then inverse-square-root decay.",
+        "source_page": 7,
+        "type": "factual"
+      },
+      {
+        "id": "q09",
+        "question": "What are the model dimension and the feed-forward inner dimension of the base Transformer?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "dmodel = 512",
+          "2048"
+        ],
+        "reference_answer": "dmodel = 512 and the position-wise feed-forward inner layer has dimension dff = 2048.",
+        "source_page": 5,
+        "type": "numeric"
+      },
+      {
+        "id": "q10",
+        "question": "What F1 score did the 4-layer Transformer reach on WSJ Section 23 constituency parsing when trained only on the WSJ training set?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "91.3",
+          "constituency"
+        ],
+        "reference_answer": "91.3 F1 (WSJ only, discriminative); 92.7 in the semi-supervised setting.",
+        "source_page": 10,
+        "type": "numeric"
+      },
+      {
+        "id": "q11",
+        "question": "What percentile did GPT-4 score on the simulated bar exam, and how did GPT-3.5 compare?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "top 10%",
+          "bottom 10%"
+        ],
+        "reference_answer": "GPT-4 scored around the top 10% of test takers; GPT-3.5 scored in the bottom 10%.",
+        "source_page": 1,
+        "type": "numeric"
+      },
+      {
+        "id": "q12",
+        "question": "What accuracy did GPT-4 achieve on the MMLU benchmark, and how many subjects does MMLU cover?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "86.4",
+          "57 subjects"
+        ],
+        "reference_answer": "86.4% compared with 70.0% for GPT-3.5; MMLU covers 57 subjects.",
+        "source_page": 7,
+        "type": "numeric"
+      },
+      {
+        "id": "q13",
+        "question": "What HumanEval pass rate did GPT-4 achieve, and what does the HumanEval benchmark measure?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "67.0",
+          "Python"
+        ],
+        "reference_answer": "67.0% pass rate at 0-shot; HumanEval measures the ability to synthesize Python functions.",
+        "source_page": 7,
+        "type": "numeric"
+      },
+      {
+        "id": "q14",
+        "question": "What score did GPT-4 get on GSM-8K, and what caveat does the report give about that result?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "92.0",
+          "training set"
+        ],
+        "reference_answer": "92.0% with 5-shot chain-of-thought, but part of the GSM-8K training set was included in GPT-4's pre-training mix.",
+        "source_page": 7,
+        "type": "factual"
+      },
+      {
+        "id": "q15",
+        "question": "How much does the GPT-4 technical report disclose about the model's architecture and size?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "no further details",
+          "architecture"
+        ],
+        "reference_answer": "It discloses almost nothing: no further details about architecture (including model size), hardware, training compute, dataset construction or training method.",
+        "source_page": 2,
+        "type": "conceptual"
+      },
+      {
+        "id": "q16",
+        "question": "On what percentage of prompts were GPT-4's responses preferred over GPT-3.5, and on how many prompts was this measured?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "70.2%",
+          "5,214"
+        ],
+        "reference_answer": "Preferred on 70.2% of 5,214 prompts submitted to ChatGPT and the OpenAI API.",
+        "source_page": 7,
+        "type": "numeric"
+      },
+      {
+        "id": "q17",
+        "question": "In how many of the languages tested did GPT-4 beat the English-language state of the art on translated MMLU?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "24 of 26"
+        ],
+        "reference_answer": "24 of the 26 languages considered.",
+        "source_page": 1,
+        "type": "numeric"
+      },
+      {
+        "id": "q18",
+        "question": "How was GPT-4 fine-tuned after pre-training?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "Reinforcement Learning from Human Feedback",
+          "RLHF"
+        ],
+        "reference_answer": "It was fine-tuned using Reinforcement Learning from Human Feedback (RLHF).",
+        "source_page": 2,
+        "type": "conceptual"
+      },
+      {
+        "id": "q19",
+        "question": "How did OpenAI predict GPT-4's final loss before training finished, and with models trained using how much less compute?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "10,000x",
+          "scaling law"
+        ],
+        "reference_answer": "They fitted a scaling law to models trained with at most 10,000x less compute and predicted final loss with high accuracy.",
+        "source_page": 2,
+        "type": "conceptual"
+      },
+      {
+        "id": "q20",
+        "question": "According to the introduction, which risk areas does the accompanying system card discuss?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "over-reliance",
+          "proliferation"
+        ],
+        "reference_answer": "Bias, disinformation, over-reliance, privacy, cybersecurity and proliferation, among others (introduction, not the system card itself).",
+        "source_page": 2,
+        "type": "conceptual"
+      }
+    ],
+    "q21-q30": [
+      {
+        "id": "q21",
+        "question": "How many identical layers are stacked in the Transformer's encoder and in its decoder?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "N = 6",
+          "identical layers"
+        ],
+        "reference_answer": "N = 6 identical layers in the encoder stack, and also N = 6 in the decoder stack.",
+        "source_page": 3,
+        "type": "factual"
+      },
+      {
+        "id": "q22",
+        "question": "How large was the WMT 2014 English-French training set, and what vocabulary size was used for it?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "36M sentences",
+          "32000"
+        ],
+        "reference_answer": "About 36M sentences, tokenised into a 32000 word-piece vocabulary.",
+        "source_page": 7,
+        "type": "numeric"
+      },
+      {
+        "id": "q23",
+        "question": "Why did the authors choose sinusoidal positional encodings instead of learned positional embeddings?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "extrapolate",
+          "sinusoidal"
+        ],
+        "reference_answer": "Learned and sinusoidal encodings gave nearly identical results, but the sinusoidal version may allow the model to extrapolate to sequence lengths longer than those seen in training.",
+        "source_page": 6,
+        "type": "conceptual"
+      },
+      {
+        "id": "q24",
+        "question": "What beam size and length penalty did the Transformer use for inference on the WMT 2014 translation tasks?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "beam size of 4",
+          "0.6"
+        ],
+        "reference_answer": "Beam search with a beam size of 4 and a length penalty alpha = 0.6.",
+        "source_page": 8,
+        "type": "numeric"
+      },
+      {
+        "id": "q25",
+        "question": "According to the paper, what effect does label smoothing have on perplexity and on BLEU score?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "label smoothing",
+          "perplexity"
+        ],
+        "reference_answer": "Label smoothing of value 0.1 hurts perplexity because the model learns to be less sure, but improves accuracy and BLEU score.",
+        "source_page": 8,
+        "type": "conceptual"
+      },
+      {
+        "id": "q26",
+        "question": "What LSAT score did GPT-4 achieve, and what percentile does that correspond to compared with GPT-3.5?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "163",
+          "LSAT"
+        ],
+        "reference_answer": "163, around the 88th percentile, against 149 (around the 40th percentile) for GPT-3.5.",
+        "source_page": 5,
+        "type": "numeric"
+      },
+      {
+        "id": "q27",
+        "question": "What score did GPT-4 get on the USABO Semifinal Exam 2020?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "87 / 150",
+          "USABO"
+        ],
+        "reference_answer": "87 out of 150, around the 99th-100th percentile, versus 43 / 150 for GPT-3.5.",
+        "source_page": 5,
+        "type": "numeric"
+      },
+      {
+        "id": "q28",
+        "question": "In the HumanEval capability prediction, how many of the hardest problems were excluded and into how many difficulty buckets were the rest split?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "15 hardest",
+          "6 difficulty buckets"
+        ],
+        "reference_answer": "All but the 15 hardest HumanEval problems were split into 6 difficulty buckets based on smaller models' performance.",
+        "source_page": 4,
+        "type": "conceptual"
+      },
+      {
+        "id": "q29",
+        "question": "What does the report observe about GPT-4's behaviour on the Inverse Scaling Prize task called Hindsight Neglect?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "Hindsight Neglect",
+          "reverses this trend"
+        ],
+        "reference_answer": "Where accuracy was expected to decrease with scale, GPT-4 reverses that trend and improves instead.",
+        "source_page": 4,
+        "type": "conceptual"
+      },
+      {
+        "id": "q30",
+        "question": "Which dataset did OpenAI use to check its prediction of GPT-4's final loss, and was that data part of the training set?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "internal codebase",
+          "not part of the training set"
+        ],
+        "reference_answer": "They predicted final loss on their internal codebase, a dataset that is not part of the training set.",
+        "source_page": 2,
+        "type": "conceptual"
+      }
+    ],
+    "q31-q40": [
+      {
+        "id": "q31",
+        "question": "What role does positional information play in a model that otherwise processes tokens without recurrence or convolution?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "positional encodings",
+          "input embeddings"
+        ],
+        "reference_answer": "Because the architecture has no recurrence or convolution, it adds positional encodings to input embeddings to represent token order; the encoding dimension matches the embeddings so they can be summed.",
+        "source_page": 6,
+        "type": "conceptual",
+        "set": "heldout_hard"
+      },
+      {
+        "id": "q32",
+        "question": "How does the decoder prevent its predictions from depending on target tokens that have not yet been generated?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "masking",
+          "offset by one position"
+        ],
+        "reference_answer": "The decoder masks attention to later positions and offsets output embeddings by one position, so a prediction depends only on already-known outputs.",
+        "source_page": 3,
+        "type": "conceptual",
+        "set": "heldout_hard"
+      },
+      {
+        "id": "q33",
+        "question": "What feature of the attention stack lets distant input positions exchange information without a chain of recurrent updates?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "maximum path length",
+          "O(1)"
+        ],
+        "reference_answer": "Self-attention lets positions connect directly within a layer, giving a maximum path length of O(1), while recurrent layers have a maximum path length of O(n).",
+        "source_page": 6,
+        "type": "conceptual",
+        "set": "heldout_hard"
+      },
+      {
+        "id": "q34",
+        "question": "Which two kinds of sublayer are repeated in each encoder layer?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "multi-head self-attention",
+          "feed-forward network"
+        ],
+        "reference_answer": "Each encoder layer contains a multi-head self-attention mechanism and a position-wise fully connected feed-forward network.",
+        "source_page": 3,
+        "type": "factual",
+        "set": "heldout_hard"
+      },
+      {
+        "id": "q35",
+        "question": "How does the decoder use information from the input sequence while producing target representations?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "queries come from the previous decoder layer",
+          "keys and values come from the output of the encoder"
+        ],
+        "reference_answer": "An added multi-head attention sublayer takes queries from the previous decoder layer and keys and values from the encoder output, allowing every decoder position to attend to all input positions.",
+        "source_page": 5,
+        "type": "conceptual",
+        "set": "heldout_hard"
+      },
+      {
+        "id": "q36",
+        "question": "What does the report attribute GPT-4's exam results to, and how strong is the apparent contribution of post-training feedback?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "pre-training",
+          "not significantly affected by RLHF"
+        ],
+        "reference_answer": "The authors say exam capabilities stem primarily from pre-training and are not significantly affected by RLHF.",
+        "source_page": 6,
+        "type": "conceptual",
+        "set": "heldout_hard"
+      },
+      {
+        "id": "q37",
+        "question": "Why did the report track held-out code prediction loss instead of a different benchmark metric when scaling compute?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "less noisy",
+          "training compute"
+        ],
+        "reference_answer": "The report used final loss because it tends to be less noisy than other measures across different amounts of training compute.",
+        "source_page": 3,
+        "type": "conceptual",
+        "set": "heldout_hard"
+      },
+      {
+        "id": "q38",
+        "question": "What caveat should readers keep in mind when interpreting some percentile results in the exam comparison?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "lower end of the range",
+          "wide scoring bins"
+        ],
+        "reference_answer": "The report conservatively gives the lower end of percentile ranges; wide scoring bins can create artifacts, such as a perfect AP Biology score appearing at the 85th percentile because 15 percent of test takers also achieve it.",
+        "source_page": 6,
+        "type": "conceptual",
+        "set": "heldout_hard"
+      },
+      {
+        "id": "q39",
+        "question": "How did the authors limit look-ahead when forecasting GPT-4's coding performance?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "registered predictions",
+          "prior to training"
+        ],
+        "reference_answer": "They registered the predictions before training finished and used only information available prior to training.",
+        "source_page": 4,
+        "type": "conceptual",
+        "set": "heldout_hard"
+      },
+      {
+        "id": "q40",
+        "question": "On the Uniform Bar Examination comparison, how did GPT-4's score without image input compare to its regular score?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "298 / 400",
+          "~90th"
+        ],
+        "reference_answer": "GPT-4 with and without vision scored 298 out of 400, around the 90th percentile.",
+        "source_page": 5,
+        "type": "factual",
+        "set": "heldout_hard"
+      }
+    ],
+    "q41-q50": [
+      {
+        "id": "q41",
+        "question": "Why can recurrent sequence models become difficult to scale to long examples, even after computational-efficiency improvements?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "sequential nature",
+          "parallelization"
+        ],
+        "reference_answer": "Their sequential nature prevents parallelization within a training example, a growing bottleneck for longer sequences when memory limits batching across examples.",
+        "source_page": 2,
+        "type": "conceptual",
+        "set": "heldout_final"
+      },
+      {
+        "id": "q42",
+        "question": "What is the computational trade-off when each position is limited to a local window rather than attending across the whole sequence?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "maximum path length",
+          "O(n/r)"
+        ],
+        "reference_answer": "Restricting self-attention to a neighborhood of size r gives per-layer complexity O(r · n · d), while the maximum path length increases to O(n/r).",
+        "source_page": 6,
+        "type": "conceptual",
+        "set": "heldout_final"
+      },
+      {
+        "id": "q43",
+        "question": "What happened to translation quality when the attention design used a single head or an excessive number of heads?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "0.9 BLEU worse",
+          "quality also drops off with too many heads"
+        ],
+        "reference_answer": "The single-head variant scored 0.9 BLEU below the best setting, and quality also declined when the number of heads became too large.",
+        "source_page": 9,
+        "type": "conceptual",
+        "set": "heldout_final"
+      },
+      {
+        "id": "q44",
+        "question": "In the sentence illustration, what kind of relationship do some encoder heads connect across separated words?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "long-distance dependencies",
+          "making...more difficult"
+        ],
+        "reference_answer": "Some heads follow a long-distance dependency, linking the verb “making” with the later phrase “more difficult.”",
+        "source_page": 13,
+        "type": "conceptual",
+        "set": "heldout_final"
+      },
+      {
+        "id": "q45",
+        "question": "What linguistic task is illustrated by attention focused on a possessive word in the second example?",
+        "expected_source": "source_doc.pdf",
+        "expected_keywords": [
+          "anaphora resolution",
+          "attentions are very sharp"
+        ],
+        "reference_answer": "The example illustrates anaphora resolution; the attention associated with “its” is described as very sharp.",
+        "source_page": 14,
+        "type": "conceptual",
+        "set": "heldout_final"
+      },
+      {
+        "id": "q46",
+        "question": "What precautions does the report recommend choosing according to the consequences of a model's use?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "human review",
+          "grounding with additional context"
+        ],
+        "reference_answer": "It suggests options such as human review, grounding with additional context, or avoiding high-stakes uses altogether, with the choice matched to the application.",
+        "source_page": 10,
+        "type": "conceptual",
+        "set": "heldout_final"
+      },
+      {
+        "id": "q47",
+        "question": "How did the relationship between the model's stated confidence and correctness change after alignment training?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "confidence in an answer generally matches",
+          "calibration is reduced"
+        ],
+        "reference_answer": "Before post-training, confidence in an answer generally matches its probability of being correct; after post-training, calibration is reduced.",
+        "source_page": 11,
+        "type": "conceptual",
+        "set": "heldout_final"
+      },
+      {
+        "id": "q48",
+        "question": "Why does the report say deployment safeguards are still necessary even after model-level safety improvements?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "jailbreaks",
+          "monitoring for abuse"
+        ],
+        "reference_answer": "Jailbreaks can still elicit prohibited behavior, so deployment-time protections such as abuse monitoring and rapid iterative model improvement remain important.",
+        "source_page": 14,
+        "type": "conceptual",
+        "set": "heldout_final"
+      },
+      {
+        "id": "q49",
+        "question": "How broadly did translated MMLU performance compare with prior English-language systems, and what types of languages were among the strong cases?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "vast majority of languages tested",
+          "Latvian",
+          "Welsh",
+          "Swahili"
+        ],
+        "reference_answer": "GPT-4 exceeded prior English-language performance for the vast majority of tested languages, including examples such as Latvian, Welsh, and Swahili.",
+        "source_page": 8,
+        "type": "conceptual",
+        "set": "heldout_final"
+      },
+      {
+        "id": "q50",
+        "question": "How did the reported expected calibration error differ between the pre-training model and its post-trained counterpart?",
+        "expected_source": "gpt4_technical_report.pdf",
+        "expected_keywords": [
+          "ECE: 0.007",
+          "ECE: 0.074"
+        ],
+        "reference_answer": "On the plotted MMLU subset, ECE increased from 0.007 for the pre-trained model to 0.074 for the post-trained model.",
+        "source_page": 12,
+        "type": "factual",
+        "set": "heldout_final"
+      }
+    ]
+  },
+  "results": {
+    "q1-q20": {
+      "dense": {
+        "primary_hits": 16,
+        "total": 20,
+        "primary_hit_rate": 0.8,
+        "page_hits": 13,
+        "page_hit_rate": 0.65
+      },
+      "hybrid": {
+        "primary_hits": 19,
+        "total": 20,
+        "primary_hit_rate": 0.95,
+        "page_hits": 15,
+        "page_hit_rate": 0.75
+      },
+      "dense_rerank": {
+        "primary_hits": 17,
+        "total": 20,
+        "primary_hit_rate": 0.85,
+        "page_hits": 14,
+        "page_hit_rate": 0.7
+      },
+      "hybrid_rerank": {
+        "primary_hits": 19,
+        "total": 20,
+        "primary_hit_rate": 0.95,
+        "page_hits": 17,
+        "page_hit_rate": 0.85
+      }
+    },
+    "q21-q30": {
+      "dense": {
+        "primary_hits": 10,
+        "total": 10,
+        "primary_hit_rate": 1.0,
+        "page_hits": 10,
+        "page_hit_rate": 1.0
+      },
+      "hybrid": {
+        "primary_hits": 10,
+        "total": 10,
+        "primary_hit_rate": 1.0,
+        "page_hits": 10,
+        "page_hit_rate": 1.0
+      },
+      "dense_rerank": {
+        "primary_hits": 10,
+        "total": 10,
+        "primary_hit_rate": 1.0,
+        "page_hits": 10,
+        "page_hit_rate": 1.0
+      },
+      "hybrid_rerank": {
+        "primary_hits": 10,
+        "total": 10,
+        "primary_hit_rate": 1.0,
+        "page_hits": 10,
+        "page_hit_rate": 1.0
+      }
+    },
+    "q31-q40": {
+      "dense": {
+        "primary_hits": 7,
+        "total": 10,
+        "primary_hit_rate": 0.7,
+        "page_hits": 7,
+        "page_hit_rate": 0.7
+      },
+      "hybrid": {
+        "primary_hits": 7,
+        "total": 10,
+        "primary_hit_rate": 0.7,
+        "page_hits": 9,
+        "page_hit_rate": 0.9
+      },
+      "dense_rerank": {
+        "primary_hits": 7,
+        "total": 10,
+        "primary_hit_rate": 0.7,
+        "page_hits": 8,
+        "page_hit_rate": 0.8
+      },
+      "hybrid_rerank": {
+        "primary_hits": 8,
+        "total": 10,
+        "primary_hit_rate": 0.8,
+        "page_hits": 8,
+        "page_hit_rate": 0.8
+      }
+    },
+    "q41-q50": {
+      "dense": {
+        "primary_hits": 5,
+        "total": 10,
+        "primary_hit_rate": 0.5,
+        "page_hits": 7,
+        "page_hit_rate": 0.7
+      },
+      "hybrid": {
+        "primary_hits": 7,
+        "total": 10,
+        "primary_hit_rate": 0.7,
+        "page_hits": 8,
+        "page_hit_rate": 0.8
+      },
+      "dense_rerank": {
+        "primary_hits": 4,
+        "total": 10,
+        "primary_hit_rate": 0.4,
+        "page_hits": 7,
+        "page_hit_rate": 0.7
+      },
+      "hybrid_rerank": {
+        "primary_hits": 5,
+        "total": 10,
+        "primary_hit_rate": 0.5,
+        "page_hits": 7,
+        "page_hit_rate": 0.7
+      }
+    }
+  },
+  "per_question": {
+    "q01": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q02": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q03": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q04": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q05": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q06": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q07": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q08": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q09": {
+      "dense": {
+        "primary": true,
+        "page_hit": false
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": false
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q10": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q11": {
+      "dense": {
+        "primary": true,
+        "page_hit": false
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": false
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": false
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q12": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q13": {
+      "dense": {
+        "primary": true,
+        "page_hit": false
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": false
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": false
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": false
+      }
+    },
+    "q14": {
+      "dense": {
+        "primary": true,
+        "page_hit": false
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": false
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": false
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": false
+      }
+    },
+    "q15": {
+      "dense": {
+        "primary": false,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": false,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q16": {
+      "dense": {
+        "primary": false,
+        "page_hit": false
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": false
+      },
+      "dense_rerank": {
+        "primary": false,
+        "page_hit": false
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q17": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q18": {
+      "dense": {
+        "primary": true,
+        "page_hit": false
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q19": {
+      "dense": {
+        "primary": false,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q20": {
+      "dense": {
+        "primary": false,
+        "page_hit": false
+      },
+      "hybrid": {
+        "primary": false,
+        "page_hit": false
+      },
+      "dense_rerank": {
+        "primary": false,
+        "page_hit": false
+      },
+      "hybrid_rerank": {
+        "primary": false,
+        "page_hit": false
+      }
+    },
+    "q21": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q22": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q23": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q24": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q25": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q26": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q27": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q28": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q29": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q30": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q31": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q32": {
+      "dense": {
+        "primary": true,
+        "page_hit": false
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q33": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q34": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q35": {
+      "dense": {
+        "primary": false,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": false,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": false,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q36": {
+      "dense": {
+        "primary": true,
+        "page_hit": false
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": false
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": false
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": false
+      }
+    },
+    "q37": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q38": {
+      "dense": {
+        "primary": false,
+        "page_hit": false
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": false,
+        "page_hit": false
+      },
+      "hybrid_rerank": {
+        "primary": false,
+        "page_hit": false
+      }
+    },
+    "q39": {
+      "dense": {
+        "primary": false,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": false,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": false,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": false,
+        "page_hit": true
+      }
+    },
+    "q40": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": false,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q41": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q42": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q43": {
+      "dense": {
+        "primary": false,
+        "page_hit": false
+      },
+      "hybrid": {
+        "primary": false,
+        "page_hit": false
+      },
+      "dense_rerank": {
+        "primary": false,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q44": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": false,
+        "page_hit": false
+      },
+      "hybrid_rerank": {
+        "primary": false,
+        "page_hit": false
+      }
+    },
+    "q45": {
+      "dense": {
+        "primary": false,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": false,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": false,
+        "page_hit": true
+      }
+    },
+    "q46": {
+      "dense": {
+        "primary": false,
+        "page_hit": false
+      },
+      "hybrid": {
+        "primary": false,
+        "page_hit": false
+      },
+      "dense_rerank": {
+        "primary": false,
+        "page_hit": false
+      },
+      "hybrid_rerank": {
+        "primary": false,
+        "page_hit": false
+      }
+    },
+    "q47": {
+      "dense": {
+        "primary": false,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": false,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": false,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": false,
+        "page_hit": true
+      }
+    },
+    "q48": {
+      "dense": {
+        "primary": false,
+        "page_hit": false
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": false,
+        "page_hit": false
+      },
+      "hybrid_rerank": {
+        "primary": false,
+        "page_hit": false
+      }
+    },
+    "q49": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    },
+    "q50": {
+      "dense": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid": {
+        "primary": true,
+        "page_hit": true
+      },
+      "dense_rerank": {
+        "primary": true,
+        "page_hit": true
+      },
+      "hybrid_rerank": {
+        "primary": true,
+        "page_hit": true
+      }
+    }
+  },
+  "flips": {
+    "q31-q40": {
+      "dense_rerank vs dense": {
+        "miss_to_hit": [],
+        "hit_to_miss": []
+      },
+      "hybrid_rerank vs hybrid": {
+        "miss_to_hit": [
+          "q35",
+          "q40"
+        ],
+        "hit_to_miss": [
+          "q38"
+        ]
+      }
+    },
+    "q41-q50": {
+      "dense_rerank vs dense": {
+        "miss_to_hit": [],
+        "hit_to_miss": [
+          "q44"
+        ]
+      },
+      "hybrid_rerank vs hybrid": {
+        "miss_to_hit": [
+          "q43"
+        ],
+        "hit_to_miss": [
+          "q44",
+          "q45",
+          "q48"
+        ]
+      }
+    }
+  }
+}

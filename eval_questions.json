@@ -370,6 +370,106 @@
     "set": "heldout_hard"
   },
   {
+    "id": "q41",
+    "question": "Why can recurrent sequence models become difficult to scale to long examples, even after computational-efficiency improvements?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["sequential nature", "parallelization"],
+    "reference_answer": "Their sequential nature prevents parallelization within a training example, a growing bottleneck for longer sequences when memory limits batching across examples.",
+    "source_page": 2,
+    "type": "conceptual",
+    "set": "heldout_final"
+  },
+  {
+    "id": "q42",
+    "question": "What is the computational trade-off when each position is limited to a local window rather than attending across the whole sequence?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["maximum path length", "O(n/r)"],
+    "reference_answer": "Restricting self-attention to a neighborhood of size r gives per-layer complexity O(r · n · d), while the maximum path length increases to O(n/r).",
+    "source_page": 6,
+    "type": "conceptual",
+    "set": "heldout_final"
+  },
+  {
+    "id": "q43",
+    "question": "What happened to translation quality when the attention design used a single head or an excessive number of heads?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["0.9 BLEU worse", "quality also drops off with too many heads"],
+    "reference_answer": "The single-head variant scored 0.9 BLEU below the best setting, and quality also declined when the number of heads became too large.",
+    "source_page": 9,
+    "type": "conceptual",
+    "set": "heldout_final"
+  },
+  {
+    "id": "q44",
+    "question": "In the sentence illustration, what kind of relationship do some encoder heads connect across separated words?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["long-distance dependencies", "making...more difficult"],
+    "reference_answer": "Some heads follow a long-distance dependency, linking the verb “making” with the later phrase “more difficult.”",
+    "source_page": 13,
+    "type": "conceptual",
+    "set": "heldout_final"
+  },
+  {
+    "id": "q45",
+    "question": "What linguistic task is illustrated by attention focused on a possessive word in the second example?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["anaphora resolution", "attentions are very sharp"],
+    "reference_answer": "The example illustrates anaphora resolution; the attention associated with “its” is described as very sharp.",
+    "source_page": 14,
+    "type": "conceptual",
+    "set": "heldout_final"
+  },
+  {
+    "id": "q46",
+    "question": "What precautions does the report recommend choosing according to the consequences of a model's use?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["human review", "grounding with additional context"],
+    "reference_answer": "It suggests options such as human review, grounding with additional context, or avoiding high-stakes uses altogether, with the choice matched to the application.",
+    "source_page": 10,
+    "type": "conceptual",
+    "set": "heldout_final"
+  },
+  {
+    "id": "q47",
+    "question": "How did the relationship between the model's stated confidence and correctness change after alignment training?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["confidence in an answer generally matches", "calibration is reduced"],
+    "reference_answer": "Before post-training, confidence in an answer generally matches its probability of being correct; after post-training, calibration is reduced.",
+    "source_page": 11,
+    "type": "conceptual",
+    "set": "heldout_final"
+  },
+  {
+    "id": "q48",
+    "question": "Why does the report say deployment safeguards are still necessary even after model-level safety improvements?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["jailbreaks", "monitoring for abuse"],
+    "reference_answer": "Jailbreaks can still elicit prohibited behavior, so deployment-time protections such as abuse monitoring and rapid iterative model improvement remain important.",
+    "source_page": 14,
+    "type": "conceptual",
+    "set": "heldout_final"
+  },
+  {
+    "id": "q49",
+    "question": "How broadly did translated MMLU performance compare with prior English-language systems, and what types of languages were among the strong cases?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["vast majority of languages tested", "Latvian", "Welsh", "Swahili"],
+    "reference_answer": "GPT-4 exceeded prior English-language performance for the vast majority of tested languages, including examples such as Latvian, Welsh, and Swahili.",
+    "source_page": 8,
+    "type": "conceptual",
+    "set": "heldout_final"
+  },
+  {
+    "id": "q50",
+    "question": "How did the reported expected calibration error differ between the pre-training model and its post-trained counterpart?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["ECE: 0.007", "ECE: 0.074"],
+    "reference_answer": "On the plotted MMLU subset, ECE increased from 0.007 for the pre-trained model to 0.074 for the post-trained model.",
+    "source_page": 12,
+    "type": "factual",
+    "set": "heldout_final"
+  },
+  {
     "id": "t01",
     "question": "What was OpenAI's revenue in 2024?",
     "should_refuse": true,
