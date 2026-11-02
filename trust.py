@@ -41,6 +41,7 @@ signals are positive.
 Command line, for the refusal numbers reported alongside the eval set:
 
     python trust.py              # refusal evaluation over eval_questions.json
+    python trust.py --mock       # offline fixture check; not model performance
 
 That run answers every question through the same prompt the app uses and counts,
 for two disjoint groups of questions, how often the system refused to answer.
@@ -309,7 +310,7 @@ def _answer_for_eval(question: str, store, ask) -> str:
     return ask(prompt)
 
 
-def run_refusal_eval(ask=None) -> dict:
+def run_refusal_eval(ask=None, mock: bool = False) -> dict:
     """Measure correct refusals and false refusals over eval_questions.json.
 
     Two numbers are reported, on two disjoint groups:
@@ -320,32 +321,40 @@ def run_refusal_eval(ask=None) -> dict:
 
     Both are printed as x/y = percentage. Refusal is detected by is_refusal(),
     i.e. by the fixed NO_ANSWER_TEXT sentence -- the same definition the prompt
-    instructs the model to follow.
+    instructs the model to follow. With mock=True, fixed fixture responses test
+    only the metric bookkeeping and must not be reported as live model results.
     """
-    from langchain_chroma import Chroma
-    from langchain_huggingface import HuggingFaceEmbeddings
-
-    from config import CHROMA_DIR, COLLECTION_NAME, EMBEDDING_MODEL
-
     questions = json.loads(QUESTIONS_PATH.read_text(encoding="utf-8"))
+    store = None
+    if not mock:
+        from langchain_chroma import Chroma
+        from langchain_huggingface import HuggingFaceEmbeddings
 
-    store = Chroma(
-        collection_name=COLLECTION_NAME,
-        embedding_function=HuggingFaceEmbeddings(model=EMBEDDING_MODEL),
-        persist_directory=str(CHROMA_DIR),
-    )
-    if store._collection.count() == 0:
-        raise SystemExit(
-            f"{CHROMA_DIR} is empty. Run `python ingest.py` before measuring refusals."
+        from config import CHROMA_DIR, COLLECTION_NAME, EMBEDDING_MODEL
+
+        store = Chroma(
+            collection_name=COLLECTION_NAME,
+            embedding_function=HuggingFaceEmbeddings(model=EMBEDDING_MODEL),
+            persist_directory=str(CHROMA_DIR),
         )
-
-    ask = ask or _default_ask
+        if store._collection.count() == 0:
+            raise SystemExit(
+                f"{CHROMA_DIR} is empty. Run `python ingest.py` before measuring refusals."
+            )
+        ask = ask or _default_ask
     groups = {
         # should_refuse=True -> refusing is the correct behaviour.
         "off-topic (should refuse)": [q for q in questions if q.get("should_refuse")],
         # should_refuse=False/absent -> refusing is a false refusal.
         "answerable (must not refuse)": [q for q in questions if not q.get("should_refuse")],
     }
+
+    if mock:
+        print(
+            "MOCKED EVALUATION ONLY: fixture answers follow the expected labels; "
+            "these counts do not measure live model behavior.",
+            flush=True,
+        )
 
     results = {}
     for name, group in groups.items():
@@ -356,7 +365,18 @@ def run_refusal_eval(ask=None) -> dict:
         print(f"\n[{name}] {len(group)} questions", flush=True)
         refused_ids = []
         for i, q in enumerate(group, start=1):
-            answer = _answer_for_eval(q["question"], store, ask)
+            if mock:
+                # The fixture checks the counting/reporting path without
+                # pretending to predict how Groq would answer these questions.
+                answer = (
+                    NO_ANSWER_TEXT
+                    if q.get("should_refuse")
+                    else "Mock grounded answer; no refusal."
+                )
+            else:
+                assert store is not None
+                assert ask is not None
+                answer = _answer_for_eval(q["question"], store, ask)
             refused = is_refusal(answer)
             if refused:
                 refused_ids.append(q["id"])
@@ -369,7 +389,12 @@ def run_refusal_eval(ask=None) -> dict:
         }
 
     print("\n" + "=" * 74)
-    print("REFUSAL MEASUREMENT (n is small; treat these as rough estimates)")
+    heading = (
+        "MOCKED REFUSAL METRIC CHECK (not live system performance)"
+        if mock
+        else "REFUSAL MEASUREMENT (n is small; treat these as rough estimates)"
+    )
+    print(heading)
     print("=" * 74)
     for name, block in results.items():
         rate = block["rate"]
@@ -392,8 +417,13 @@ def main() -> None:
         action="store_true",
         help="measure correct refusals and false refusals (this is the default)",
     )
-    parser.parse_args()
-    run_refusal_eval()
+    parser.add_argument(
+        "--mock",
+        action="store_true",
+        help="exercise refusal metric bookkeeping with fixture responses; no API or retrieval",
+    )
+    args = parser.parse_args()
+    run_refusal_eval(mock=args.mock)
 
 
 if __name__ == "__main__":

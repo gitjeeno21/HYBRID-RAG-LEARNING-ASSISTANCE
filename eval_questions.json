@@ -471,44 +471,50 @@
   },
   {
     "id": "t01",
-    "question": "What was OpenAI's revenue in 2024?",
+    "question": "What is the recommended baking time and temperature for a homemade apple pie?",
     "should_refuse": true,
-    "type": "refusal",
-    "reference_answer": "Not answerable from the two papers: the GPT-4 technical report covers capability evaluations, not financial results. The assistant should return the fixed no-answer sentence."
+    "type": "should_refuse",
+    "set": "refusal_test",
+    "reference_answer": "Not answerable from the two papers; the assistant should return the fixed no-answer sentence."
   },
   {
     "id": "t02",
-    "question": "Who won the 2022 FIFA World Cup final?",
+    "question": "Can you summarize the plot of the latest Marvel movie?",
     "should_refuse": true,
-    "type": "refusal",
-    "reference_answer": "Off-topic; neither paper mentions football. The assistant should return the fixed no-answer sentence."
+    "type": "should_refuse",
+    "set": "refusal_test",
+    "reference_answer": "Not answerable from the two papers; the assistant should return the fixed no-answer sentence."
   },
   {
     "id": "t03",
-    "question": "What learning rate did BERT use during pre-training?",
+    "question": "Exactly how many parameter weights and layers does the GPT-4 model contain?",
     "should_refuse": true,
-    "type": "refusal",
-    "reference_answer": "Adjacent topic but absent from the corpus: neither paper reports BERT's hyperparameters. Tests whether the model invents a plausible number. The assistant should return the fixed no-answer sentence."
+    "type": "should_refuse",
+    "set": "refusal_test",
+    "reference_answer": "The GPT-4 report does not disclose these exact model details; the assistant should return the fixed no-answer sentence."
   },
   {
     "id": "t04",
-    "question": "What was the average wholesale electricity price in Germany in 2023?",
+    "question": "What specific datasets and source code were used to pre-train the GPT-4 model?",
     "should_refuse": true,
-    "type": "refusal",
-    "reference_answer": "Off-topic; neither paper contains electricity market data. The assistant should return the fixed no-answer sentence."
+    "type": "should_refuse",
+    "set": "refusal_test",
+    "reference_answer": "The GPT-4 report does not provide these specific pre-training datasets or source code; the assistant should return the fixed no-answer sentence."
   },
   {
     "id": "t05",
-    "question": "What is the boiling point of ethanol at sea level?",
+    "question": "How did the release of the Transformer paper in 2017 impact Google's quarterly stock earnings?",
     "should_refuse": true,
-    "type": "refusal",
-    "reference_answer": "Off-topic chemistry question; neither paper contains it. The assistant should return the fixed no-answer sentence."
+    "type": "should_refuse",
+    "set": "refusal_test",
+    "reference_answer": "The Transformer paper does not discuss Google's quarterly stock earnings; the assistant should return the fixed no-answer sentence."
   },
   {
     "id": "t06",
-    "question": "What was the median salary of DeepMind researchers in 2023?",
+    "question": "What was the exact brand and model of the cooling system used for the P100 GPUs during the Transformer model training?",
     "should_refuse": true,
-    "type": "refusal",
-    "reference_answer": "Plausible-sounding but nowhere in the papers. Tests invented specifics. The assistant should return the fixed no-answer sentence."
+    "type": "should_refuse",
+    "set": "refusal_test",
+    "reference_answer": "The Transformer paper gives no cooling-system brand or model; the assistant should return the fixed no-answer sentence."
   }
 ]
