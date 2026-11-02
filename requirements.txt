@@ -13,6 +13,9 @@ langchain-huggingface>=1.2.0
 sentence-transformers>=6.2.0   # provides all-MiniLM-L6-v2
 langchain-text-splitters>=1.1.0
 
+# Hybrid retrieval (lexical half; dense half uses the packages above)
+rank_bm25>=0.2.2               # BM25Okapi used by hybrid.py
+
 # Document loading
 langchain-community>=0.4.0     # PyPDFLoader (emits a sunset warning; works)
 pypdf>=6.21.0                  # PDF parsing backend used by PyPDFLoader

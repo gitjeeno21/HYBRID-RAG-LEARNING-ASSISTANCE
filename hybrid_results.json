@@ -1,0 +1,190 @@
+{
+  "generated_at": "2026-11-02T14:47:35+00:00",
+  "settings": {
+    "dense_chunk_size": 1500,
+    "dense_chunk_overlap": 50,
+    "rrf_k": 60,
+    "candidates_per_method": 10,
+    "top_k": 3,
+    "retrieval_only": true,
+    "fixed_before_measurement": true
+  },
+  "question_counts": {
+    "q1-q20": 20,
+    "q21-q30": 10
+  },
+  "results": {
+    "q1-q20": {
+      "dense": {
+        "hits": 16,
+        "total": 20,
+        "missed": [
+          "q15",
+          "q16",
+          "q19",
+          "q20"
+        ],
+        "hit_rate": 0.8
+      },
+      "hybrid": {
+        "hits": 19,
+        "total": 20,
+        "missed": [
+          "q20"
+        ],
+        "hit_rate": 0.95
+      }
+    },
+    "q21-q30": {
+      "dense": {
+        "hits": 10,
+        "total": 10,
+        "missed": [],
+        "hit_rate": 1.0
+      },
+      "hybrid": {
+        "hits": 10,
+        "total": 10,
+        "missed": [],
+        "hit_rate": 1.0
+      }
+    }
+  },
+  "per_question": {
+    "q01": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q02": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q03": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q04": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q05": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q06": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q07": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q08": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q09": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q10": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q11": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q12": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q13": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q14": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q15": {
+      "dense": false,
+      "hybrid": true
+    },
+    "q16": {
+      "dense": false,
+      "hybrid": true
+    },
+    "q17": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q18": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q19": {
+      "dense": false,
+      "hybrid": true
+    },
+    "q20": {
+      "dense": false,
+      "hybrid": false
+    },
+    "q21": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q22": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q23": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q24": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q25": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q26": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q27": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q28": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q29": {
+      "dense": true,
+      "hybrid": true
+    },
+    "q30": {
+      "dense": true,
+      "hybrid": true
+    }
+  },
+  "changed": {
+    "q1-q20": {
+      "miss_to_hit": [
+        "q15",
+        "q16",
+        "q19"
+      ],
+      "hit_to_miss": []
+    },
+    "q21-q30": {
+      "miss_to_hit": [],
+      "hit_to_miss": []
+    }
+  },
+  "dense_definition_mismatches": 0
+}

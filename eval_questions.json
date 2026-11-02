@@ -180,6 +180,96 @@
     "type": "conceptual"
   },
   {
+    "id": "q21",
+    "question": "How many identical layers are stacked in the Transformer's encoder and in its decoder?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["N = 6", "identical layers"],
+    "reference_answer": "N = 6 identical layers in the encoder stack, and also N = 6 in the decoder stack.",
+    "source_page": 3,
+    "type": "factual"
+  },
+  {
+    "id": "q22",
+    "question": "How large was the WMT 2014 English-French training set, and what vocabulary size was used for it?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["36M sentences", "32000"],
+    "reference_answer": "About 36M sentences, tokenised into a 32000 word-piece vocabulary.",
+    "source_page": 7,
+    "type": "numeric"
+  },
+  {
+    "id": "q23",
+    "question": "Why did the authors choose sinusoidal positional encodings instead of learned positional embeddings?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["extrapolate", "sinusoidal"],
+    "reference_answer": "Learned and sinusoidal encodings gave nearly identical results, but the sinusoidal version may allow the model to extrapolate to sequence lengths longer than those seen in training.",
+    "source_page": 6,
+    "type": "conceptual"
+  },
+  {
+    "id": "q24",
+    "question": "What beam size and length penalty did the Transformer use for inference on the WMT 2014 translation tasks?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["beam size of 4", "0.6"],
+    "reference_answer": "Beam search with a beam size of 4 and a length penalty alpha = 0.6.",
+    "source_page": 8,
+    "type": "numeric"
+  },
+  {
+    "id": "q25",
+    "question": "According to the paper, what effect does label smoothing have on perplexity and on BLEU score?",
+    "expected_source": "source_doc.pdf",
+    "expected_keywords": ["label smoothing", "perplexity"],
+    "reference_answer": "Label smoothing of value 0.1 hurts perplexity because the model learns to be less sure, but improves accuracy and BLEU score.",
+    "source_page": 8,
+    "type": "conceptual"
+  },
+  {
+    "id": "q26",
+    "question": "What LSAT score did GPT-4 achieve, and what percentile does that correspond to compared with GPT-3.5?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["163", "LSAT"],
+    "reference_answer": "163, around the 88th percentile, against 149 (around the 40th percentile) for GPT-3.5.",
+    "source_page": 5,
+    "type": "numeric"
+  },
+  {
+    "id": "q27",
+    "question": "What score did GPT-4 get on the USABO Semifinal Exam 2020?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["87 / 150", "USABO"],
+    "reference_answer": "87 out of 150, around the 99th-100th percentile, versus 43 / 150 for GPT-3.5.",
+    "source_page": 5,
+    "type": "numeric"
+  },
+  {
+    "id": "q28",
+    "question": "In the HumanEval capability prediction, how many of the hardest problems were excluded and into how many difficulty buckets were the rest split?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["15 hardest", "6 difficulty buckets"],
+    "reference_answer": "All but the 15 hardest HumanEval problems were split into 6 difficulty buckets based on smaller models' performance.",
+    "source_page": 4,
+    "type": "conceptual"
+  },
+  {
+    "id": "q29",
+    "question": "What does the report observe about GPT-4's behaviour on the Inverse Scaling Prize task called Hindsight Neglect?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["Hindsight Neglect", "reverses this trend"],
+    "reference_answer": "Where accuracy was expected to decrease with scale, GPT-4 reverses that trend and improves instead.",
+    "source_page": 4,
+    "type": "conceptual"
+  },
+  {
+    "id": "q30",
+    "question": "Which dataset did OpenAI use to check its prediction of GPT-4's final loss, and was that data part of the training set?",
+    "expected_source": "gpt4_technical_report.pdf",
+    "expected_keywords": ["internal codebase", "not part of the training set"],
+    "reference_answer": "They predicted final loss on their internal codebase, a dataset that is not part of the training set.",
+    "source_page": 2,
+    "type": "conceptual"
+  },
+  {
     "id": "t01",
     "question": "What was OpenAI's revenue in 2024?",
     "should_refuse": true,
