@@ -335,7 +335,41 @@ def main() -> None:
         action="store_true",
         help="print which runs would be executed without calling any API",
     )
+    parser.add_argument(
+        "--only",
+        metavar="SIZE/OVERLAP",
+        help=(
+            "restrict judging to a single config, e.g. --only 500/50. "
+            "Must be one of: "
+            + ", ".join(f"{s}/{o}" for s, o in CONFIGS_TO_JUDGE)
+        ),
+    )
     args = parser.parse_args()
+
+    # --- Resolve --only filter --------------------------------------------
+    # WHY validate here before touching the disk or the API: failing fast with
+    # a clear message is better than running silently against a wrong config.
+    if args.only is not None:
+        # Accept "SIZE/OVERLAP" format, e.g. "500/50".
+        try:
+            size_str, overlap_str = args.only.split("/")
+            only_key = (int(size_str), int(overlap_str))
+        except ValueError:
+            parser.error(
+                f"--only value must be in SIZE/OVERLAP format, e.g. 500/50, "
+                f"got: {args.only!r}"
+            )
+        if only_key not in CONFIGS_TO_JUDGE:
+            valid = ", ".join(f"{s}/{o}" for s, o in CONFIGS_TO_JUDGE)
+            parser.error(
+                f"--only {args.only!r} is not a known config. "
+                f"Valid options: {valid}"
+            )
+        # Restrict the working list to just the requested config.
+        configs_to_run = [only_key]
+        print(f"--only filter active: judging config {args.only} only", flush=True)
+    else:
+        configs_to_run = list(CONFIGS_TO_JUDGE)
 
     # --- Load and filter questions -----------------------------------------
     questions = load_judge_questions()
@@ -362,7 +396,7 @@ def main() -> None:
     if args.dry_run:
         print("\n=== DRY RUN — no API calls will be made ===\n")
         any_pending = False
-        for chunk_size, chunk_overlap in CONFIGS_TO_JUDGE:
+        for chunk_size, chunk_overlap in configs_to_run:
             config = next(
                 (c for c in results["configs"]
                  if c["chunk_size"] == chunk_size and c["chunk_overlap"] == chunk_overlap),
@@ -395,7 +429,7 @@ def main() -> None:
     # a --dry-run never touches any credentials.
     groq_client = Groq()  # reads GROQ_API_KEY from .env
 
-    for chunk_size, chunk_overlap in CONFIGS_TO_JUDGE:
+    for chunk_size, chunk_overlap in configs_to_run:
         print(f"\n{'='*60}", flush=True)
         print(f"Judging config {chunk_size}/{chunk_overlap}", flush=True)
         print(f"{'='*60}", flush=True)
