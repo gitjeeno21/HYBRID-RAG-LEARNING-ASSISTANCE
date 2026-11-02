@@ -9,7 +9,8 @@ Each answer then gets a trust label (High / Medium / Low) plus a one-line reason
 from trust.py, computed from the retrieval scores and one extra LLM support
 check. The label is a heuristic, not a measured accuracy. Quiz Mode separately
 generates source-grounded study questions from one selected PDF. Compare Mode
-retrieves separately from two PDFs and compares them in one LLM request.
+retrieves separately from two PDFs and compares them in one LLM request. New
+PDFs can be uploaded from the sidebar and indexed into the local library.
 
 Run with: streamlit run app.py
 """
@@ -47,6 +48,7 @@ from quiz import (
     retrieve_quiz_chunks,
     submit_quiz_state,
 )
+from upload import add_pdf_to_library
 
 load_dotenv()
 
@@ -320,6 +322,49 @@ def render_sidebar(eval_summary: dict) -> None:
         st.sidebar.markdown("\n".join(f"- {name}" for name in kb_files))
     else:
         st.sidebar.markdown("_No PDF files found in data/_")
+
+    st.sidebar.markdown("**Add a PDF**")
+    uploaded_pdf = st.sidebar.file_uploader(
+        "Choose a research paper",
+        type=["pdf"],
+        accept_multiple_files=False,
+        key="pdf_library_upload",
+    )
+    if st.sidebar.button(
+        "Add PDF to library",
+        disabled=uploaded_pdf is None,
+        key="add_pdf_to_library",
+    ):
+        if uploaded_pdf is None:
+            st.sidebar.warning("Choose a PDF before adding it.")
+        else:
+            try:
+                # Initialize the persistent collection before writing the new
+                # file, so an empty-index bootstrap cannot ingest it twice.
+                vector_store = get_vector_store()
+                chunk_size, chunk_overlap = best_chunk_config()
+                chunk_count = add_pdf_to_library(
+                    uploaded_pdf.name,
+                    uploaded_pdf.getvalue(),
+                    vector_store,
+                    PDF_DIR,
+                    chunk_size,
+                    chunk_overlap,
+                )
+            except (OSError, ValueError, RuntimeError) as exc:
+                st.sidebar.error(f"Could not add PDF: {exc}")
+            except Exception as exc:
+                # PDF parsers and embedding providers raise several library-
+                # specific errors; show their message instead of hiding them.
+                st.sidebar.error(
+                    f"Could not add PDF ({type(exc).__name__}): {exc}"
+                )
+            else:
+                get_hybrid_resources.clear()
+                st.sidebar.success(
+                    f"Added {uploaded_pdf.name} ({chunk_count} chunks)."
+                )
+                st.rerun()
 
 
 # ---------------------------------------------------------------------------
