@@ -411,6 +411,14 @@ def main() -> None:
     args = parser.parse_args()
 
     questions = json.loads(QUESTIONS_PATH.read_text(encoding="utf-8"))
+    # eval_questions.json now also holds off-topic / unanswerable questions
+    # ("should_refuse": true) used by the trust meter's refusal measurement.
+    # They are supposed to be unanswerable, so counting them here would lower
+    # every hit rate for a reason that has nothing to do with chunking, and
+    # would change questions_hash and force a full re-embed. Evaluating only the
+    # answerable questions keeps every number in eval_results.json comparable
+    # with the runs already recorded.
+    questions = [q for q in questions if not q.get("should_refuse")]
     q_hash = questions_hash(questions)
     previous = load_results()
 

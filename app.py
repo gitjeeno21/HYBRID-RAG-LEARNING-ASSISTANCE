@@ -5,6 +5,9 @@ from eval_results.json (best chunk size, overlap, hit rate, judge score).
 The chat interface retrieves top chunks from the Chroma store, labels each one
 with "filename, p. X" AND its similarity score, sends them to Groq (key from
 .env), and streams the generated answer — with page citations — back to the UI.
+Each answer then gets a trust label (High / Medium / Low) plus a one-line reason
+from trust.py, computed from the retrieval scores and one extra LLM support
+check. The label is a heuristic, not a measured accuracy.
 
 Run with: streamlit run app.py
 """
@@ -18,6 +21,7 @@ from groq import Groq
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 
+import trust
 from config import (
     CHROMA_DIR,
     COLLECTION_NAME,
@@ -156,6 +160,37 @@ def stream_answer(context: str, question: str):
 # ---------------------------------------------------------------------------
 # UI helpers
 # ---------------------------------------------------------------------------
+def render_trust(result: dict) -> None:
+    """Show the trust label and its one-line reason directly under the answer.
+
+    WHY a coloured emoji instead of st.metric/st.success: some Streamlit
+    versions dropped the `color=` argument on st.success, and a metric box would
+    take over the chat layout. Plain markdown with a traffic-light emoji works
+    everywhere and reads as one line, which is what the brief asked for.
+
+    WHY show the reason: the label comes from a heuristic (see trust.py), so a
+    bare "Low" would look like a measurement. The reason names which of the two
+    signals failed, letting the reader decide whether to trust the label itself.
+    """
+    label = result.get("label", "n/a")
+    # Green / amber / red for the three real labels; grey when the system
+    # refused, because a refusal is not a confidence claim in either direction.
+    icon = {"High": "\U0001F7E2", "Medium": "\U0001F7E1", "Low": "\U0001F534"}.get(
+        label, "\u26AA"
+    )
+    st.markdown(f"{icon} **Trust: {label}** — {result.get('reason', '')}")
+    # The raw signals live one click away: useful in an interview, out of the way
+    # in normal use.
+    with st.expander("Why this trust label?"):
+        st.markdown(
+            f"- Support check: `{result.get('verdict') or 'not run / unparseable'}`\n"
+            f"- Best chunk similarity: `{result.get('top_score')}`\n"
+            f"- Mean similarity: `{result.get('mean_score')}`\n"
+            "- Reminder: these two signals are a heuristic, not a measured "
+            "accuracy (see trust.py)."
+        )
+
+
 def render_retrieved_context(chunks: list) -> None:
     """Display the raw retrieved chunks (with citations AND similarity scores).
 
@@ -269,6 +304,10 @@ if "messages" not in st.session_state:
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
+        # Replay the stored trust label too; recomputing it would cost another
+        # LLM call on every rerun just to redraw old messages.
+        if message.get("trust"):
+            render_trust(message["trust"])
         if message.get("chunks"):
             render_retrieved_context(message["chunks"])
 
@@ -283,10 +322,21 @@ if question := st.chat_input("Ask a question about your documents:"):
             chunks = retrieve_chunks(question)
             context = format_context(chunks)
             answer = st.write_stream(stream_answer(context, question))
-        # 3. Show the raw chunks (with citations and scores) after the answer.
+            # 3. Trust meter: exactly ONE extra LLM call per answer (a support
+            # check), plus the free retrieval-strength signal from the scores
+            # above. It runs after the answer has streamed, so a slow or
+            # rate-limited check never delays the text the user is reading.
+            trust_result = trust.assess(question, answer, chunks)
+        # 4. Label the answer, then show the raw chunks it was built from.
+        render_trust(trust_result)
         render_retrieved_context(chunks)
 
-    # 4. Persist the answer and its chunks for history replay.
+    # 5. Persist the answer, its chunks and its trust label for history replay.
     st.session_state.messages.append(
-        {"role": "assistant", "content": answer, "chunks": chunks}
+        {
+            "role": "assistant",
+            "content": answer,
+            "chunks": chunks,
+            "trust": trust_result,
+        }
     )

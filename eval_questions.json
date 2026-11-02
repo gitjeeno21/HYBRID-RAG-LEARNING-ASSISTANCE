@@ -178,5 +178,47 @@
     "reference_answer": "Bias, disinformation, over-reliance, privacy, cybersecurity and proliferation, among others (introduction, not the system card itself).",
     "source_page": 2,
     "type": "conceptual"
+  },
+  {
+    "id": "t01",
+    "question": "What was OpenAI's revenue in 2024?",
+    "should_refuse": true,
+    "type": "refusal",
+    "reference_answer": "Not answerable from the two papers: the GPT-4 technical report covers capability evaluations, not financial results. The assistant should return the fixed no-answer sentence."
+  },
+  {
+    "id": "t02",
+    "question": "Who won the 2022 FIFA World Cup final?",
+    "should_refuse": true,
+    "type": "refusal",
+    "reference_answer": "Off-topic; neither paper mentions football. The assistant should return the fixed no-answer sentence."
+  },
+  {
+    "id": "t03",
+    "question": "What learning rate did BERT use during pre-training?",
+    "should_refuse": true,
+    "type": "refusal",
+    "reference_answer": "Adjacent topic but absent from the corpus: neither paper reports BERT's hyperparameters. Tests whether the model invents a plausible number. The assistant should return the fixed no-answer sentence."
+  },
+  {
+    "id": "t04",
+    "question": "What was the average wholesale electricity price in Germany in 2023?",
+    "should_refuse": true,
+    "type": "refusal",
+    "reference_answer": "Off-topic; neither paper contains electricity market data. The assistant should return the fixed no-answer sentence."
+  },
+  {
+    "id": "t05",
+    "question": "What is the boiling point of ethanol at sea level?",
+    "should_refuse": true,
+    "type": "refusal",
+    "reference_answer": "Off-topic chemistry question; neither paper contains it. The assistant should return the fixed no-answer sentence."
+  },
+  {
+    "id": "t06",
+    "question": "What was the median salary of DeepMind researchers in 2023?",
+    "should_refuse": true,
+    "type": "refusal",
+    "reference_answer": "Plausible-sounding but nowhere in the papers. Tests invented specifics. The assistant should return the fixed no-answer sentence."
   }
 ]
