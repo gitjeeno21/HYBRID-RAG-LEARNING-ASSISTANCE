@@ -26,3 +26,12 @@ Thumbs.db
 # ChromaDB
 chroma_db/
 
+
+# Evaluation indexes (regenerate with: python evaluator.py --retrieval-only)
+chroma_db_eval_*/
+
+# Local quiz progress
+quiz_history.json
+
+# Test cache
+.pytest_cache/
