@@ -5,6 +5,8 @@ import os
 import unittest
 from unittest.mock import patch
 
+from fastapi.testclient import TestClient
+
 from langchain_core.documents import Document
 from streamlit.testing.v1 import AppTest
 
@@ -15,6 +17,72 @@ from quiz import (
     make_quiz_state,
     submit_quiz_state,
 )
+
+
+class QuizGradingApiTests(unittest.TestCase):
+    def setUp(self) -> None:
+        from main import app
+        self.client = TestClient(app)
+
+    def _payload(self, answers, question_type="Multiple choice", count=5):
+        questions = []
+        for index in range(count):
+            question = {
+                "question": f"Question {index + 1}",
+                "answer": "Correct",
+                "source": "ML222.pdf, p. 1",
+                "type": question_type,
+                "difficulty": "Mixed",
+            }
+            if question_type in {"Multiple choice", "True/False"}:
+                question["options"] = ["Correct", "False"] if question_type == "True/False" else ["Correct", "Wrong", "Other", "No"]
+            questions.append(question)
+        return {"pdf": "ML222.pdf", "topic": "", "questions": questions, "answers": answers}
+
+    @patch("main.grade_quiz")
+    @patch("main.get_hybrid_resources")
+    def test_all_mcq_payload_is_accepted(self, resources, grade) -> None:
+        resources.return_value = ([], object())
+        grade.return_value = {"score": 5, "maximum": 5, "results": []}
+        response = self.client.post("/api/quiz/grade", json=self._payload(["Correct"] * 5))
+        self.assertEqual(response.status_code, 200)
+
+    @patch("main.grade_quiz")
+    @patch("main.get_hybrid_resources")
+    def test_true_false_short_answer_and_mixed_payloads_are_accepted(self, resources, grade) -> None:
+        resources.return_value = ([], object())
+        grade.return_value = {"score": 5, "maximum": 5, "results": []}
+        for question_type in ("True/False", "Short answer"):
+            with self.subTest(question_type=question_type):
+                response = self.client.post(
+                    "/api/quiz/grade",
+                    json=self._payload(["Correct"] * 5, question_type=question_type),
+                )
+                self.assertEqual(response.status_code, 200)
+
+    def test_malformed_payload_returns_fastapi_validation_error(self) -> None:
+        response = self.client.post(
+            "/api/quiz/grade",
+            json={"pdf": "ML222.pdf", "questions": "not-a-list", "answers": []},
+        )
+        self.assertEqual(response.status_code, 422)
+        self.assertIsInstance(response.json()["detail"], list)
+
+    def test_unanswered_questions_return_readable_error(self) -> None:
+        response = self.client.post("/api/quiz/grade", json=self._payload([""] * 5))
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(response.json()["detail"], "Please answer all questions before grading (5 unanswered)")
+
+    def test_mismatched_answers_return_readable_error(self) -> None:
+        response = self.client.post("/api/quiz/grade", json=self._payload(["Correct"]))
+        self.assertEqual(response.status_code, 422)
+        self.assertIn("same length", response.json()["detail"])
+
+    def test_error_helper_handles_structured_errors(self) -> None:
+        source = open("static/app.js", encoding="utf-8").read()
+        self.assertIn("function formatApiError(error, fallback = \"Request failed\")", source)
+        self.assertIn("messages.join(\"; \")", source)
+        self.assertIn("typeof error === \"string\"", source)
 
 
 class QuizWorkflowTests(unittest.TestCase):
@@ -154,6 +222,40 @@ class QuizWorkflowTests(unittest.TestCase):
             ask=lambda _: self.fail("No LLM request should be made without evidence"),
         )
         self.assertEqual(quiz, {"covered": False, "questions": []})
+
+    def test_malformed_json_retries_once_with_valid_count(self) -> None:
+        replies = iter(["not json", json.dumps({
+            "covered": True,
+            "questions": [
+                {
+                    "question": f"Question {index}?",
+                    "answer": f"Answer {index}",
+                    "source": "paper.pdf, p. 3",
+                    "difficulty": "Medium",
+                    "type": "Short answer",
+                }
+                for index in range(5)
+            ],
+        })])
+        prompts = []
+
+        def ask(prompt: str) -> str:
+            prompts.append(prompt)
+            return next(replies)
+
+        generated = generate_quiz("paper.pdf", "attention", self.chunks, ask=ask)
+        self.assertEqual(len(generated["questions"]), 5)
+        self.assertEqual(len(prompts), 2)
+        self.assertIn("Generate exactly 5 questions", prompts[0])
+
+    def test_grading_prompt_strictness_follows_difficulty(self) -> None:
+        context = build_quiz_context(self.chunks)
+        hard_questions = [dict(question, difficulty="Hard") for question in self.questions]
+        easy_questions = [dict(question, difficulty="Easy") for question in self.questions]
+        hard_prompt = build_grading_prompt(hard_questions, ["answer"] * 5, context)
+        easy_prompt = build_grading_prompt(easy_questions, ["answer"] * 5, context)
+        self.assertIn("require key terms or correct reasoning", hard_prompt)
+        self.assertIn("accept partial paraphrases", easy_prompt)
 
     def test_streamlit_submission_persists_answers_and_renders_grade(self) -> None:
         # Disable dotenv loading so this UI test cannot inspect a developer's

@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hybrid RAG for Evidence-Grounded Knowledge Discovery & Learning</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { color-scheme: dark; }
+    * { scrollbar-width: thin; scrollbar-color: rgba(148,163,184,.25) transparent; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow-x: hidden;
+      background:
+        radial-gradient(circle at 78% 8%, rgba(14,165,233,.09), transparent 24rem),
+        radial-gradient(circle at 28% 88%, rgba(20,184,166,.07), transparent 28rem),
+        #09090b;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    .glass {
+      background: rgba(255,255,255,.035);
+      border: 1px solid rgba(255,255,255,.09);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 24px 70px rgba(0,0,0,.18);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+    .sidebar-link.active {
+      background: linear-gradient(90deg, rgba(99,102,241,.16), rgba(99,102,241,.04));
+      border-color: rgba(129,140,248,.24);
+      color: #c7d2fe;
+      box-shadow: inset 2px 0 0 #818cf8;
+    }
+    .sidebar-link .nav-dot { opacity: 0; transform: scale(.7); }
+    .sidebar-link.active .nav-dot { opacity: 1; transform: scale(1); }
+    .citation {
+      border: 1px solid rgba(129,140,248,.18);
+      background: rgba(99,102,241,.09);
+      color: #c7d2fe;
+    }
+    .field {
+      background: rgba(255,255,255,.025);
+      border: 1px solid rgba(255,255,255,.09);
+      color: #f4f4f5;
+      outline: none;
+      transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+    }
+    .field::placeholder { color: #71717a; }
+    .field:focus {
+      border-color: rgba(129,140,248,.48);
+      background: rgba(255,255,255,.04);
+      box-shadow: 0 0 0 3px rgba(99,102,241,.09);
+    }
+    select.field option { background: #18181b; color: #f4f4f5; }
+    .primary-button {
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      box-shadow: 0 10px 30px rgba(79,70,229,.22), inset 0 1px 0 rgba(255,255,255,.18);
+      transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
+    }
+    .primary-button:hover { transform: translateY(-1px); filter: brightness(1.08); box-shadow: 0 14px 36px rgba(79,70,229,.32); }
+    .pulse-dot { animation: pulse-ring 2s ease-out infinite; }
+    :focus-visible { outline: 2px solid #818cf8 !important; outline-offset: 2px; }
+    body.light { background: #f4f4f5; color: #18181b; color-scheme: light; }
+    body.light .glass { background: rgba(255,255,255,.78); border-color: rgba(0,0,0,.12); }
+    @media (max-width: 1023px) {
+      #sidebar { position: fixed; z-index: 40; inset: 0 auto 0 0; width: min(18rem, 88vw); transform: translateX(-105%); transition: transform .2s ease; overflow-y: auto; }
+      #sidebar.open { transform: translateX(0); }
+      #sidebar-scrim.open { display: block !important; }
+    }
+    @keyframes pulse-ring {
+      0% { box-shadow: 0 0 0 0 rgba(52,211,153,.35); }
+      70% { box-shadow: 0 0 0 5px rgba(52,211,153,0); }
+      100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); }
+    }
+  </style>
+</head>
+<body class="text-zinc-100 antialiased">
+  <div class="pointer-events-none fixed inset-0 overflow-hidden">
+    <div class="absolute -left-40 top-1/4 h-80 w-80 rounded-full bg-indigo-500/[.055] blur-[100px]"></div>
+    <div class="absolute bottom-[-12rem] right-[-5rem] h-96 w-96 rounded-full bg-cyan-400/[.055] blur-[110px]"></div>
+  </div>
+
+  <div class="relative min-h-screen lg:flex">
+    <aside id="sidebar" class="border-b border-white/[.07] bg-zinc-950/70 px-4 py-4 backdrop-blur-xl lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r lg:px-5 lg:py-5">
+      <div class="flex items-center gap-3">
+        <div class="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[.06] font-semibold text-white shadow-lg shadow-indigo-950/30">
+          RAG
+        </div>
+        <div>
+          <div class="leading-tight">
+            <div class="text-[15px] font-semibold tracking-tight text-white">Hybrid RAG</div>
+            <div class="text-[10px] font-medium text-zinc-500">Evidence-Grounded Knowledge Discovery &amp; Learning</div>
+          </div>
+          <div class="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-500">
+            <span class="pulse-dot h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+            Research workspace
+          </div>
+        </div>
+      </div>
+
+      <nav class="mt-5 grid grid-cols-3 gap-1.5 lg:mt-9 lg:block lg:space-y-1.5">
+        <button data-mode="chat" class="sidebar-link active flex items-center justify-center rounded-xl border border-transparent px-3 py-3 text-sm font-medium transition lg:justify-start">
+          <span class="mr-3 hidden h-1.5 w-1.5 rounded-full bg-indigo-400 nav-dot lg:block"></span>
+          Chat
+        </button>
+        <button data-mode="quiz" class="sidebar-link flex items-center justify-center rounded-xl border border-transparent px-3 py-3 text-sm font-medium text-zinc-500 transition hover:bg-white/[.035] hover:text-zinc-200 lg:justify-start">
+          <span class="mr-3 hidden h-1.5 w-1.5 rounded-full bg-indigo-400 nav-dot lg:block"></span>
+          Quiz
+        </button>
+        <button data-mode="compare" class="sidebar-link flex items-center justify-center rounded-xl border border-transparent px-3 py-3 text-sm font-medium text-zinc-500 transition hover:bg-white/[.035] hover:text-zinc-200 lg:justify-start">
+          <span class="mr-3 hidden h-1.5 w-1.5 rounded-full bg-indigo-400 nav-dot lg:block"></span>
+          Compare
+        </button>
+      </nav>
+
+      <div class="mt-5 hidden border-t border-white/[.07] pt-5 lg:block">
+        <div class="mb-3 flex items-center justify-between">
+          <label class="text-[11px] font-semibold uppercase tracking-[.16em] text-zinc-500">Paper library</label>
+          <span id="paper-count" class="rounded-full border border-white/[.07] bg-white/[.035] px-2 py-0.5 text-[10px] text-zinc-400">0</span>
+        </div>
+        <button id="upload-button" class="mb-3 w-full rounded-xl border border-dashed border-indigo-400/25 px-3 py-2.5 text-sm font-medium text-indigo-300 transition hover:border-indigo-400/50 hover:bg-indigo-400/[.06]">
+          + Add PDF
+        </button>
+        <input id="pdf-upload" type="file" accept=".pdf,application/pdf" class="hidden">
+        <div id="upload-dropzone" class="mb-3 hidden rounded-xl border border-dashed border-indigo-400/30 p-3 text-center text-xs text-zinc-400">
+          Drop PDF here
+          <div id="upload-progress" class="mt-2 text-indigo-300"></div>
+        </div>
+        <div id="pdf-list" class="max-h-52 space-y-1 overflow-auto text-sm text-zinc-400"></div>
+      </div>
+    </aside>
+
+    <main class="flex min-h-screen flex-1 flex-col">
+      <header class="flex items-center justify-between border-b border-white/[.07] bg-black/10 px-5 py-4 backdrop-blur-md lg:px-8">
+        <div>
+          <button id="menu-button" class="mr-2 rounded-lg border border-white/10 px-3 py-2 lg:hidden" aria-label="Open navigation menu">☰</button>
+          <button id="settings-button" aria-label="Open settings" class="rounded-lg border border-white/10 px-3 py-2">Settings</button>
+          <h1 id="mode-title" class="text-xl font-semibold tracking-tight text-white">Evidence-grounded chat</h1>
+          <p id="mode-description" class="mt-1 text-sm text-zinc-500">Ask questions across your research library.</p>
+        </div>
+        <div class="hidden items-center gap-2 rounded-full border border-white/[.08] bg-white/[.025] px-3 py-1.5 text-xs text-zinc-400 sm:flex">
+          <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+          Local index online
+        </div>
+      </header>
+      <div id="sidebar-scrim" class="fixed inset-0 hidden bg-black/70 lg:hidden"></div>
+
+      <section class="flex-1 px-4 py-6 lg:px-8">
+        <div id="first-run-hint" class="glass mb-5 flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm text-zinc-300">
+          <span>Add a PDF, ask a question, then test yourself with a quiz.</span>
+          <button id="dismiss-hint" aria-label="Dismiss hint" class="text-zinc-500 hover:text-white">Dismiss</button>
+        </div>
+        <div id="chat-panel" class="mx-auto max-w-4xl">
+          <div class="mb-3 flex justify-end gap-2">
+            <button id="progress-button" type="button" class="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300">Progress</button>
+            <button id="export-chat" type="button" class="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300">Export chat</button>
+          </div>
+          <div class="glass mb-4 flex flex-wrap items-center gap-3 rounded-2xl px-4 py-3">
+            <label for="chat-papers" class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Paper scope</label>
+            <select id="chat-papers" multiple class="field min-h-10 min-w-48 rounded-xl px-3 py-2"></select>
+            <span class="text-xs text-zinc-500">Select none for All papers</span>
+            <button type="button" id="clear-chat" class="ml-auto rounded-xl border border-white/10 px-3 py-2 text-xs text-zinc-300">Clear conversation</button>
+          </div>
+          <div id="chat-messages" class="mb-6 min-h-[55vh] space-y-5"></div>
+          <form id="chat-form" class="glass sticky bottom-4 rounded-2xl p-3">
+            <div class="flex gap-3">
+              <textarea id="chat-input" rows="2" required placeholder="Ask a question grounded in your papers..." class="field flex-1 resize-none rounded-xl px-4 py-3"></textarea>
+              <button class="primary-button rounded-xl px-5 text-sm font-semibold text-white">Send</button>
+            </div>
+          </form>
+        </div>
+
+        <div id="quiz-panel" class="mx-auto hidden max-w-4xl">
+          <div class="glass mb-6 rounded-2xl p-5">
+            <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              <select id="quiz-pdf" class="field rounded-xl px-3 py-2.5"></select>
+              <input id="quiz-topic" placeholder="Quiz topic" class="field rounded-xl px-3 py-2.5">
+              <input id="quiz-pages" placeholder="Page range (e.g. 1-12)" class="field rounded-xl px-3 py-2.5">
+              <select id="quiz-difficulty" class="field rounded-xl px-3 py-2.5">
+                <option>Easy</option><option selected>Medium</option><option>Hard</option><option>Mixed</option>
+              </select>
+              <select id="quiz-count" class="field rounded-xl px-3 py-2.5">
+                <option selected>5</option><option>10</option><option>15</option>
+              </select>
+              <select id="quiz-type" class="field rounded-xl px-3 py-2.5">
+                <option>Multiple choice</option><option>Short answer</option><option>True/False</option><option selected>Mixed</option>
+              </select>
+            </div>
+            <button id="generate-quiz" class="primary-button mt-4 rounded-xl px-4 py-2.5 text-sm font-medium text-white">Generate five questions</button>
+          </div>
+          <form id="quiz-form" class="hidden space-y-4"></form>
+          <div id="quiz-results" class="mt-5 hidden space-y-4"></div>
+          <button id="export-quiz" type="button" class="mt-4 rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300">Export quiz Markdown</button>
+          <button id="export-quiz-pdf" type="button" class="mt-4 ml-2 rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300">Export quiz PDF</button>
+          <div class="glass mt-6 rounded-2xl p-5">
+            <h3 class="mb-3 text-sm font-semibold text-zinc-300">Past attempts</h3>
+            <div id="quiz-history" class="space-y-2 text-sm text-zinc-500">No attempts yet.</div>
+          </div>
+        </div>
+
+        <div id="compare-panel" class="mx-auto hidden max-w-4xl">
+          <div class="glass mb-6 rounded-2xl p-5">
+            <div class="grid gap-3 md:grid-cols-2">
+              <select id="compare-pdf-one" class="field rounded-xl px-3 py-2.5"></select>
+              <select id="compare-pdf-two" class="field rounded-xl px-3 py-2.5"></select>
+            </div>
+            <div id="compare-library-warning" class="mt-3 hidden rounded-xl border border-amber-400/20 bg-amber-400/[.08] p-3 text-sm text-amber-200">
+              Add at least two PDFs to compare papers.
+              <button type="button" id="compare-add-pdf" class="ml-2 font-semibold underline">Add PDF</button>
+            </div>
+            <input id="compare-question" required placeholder="What should I compare?" class="field mt-3 w-full rounded-xl px-3 py-2.5">
+            <div class="mt-3 flex flex-wrap gap-2" aria-label="Comparison suggestions">
+              <button type="button" class="compare-chip rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">Main objective</button>
+              <button type="button" class="compare-chip rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">Methodology</button>
+              <button type="button" class="compare-chip rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">Results and metrics</button>
+              <button type="button" class="compare-chip rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">Limitations</button>
+              <button type="button" class="compare-chip rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">Data used</button>
+            </div>
+            <button id="compare-button" class="primary-button mt-4 rounded-xl px-4 py-2.5 text-sm font-medium text-white">Compare papers</button>
+          </div>
+          <article id="compare-result" class="glass hidden rounded-2xl p-5 text-zinc-300"></article>
+        </div>
+      </section>
+      <footer class="border-t border-white/[.07] px-5 py-4 text-center text-xs text-zinc-500">
+        Study aid only. Answers are grounded in retrieved passages but not guaranteed correct.
+      </footer>
+    </main>
+  </div>
+
+  <div id="toast" class="glass fixed bottom-5 right-5 hidden rounded-xl px-4 py-3 text-sm text-white shadow-2xl"></div>
+  <div id="app-error" class="fixed bottom-5 left-5 hidden max-w-sm rounded-xl border border-red-400/20 bg-red-950/95 p-4 text-sm text-red-100 shadow-2xl" role="alert">
+    <div id="app-error-message"></div>
+    <button id="app-error-retry" type="button" class="mt-3 rounded-lg border border-red-300/30 px-3 py-1.5 text-xs">Retry</button>
+  </div>
+  <dialog id="settings-dialog" class="rounded-2xl border border-white/10 bg-zinc-950 p-0 text-zinc-200 backdrop:bg-black/70">
+    <div class="w-[min(92vw,520px)] p-5">
+      <h2 class="text-lg font-semibold text-white">Settings</h2>
+      <label class="mt-5 block text-sm text-zinc-400">Top-k
+        <input id="setting-top-k" type="number" min="1" max="20" class="field mt-2 block w-full rounded-xl px-3 py-2">
+      </label>
+      <label class="mt-4 block text-sm text-zinc-400">Model
+        <input id="setting-model" readonly class="field mt-2 block w-full rounded-xl px-3 py-2 text-zinc-500">
+      </label>
+      <label class="mt-4 flex items-center gap-3 text-sm"><input id="setting-theme" type="checkbox"> Light theme</label>
+      <label class="mt-4 flex items-center gap-3 text-sm"><input id="setting-context" type="checkbox"> Show retrieved context by default</label>
+      <button id="settings-close" type="button" class="primary-button mt-6 rounded-xl px-4 py-2 text-sm">Done</button>
+    </div>
+  </dialog>
+  <dialog id="progress-dialog" class="rounded-2xl border border-white/10 bg-zinc-950 p-0 text-zinc-200 backdrop:bg-black/70">
+    <div class="w-[min(92vw,520px)] p-5">
+      <h2 class="text-lg font-semibold text-white">Progress</h2>
+      <div id="progress-content" class="mt-4 text-sm text-zinc-400">Loading progress...</div>
+      <button id="progress-close" type="button" class="mt-5 rounded-xl border border-white/10 px-4 py-2 text-sm">Close</button>
+    </div>
+  </dialog>
+  <dialog id="library-dialog" class="rounded-2xl border border-white/10 bg-zinc-950 p-0 text-zinc-200 backdrop:bg-black/70">
+    <div class="w-[min(92vw,560px)] p-5">
+      <div id="library-dialog-content"></div>
+      <button type="button" id="library-dialog-close" class="mt-4 rounded-xl border border-white/10 px-3 py-2 text-sm">Close</button>
+    </div>
+  </dialog>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

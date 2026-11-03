@@ -3,7 +3,7 @@
 ## Complete Project Report and Demonstration Guide
 
 **Project:** Hybrid RAG for Evidence-Grounded Knowledge Discovery & Learning
-**Application:** Streamlit web interface
+**Application:** FastAPI backend with a Tailwind-style vanilla JavaScript web frontend
 **Core techniques:** PDF ingestion, local embeddings, Chroma retrieval, BM25, reciprocal-rank fusion, grounded language-model generation, evaluation, and interactive study workflows
 **Prepared:** November 2026
 
@@ -20,9 +20,9 @@ This report includes a presenter script and a repeatable demonstration sequence.
 <!-- PAGE 02 -->
 # Executive Summary
 
-PaperPilot is a hybrid retrieval-augmented generation application for evidence-grounded research paper analysis and interactive learning. Rather than sending a question to a language model without context, the application searches a local collection of embedded PDF chunks, attaches filename and page citations, and asks the model to answer from those passages. That retrieval step is the key architectural distinction from a general chatbot.
+Hybrid RAG for Evidence-Grounded Knowledge Discovery & Learning is a hybrid retrieval-augmented generation application for evidence-grounded research paper analysis and interactive learning. Rather than sending a question to a language model without context, the application searches a local collection of embedded PDF chunks, attaches filename and page citations, and asks the model to answer from those passages. That retrieval step is the key architectural distinction from a general chatbot.
 
-The user-facing Streamlit application has three workflows. **Chat** answers a question using hybrid dense-plus-lexical retrieval and shows source context, similarity information where available, and a heuristic trust label. **Quiz Mode** retrieves from one selected PDF, generates five structured questions, collects typed answers, grades them against the retrieved passages, and preserves the attempt in session state. **Compare Mode** searches two PDFs separately and asks for a cited answer for each plus a concise comparison. A sidebar uploader can save a new PDF into the library and add its chunks to the local vector store.
+The FastAPI application has three workflows. **Chat** answers a question using hybrid dense-plus-lexical retrieval and shows source context, similarity information where available, and a heuristic trust label. **Quiz Mode** retrieves from one selected PDF, generates five structured questions, collects typed answers, grades them against the retrieved passages, and preserves the attempt in session state. **Compare Mode** searches two PDFs separately and asks for a cited answer for each plus a concise comparison. A sidebar uploader can save a new PDF into the library and add its chunks to the local vector store.
 
 The local retrieval stack uses `all-MiniLM-L6-v2` embeddings and Chroma. BM25 complements semantic similarity with exact-term matching. Reciprocal Rank Fusion (RRF) combines their rankings without pretending that their raw scores share a scale. Groq provides hosted language-model generation through the project’s retry helper in workflows that use it.
 
@@ -66,7 +66,7 @@ The repository also contains offline and API-backed evaluation tools, a cross-en
 Pages 4–20 explain what the application does during real user interactions. Pages 21–26 describe the experiments and supporting scripts. Pages 27–28 provide operational and interpretation guidance. Pages 29–30 are written to be presented aloud during a classroom or review demonstration.
 
 ### Main source files
-The architecture is chiefly visible in `config.py`, `ingest.py`, `hybrid.py`, `app.py`, `quiz.py`, `compare.py`, `trust.py`, and `agent.py`. Evaluation is implemented in `evaluator.py`, `hybrid.py`, `rerank.py`, and `diagnose_misses.py`.
+The architecture is chiefly visible in `config.py`, `ingest.py`, `hybrid.py`, `main.py`, `quiz.py`, `compare.py`, `trust.py`, `agent.py`, and the browser files `static/index.html` and `static/app.js`. Evaluation is implemented in `evaluator.py`, `hybrid.py`, `rerank.py`, and `diagnose_misses.py`.
 
 <!-- PAGE 04 -->
 # Project Goals and Intended Users
@@ -100,7 +100,7 @@ The project has four logical layers:
 
 **2. Document preparation and retrieval.** `ingest.py` loads and splits PDFs. `all-MiniLM-L6-v2` embeds each chunk. Chroma persists vectors and metadata. `hybrid.py` adds BM25 keyword ranking and RRF fusion.
 
-**3. Application workflows.** `app.py` provides Chat, Quiz, and Compare modes, caches expensive resources, handles PDF uploads, and stores interactive results in Streamlit session state. `quiz.py` and `compare.py` keep workflow-specific prompt and validation logic out of the main interface.
+**3. Application workflows.** `main.py` exposes FastAPI REST endpoints for Chat, Quiz, Compare, PDF uploads, settings, and history. `static/index.html` and `static/app.js` provide the browser interface, while `quiz.py` and `compare.py` keep workflow-specific prompt and validation logic out of the API layer.
 
 **4. Evaluation and diagnostics.** `evaluator.py`, `hybrid.py`, `rerank.py`, `run_judging.py`, and `diagnose_misses.py` quantify retrieval or answer behavior. `trust.py` implements the answer-support heuristic and refusal measurement.
 
@@ -112,21 +112,55 @@ Question → BM25 ranking ──┴→ RRF → cited context → LLM → answer/
 ```
 
 ### Important separation
-The Streamlit app is the user-facing product. Evaluation scripts are experiments and may use their own indexes, datasets, or model calls. The standalone `AutonomousRAGAgent` uses its own fixed evaluation index and should not be confused with the default Chat route.
+The FastAPI backend and static browser frontend are the user-facing product. Evaluation scripts are experiments and may use their own indexes, datasets, or model calls. The standalone `AutonomousRAGAgent` uses its own fixed evaluation index and should not be confused with the default Chat route.
 
 <!-- PAGE 06 -->
 # Running the Application
 
-The repository uses a Python virtual environment and lists direct dependencies in `requirements.txt`: Streamlit, Groq, python-dotenv, Chroma integrations, sentence-transformers, BM25, PDF loading, and text splitting.
+The repository uses a Python virtual environment and lists its direct dependencies in `requirements.txt`.
+
+## Technology Stack Used
+
+| Category | Technology used in the project | Purpose |
+|---|---|---|
+| Programming language | **Python 3.11** | Main implementation language for ingestion, retrieval, generation, evaluation, CLI tools, and tests. |
+| Backend web framework | **FastAPI** | Provides REST endpoints for Chat, Quiz, grading, Compare, uploads, library management, settings, and progress. |
+| Frontend | **HTML, Tailwind CSS CDN, and vanilla JavaScript** | Provides the responsive dark Chat, Quiz, Compare, and Paper Library interface without a Node.js build step. |
+| ASGI server | **Uvicorn** | Runs the FastAPI backend locally on port 8000 and serves the static frontend. |
+| Large language-model service | **Groq API** | Runs the hosted `openai/gpt-oss-120b` language model for grounded answers, quiz generation, grading support, and paper comparison. |
+| Environment configuration | **python-dotenv** | Loads the Groq API key and other environment settings from `.env`. |
+| PDF processing | **PyPDF**, **langchain-community/PyPDFLoader** | Reads PDF files and produces page-level documents. |
+| Document splitting | **LangChain Text Splitters** | Splits loaded PDF pages into overlapping text chunks for retrieval. |
+| Embedding model | **Hugging Face Sentence Transformers**, **all-MiniLM-L6-v2** | Converts chunks and questions into semantic vectors locally on the CPU. |
+| Vector database | **Chroma**, **langchain-chroma** | Persists document embeddings and metadata for similarity search. |
+| Lexical retrieval | **rank-bm25 / BM25Okapi** | Finds passages through exact and statistical keyword matching. |
+| Hybrid search | **Python ranking logic with Reciprocal Rank Fusion (RRF)** | Combines dense vector rankings and BM25 rankings without directly comparing their different score scales. |
+| Retrieval framework | **LangChain Core and integrations** | Provides shared document objects, embeddings, vector-store integration, and text-processing components. |
+| Evaluation and diagnostics | **Python, JSON result files, custom evaluator scripts** | Measures retrieval hit rate, chunking configurations, answer quality, misses, and autonomous-loop behavior. |
+| Testing | **Python `unittest`** | Covers library removal, PDF upload, quiz, and comparison workflows. |
+| Development and execution | **PowerShell, pip, Python virtual environment** | Runs local commands, installs dependencies, starts FastAPI, and performs tests. |
+
+### Main system architecture
+
+- **Frontend / UI:** HTML plus Tailwind CSS CDN and vanilla JavaScript in `static/index.html` and `static/app.js`.
+- **Backend / application logic:** FastAPI in `main.py`, with retrieval and workflow modules in Python.
+- **Retrieval:** hybrid dense embeddings plus BM25 lexical search.
+- **Vector storage:** locally persisted Chroma database.
+- **Generation model:** Groq-hosted large language model accessed through the Groq Python SDK.
+- **Document format:** PDF; PDF parsing uses PyPDFLoader.
+- **Embeddings:** the Sentence Transformers model `all-MiniLM-L6-v2`.
+- **Evaluation output:** structured JSON files.
+
+The project does not require a separately deployed database server or frontend build server. FastAPI combines local PDF processing, vector retrieval, and hosted Groq generation with the static browser interface.
 
 ### Typical local startup
 From the project directory in PowerShell:
 
 ```powershell
-.\venv\Scripts\python.exe -m streamlit run .\app.py
+.\venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000
 ```
 
-The app opens in a browser at the local Streamlit address, commonly `http://localhost:8501`. It reads model credentials from the environment through dotenv support. Never paste secrets into a report, source file, screenshot, or public repository.
+Open `http://127.0.0.1:8000` in the browser. FastAPI serves both the API and the frontend. If the main index has not been built, run `python ingest.py` before starting the server. Never paste secrets into a report, source file, screenshot, or public repository.
 
 ### First-run behavior
 The embedding model may need to be downloaded the first time it is loaded. The local vector store is opened through a cached resource. If the main Chroma collection is empty, the app can load PDFs and populate the collection. Language-model requests happen only when a workflow is submitted; opening the interface does not itself need to answer a question.
@@ -138,7 +172,7 @@ The embedding model may need to be downloaded the first time it is loaded. The l
 - Run the non-mocked judging or refusal-evaluation commands.
 
 ### What a successful startup demonstrates
-The Streamlit page renders, the sidebar displays the current PDF library and evaluation summary, and the mode controls are available. Startup alone is not proof that Groq credentials, an index, or every model request will work; those are exercised by their respective operations.
+The browser page renders, the sidebar displays the current PDF library, and the Chat, Quiz, Compare, and settings controls are available. Startup alone is not proof that Groq credentials, an index, or every model request will work; those are exercised by their respective operations.
 
 <!-- PAGE 07 -->
 # PDF Ingestion: From File to Page Objects
@@ -205,7 +239,7 @@ The main app uses the best configuration reported in its evaluation file. The sp
 
 An embedding model maps text into a numeric vector. The project uses the local sentence-transformer model `all-MiniLM-L6-v2` for chunks and user queries. At search time, a query vector is compared with stored chunk vectors so semantically similar passages can be ranked even when they do not repeat the same wording.
 
-Chroma is the persistent vector store. The main store uses the collection name `documents` and the path defined by `CHROMA_DIR`. The app creates an embedding function through a cached resource and opens the store through a second cached resource. This avoids reloading the model and database connection on every Streamlit rerun.
+Chroma is the persistent vector store. The main store uses the collection name `documents` and the path defined by `CHROMA_DIR`. The FastAPI application creates the embedding function through a cached resource and opens the store through a second cached resource. This avoids reloading the model and database connection on every request.
 
 ### Persistence and rebuilds
 Embeddings and chunk metadata live in Chroma’s local on-disk database. Batch ingestion rebuilds the main index. Evaluation scripts may create separate `chroma_db_eval_*` stores for experimental configurations. Those indexes are distinct from the main application index and must not be confused when interpreting results.
@@ -238,9 +272,9 @@ Chat uses a score-bearing variant that preserves dense relevance scores for the 
 <!-- PAGE 12 -->
 # Chat Mode: End-to-End Data Flow
 
-The regular Chat path begins when the user enters a question in the Streamlit chat input. `retrieve_chunks()` gets the cached BM25 corpus and Chroma store, then calls the hybrid score-bearing retrieval helper. The helper fuses dense and BM25 candidate rankings and returns the top three chunks.
+The regular Chat path begins when the user enters a question in the browser and submits it to FastAPI. `retrieve_chunks()` gets the cached BM25 corpus and Chroma store, then calls the hybrid score-bearing retrieval helper. The helper fuses dense and BM25 candidate rankings and returns the top three chunks.
 
-The app converts each result into a UI-friendly record containing filename, citation, passage text, and a dense score when available. `format_context()` joins the text passages under their source labels. `stream_answer()` formats the shared prompt from `config.py`, asks the configured Groq model for a streaming response, and yields tokens to Streamlit for display.
+The API converts each result into a JSON record containing filename, citation, passage text, and a dense score when available. `format_context()` joins the text passages under their source labels. The Chat endpoint formats the shared prompt from `config.py`, asks the configured Groq model for an answer, and returns the response and citations to `static/app.js` for browser display.
 
 After generation, the app calls `trust.assess()` with the question, answer, and retrieved chunk records. It renders a trust label and reason, then offers an expander with the raw retrieved passages and scores. The assistant message, evidence, and trust result are saved in `st.session_state["messages"]`, so reruns can redraw the conversation without regenerating the answer.
 
@@ -311,7 +345,7 @@ The source passages remain available in an expander after the quiz is generated,
 <!-- PAGE 16 -->
 # Interactive Quiz State and Answer Collection
 
-Streamlit reruns the script when controls change, so the quiz must be represented explicitly in session state. `make_quiz_state()` creates a serializable state containing an attempt identifier, selected PDF, topic, generated questions, empty answer slots, retrieved context, displayed chunks, and an initially empty grade.
+Browser interactions issue FastAPI requests, so generated quiz state is represented explicitly in JavaScript and server-side attempt data. `make_quiz_state()` remains part of the supporting Python workflow and creates serializable state containing an attempt identifier, selected PDF, topic, generated questions, answer slots, retrieved context, displayed chunks, and an initially empty grade.
 
 The attempt identifier is used in the form and text-area widget keys. This keeps answer inputs associated with one quiz attempt and prevents a newly generated quiz from accidentally reusing stale widget values. The `quiz_state` object is held in `st.session_state`, so it survives the reruns caused by typing and button presses.
 
@@ -327,7 +361,7 @@ No attempt
   → score, per-question feedback, missed answers and citations
 ```
 
-The form’s current answers are held by Streamlit widgets until submission; after submission, the values are copied into quiz state. A different PDF or topic does not display a mismatched prior result. A new generation creates a new attempt identifier and fresh answer slots.
+The browser form collects radio or text answers until submission. A different PDF or topic does not display a mismatched prior result. A new generation creates fresh questions and unanswered answer slots.
 
 <!-- PAGE 17 -->
 # Quiz Grading: Context Is the Authority
@@ -358,7 +392,7 @@ One prompt reduces the number of separate generation requests and gives the mode
 <!-- PAGE 19 -->
 # Adding a PDF Through the Interface
 
-The Streamlit sidebar includes an **Add a PDF** uploader. The user chooses a PDF and clicks **Add PDF to library**. The app opens or initializes the persistent Chroma store, reads the current best chunk configuration, and passes the uploaded bytes to `upload.py`.
+The Paper Library sidebar includes an **Add PDF** uploader. The user chooses or drops a PDF into the browser upload control. FastAPI opens or initializes the persistent Chroma store, reads the current best chunk configuration, and passes the uploaded bytes to `upload.py`.
 
 The upload helper validates a simple `.pdf` filename and the PDF header, refuses to overwrite an existing filename, writes to a temporary file, and parses the pages with `PyPDFLoader`. Each page is assigned the final filename and final source path. Pages are split with the same chunking function used by ingestion, then the chunks are added to Chroma. After success, the temporary file is atomically renamed into `data/` and the cached hybrid resources are cleared so BM25 includes the new chunks on the next retrieval.
 
@@ -384,7 +418,7 @@ If parsing or indexing fails, the helper removes temporary files and deletes par
 The class lazily initializes its vector store, reconstructs the expected chunk corpus, checks that the persisted index has the expected number of chunks, and builds an in-memory BM25 index. Its mocked `__main__` test verifies both the rewrite-to-success and exhausted-retry refusal paths without network calls.
 
 ### Relationship to the app
-This agent is currently a standalone class and testable module. The default Streamlit Chat workflow directly calls hybrid retrieval and answer generation; it does not instantiate `AutonomousRAGAgent`. This distinction is important when describing the architecture: the repository contains an autonomous loop, but normal UI Chat is not that loop.
+This agent is currently a standalone class and testable module. The default FastAPI Chat workflow directly calls hybrid retrieval and answer generation; it does not instantiate `AutonomousRAGAgent`. This distinction is important when describing the architecture: the repository contains an autonomous loop, but normal UI Chat is not that loop.
 
 ### Fixed-index caveat
 The agent’s historical index path and expected count are fixed in the module. If the PDF corpus changes, the index and count need corresponding maintenance; otherwise the agent intentionally fails rather than silently using an incompatible corpus.
@@ -485,7 +519,7 @@ The repository includes both user-facing and developer-facing entry points:
 - `diagnose_misses.py` explains selected retrieval misses.
 - `agent.py` exercises a bounded self-reflective retrieval loop.
 
-Tests use standard `unittest` and Streamlit’s `AppTest`. `test_compare.py` verifies separate paper retrieval, prompt separation, and citation behavior. `test_quiz.py` verifies structured question generation, evidence-bound grading, state progression, score handling, and mocked UI submission. `test_upload.py` verifies filename and PDF validation, metadata, persistence, duplicate protection, and indexing behavior.
+Tests use standard `unittest`, FastAPI’s `TestClient`, and mocked model calls. `test_compare.py` verifies separate paper retrieval, prompt separation, and citation behavior. `test_quiz.py` verifies structured question generation, evidence-bound grading, API validation, state progression, and score handling. `test_upload.py` verifies filename and PDF validation, metadata, persistence, duplicate protection, and indexing behavior.
 
 ### Why mocks matter
 Mock callbacks make it possible to test prompt shape, result validation, session-state updates, and interface progression without spending API quota or relying on network availability. These tests establish application behavior for known fixture inputs; they do not measure actual LLM answer quality.
@@ -538,9 +572,9 @@ The strongest responsible claim is that the project provides an evidence-oriente
 1. Open a terminal in the project directory.
 2. Start the interface:
    ```powershell
-   .\venv\Scripts\python.exe -m streamlit run .\app.py
+   .\venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000
    ```
-3. Open the local Streamlit URL in a browser.
+3. Open `http://127.0.0.1:8000` in a browser.
 4. Confirm the sidebar lists the available PDFs and the evaluation summary.
 5. Use a valid local Groq configuration only if you intend to run live generation. Do not display the secret value.
 
@@ -570,9 +604,9 @@ Live generation consumes hosted-model quota. For a quota-free rehearsal, demonst
 - **Top-k:** The first k results returned by a retrieval or ranking step.
 - **Cross-encoder:** A model that jointly scores a query and candidate passage.
 - **Grounding:** Restricting an answer or judgment to provided evidence.
-- **Session state:** Streamlit storage that survives reruns during a user session.
+- **Browser session state:** JavaScript state and browser storage used to preserve the current interaction during a session.
 
 ### Source map
-Configuration and prompts: `config.py`. PDF ingestion and splitting: `ingest.py`. Main interface and upload action: `app.py`. Hybrid retrieval: `hybrid.py`. Quiz logic: `quiz.py`. Compare logic: `compare.py`. Trust heuristic: `trust.py`. Autonomous loop: `agent.py`. Evaluation and diagnostics: `evaluator.py`, `run_judging.py`, `rerank.py`, and `diagnose_misses.py`.
+Configuration and prompts: `config.py`. PDF ingestion and splitting: `ingest.py`. FastAPI interface and upload routes: `main.py`. Browser interface: `static/index.html` and `static/app.js`. Hybrid retrieval: `hybrid.py`. Quiz logic: `quiz.py`. Compare logic: `compare.py`. Trust heuristic: `trust.py`. Autonomous loop: `agent.py`. Evaluation and diagnostics: `evaluator.py`, `run_judging.py`, `rerank.py`, and `diagnose_misses.py`.
 
 **End of report.**

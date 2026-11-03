@@ -8,6 +8,7 @@ from unittest.mock import patch
 from langchain_core.documents import Document
 
 from upload import add_pdf_to_library
+from library import rename_pdf_in_library
 
 
 class FakeVectorStore:
@@ -100,6 +101,19 @@ class PdfUploadTests(unittest.TestCase):
                     chunk_overlap=50,
                 )
             self.assertEqual(existing_pdf.read_bytes(), b"%PDF-1.7 existing")
+
+    def test_rename_updates_filename_without_overwriting(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            pdf_dir = Path(temporary_directory)
+            source = pdf_dir / "old.pdf"
+            source.write_bytes(b"%PDF-1.7")
+            renamed = rename_pdf_in_library("old.pdf", "new.pdf", pdf_dir)
+            self.assertEqual(renamed, pdf_dir / "new.pdf")
+            self.assertFalse(source.exists())
+            self.assertTrue(renamed.exists())
+
+            with self.assertRaisesRegex(FileExistsError, "already exists"):
+                rename_pdf_in_library("new.pdf", "new.pdf", pdf_dir)
 
 
 if __name__ == "__main__":

@@ -331,7 +331,7 @@ def render_sidebar(eval_summary: dict) -> None:
             expanded=False,
         ):
             st.caption("Select PDFs to remove them from retrieval.")
-            with st.form("remove_papers_form", clear_on_submit=True):
+            with st.form("remove_papers_form", clear_on_submit=False):
                 selected_for_removal = st.multiselect(
                     "Papers",
                     kb_files,
@@ -405,6 +405,7 @@ def render_sidebar(eval_summary: dict) -> None:
 
             if removed_any:
                 get_hybrid_resources.clear()
+                get_vector_store.clear()
             st.session_state["paper_removal_notices"] = notices
             st.rerun()
 

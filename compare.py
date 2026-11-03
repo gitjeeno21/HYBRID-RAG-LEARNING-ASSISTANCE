@@ -8,6 +8,19 @@ from rank_bm25 import BM25Okapi
 from config import citation
 from hybrid import VectorSearchStore, hybrid_search
 
+COMPARE_CHIP_EXPANSIONS = {
+    "main objective": "What is the main objective or purpose of this paper?",
+    "methodology": "What methodology or approach does this paper use?",
+    "results and metrics": "What results or metrics does this paper report?",
+    "limitations": "What limitations does this paper mention?",
+    "data used": "What data or dataset does this paper use?",
+}
+
+
+def expand_compare_query(question: str) -> str:
+    key = question.strip().casefold()
+    return COMPARE_CHIP_EXPANSIONS.get(key, question.strip())
+
 
 def retrieve_paper_contexts(
     vector_store: VectorSearchStore,
@@ -74,7 +87,10 @@ def build_compare_prompt(
         "Answer: ...\n"
         "## Difference\n"
         "Summarize how the papers' approaches or answers differ in exactly "
-        "two sentences. Base the comparison only on the evidence above."
+        "two sentences. Base the comparison only on the evidence above.\n"
+        "## Similarities\n"
+        "Write one short evidence-grounded similarity, or state that no "
+        "evidence-supported similarity is found."
     )
 
 
@@ -84,16 +100,33 @@ def generate_comparison(
     ask: Callable[[str], str] | None = None,
 ) -> str:
     """Generate the two-paper comparison with exactly one prompt/call."""
+    if any(not chunks for chunks in contexts.values()):
+        if contexts and all(not chunks for chunks in contexts.values()):
+            pass
+        else:
+            return ""
     prompt = build_compare_prompt(question, contexts)
-    if ask is None:
-        # Reuse the app's transient-error/rate-limit retry behavior without
-        # creating another client or issuing separate per-paper LLM requests.
-        from evaluator import call_llm
+    def request_answer() -> str:
+        if ask is None:
+            # Reuse the app's transient-error/rate-limit retry behavior.
+            from evaluator import call_llm
 
-        answer = call_llm(prompt, temperature=0.2, label="compare")
-    else:
+            return call_llm(prompt, temperature=0.2, label="compare")
         # Injected test callbacks verify the full prompt without network access.
-        answer = ask(prompt)
+        return ask(prompt)
+
+    answer = request_answer()
     if not answer or not answer.strip():
         raise RuntimeError("Comparison generation returned an empty response")
-    return answer.strip()
+    first_answer = answer.strip()
+    expected_sections = [name.casefold() for name in contexts]
+    has_expected_sections = all(
+        f"## {name}".casefold() in first_answer.casefold()
+        for name in expected_sections
+    )
+    if not has_expected_sections:
+        answer = request_answer()
+        if not answer or not answer.strip():
+            return first_answer
+        return answer.strip()
+    return first_answer

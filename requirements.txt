@@ -22,3 +22,8 @@ pypdf>=6.21.0                  # PDF parsing backend used by PyPDFLoader
 
 # Web UI
 streamlit>=1.66.0
+
+# FastAPI backend
+fastapi>=0.115.0
+uvicorn>=0.34.0
+python-multipart>=0.0.20

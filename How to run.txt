@@ -1,4 +1,4 @@
-Steps to Run the Autonomous RAG Agent
+Steps to Run Hybrid RAG for Evidence-Grounded Knowledge Discovery & Learning
 
 1. Open PowerShell.
 
@@ -32,16 +32,20 @@ Steps to Run the Autonomous RAG Agent
 
 9. Save and close the file.
 
-10. Build the PDF search index:
+10. Optional: rebuild the PDF search index:
 
    python ingest.py
 
-11. Start the application:
+11. Start the FastAPI application:
 
-   python -m streamlit run app.py
+   python -m uvicorn main:app --host 127.0.0.1 --port 8000
 
-12. Open the local address shown in the terminal, usually:
+12. Open the web application:
 
-   http://localhost:8501
+   http://127.0.0.1:8000
 
 13. To stop the application, press Ctrl+C in the PowerShell terminal.
+
+The FastAPI backend serves the dark Tailwind-style frontend from static/index.html.
+The frontend and backend run together on port 8000; no separate frontend server or
+Node.js build is required. The browser calls REST endpoints exposed by main.py.

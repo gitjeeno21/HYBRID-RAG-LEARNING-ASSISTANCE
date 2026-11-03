@@ -10,6 +10,22 @@ class DeletableVectorStore(Protocol):
     def delete(self, where: dict[str, str]) -> None: ...
 
 
+def rename_pdf_in_library(filename: str, new_filename: str, pdf_dir: Path) -> Path:
+    """Rename a PDF and return its new path."""
+    old = Path(filename).name
+    new = Path(new_filename).name
+    if old != filename or new != new_filename or not old.lower().endswith(".pdf") or not new.lower().endswith(".pdf"):
+        raise ValueError("Use simple .pdf filenames")
+    source = pdf_dir / old
+    destination = pdf_dir / new
+    if not source.is_file():
+        raise FileNotFoundError(f"{old} was not found")
+    if destination.exists():
+        raise FileExistsError(f"{new} already exists")
+    source.replace(destination)
+    return destination
+
+
 def remove_pdf_from_library(
     filename: str,
     vector_store: DeletableVectorStore,
