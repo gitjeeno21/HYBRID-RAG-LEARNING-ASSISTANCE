@@ -12,7 +12,7 @@ generates source-grounded study questions from one selected PDF. Compare Mode
 retrieves separately from two PDFs and compares them in one LLM request. New
 PDFs can be uploaded from the sidebar and indexed into the local library.
 
-Run with: streamlit run app.py
+Run with: .\\venv\\Scripts\\python.exe -m streamlit run .\\app.py
 """
 
 import json
@@ -36,12 +36,14 @@ from config import (
     LLM_MODEL,
     PDF_DIR,
     PROMPT_TEMPLATE,
+    REMOVED_PDF_DIR,
     TOP_K,
     citation,
     source_filename,
 )
 from ingest import best_chunk_config, load_documents, split_documents
 from hybrid import build_bm25, hybrid_search_with_scores
+from library import remove_pdf_from_library
 from quiz import (
     generate_quiz,
     make_quiz_state,
@@ -101,7 +103,7 @@ def get_vector_store() -> Chroma:
         embedding_function=get_embeddings(),
         persist_directory=str(CHROMA_DIR),
     )
-    if store._collection.count() == 0:
+    if store._collection.count() == 0 and list_knowledge_base():
         store.add_documents(split_documents(load_documents()))
     return store
 
@@ -323,6 +325,98 @@ def render_sidebar(eval_summary: dict) -> None:
     else:
         st.sidebar.markdown("_No PDF files found in data/_")
 
+    if kb_files:
+        with st.sidebar.expander(
+            f"Manage library removal  ·  {len(kb_files)} PDF{'s' if len(kb_files) != 1 else ''}",
+            expanded=False,
+        ):
+            st.caption("Select PDFs to remove them from retrieval.")
+            with st.form("remove_papers_form", clear_on_submit=True):
+                selected_for_removal = st.multiselect(
+                    "Papers",
+                    kb_files,
+                    placeholder="Choose one or more PDFs",
+                    key="papers_to_remove",
+                )
+                keep_removed_copy = st.radio(
+                    "After removal",
+                    (
+                        "Keep a copy in removed_pdfs",
+                        "Permanently delete the PDF files",
+                    ),
+                    key="paper_removal_behavior",
+                )
+                if keep_removed_copy.startswith("Permanently"):
+                    st.warning(
+                        "This permanently deletes the PDF and its indexed content."
+                    )
+                else:
+                    st.caption(
+                        "The PDF can be restored from `removed_pdfs` later."
+                    )
+
+                confirmed_removal = st.checkbox(
+                    "Confirm removal of selected PDFs and database entries",
+                    key="confirm_paper_removal",
+                )
+                submitted_removal = st.form_submit_button(
+                    "Remove selected papers",
+                    type="primary",
+                    disabled=not selected_for_removal or not confirmed_removal,
+                )
+
+        if submitted_removal:
+            notices = []
+            removed_any = False
+            for filename in selected_for_removal:
+                try:
+                    archived_path = remove_pdf_from_library(
+                        filename,
+                        get_vector_store(),
+                        Path(PDF_DIR),
+                        Path(REMOVED_PDF_DIR),
+                        keep_copy=keep_removed_copy.startswith("Keep a copy"),
+                    )
+                except Exception as exc:
+                    notices.append(
+                        (
+                            "error",
+                            f"Could not remove {filename} "
+                            f"({type(exc).__name__}): {exc}",
+                        )
+                    )
+                else:
+                    removed_any = True
+                    if archived_path is not None:
+                        notices.append(
+                            (
+                                "success",
+                                f"Removed {filename} from the knowledge base. "
+                                f"PDF kept at {archived_path}.",
+                            )
+                        )
+                    else:
+                        notices.append(
+                            (
+                                "success",
+                                f"Permanently removed {filename} and its indexed chunks.",
+                            )
+                        )
+
+            if removed_any:
+                get_hybrid_resources.clear()
+            st.session_state["paper_removal_notices"] = notices
+            st.rerun()
+
+    else:
+        st.sidebar.caption("There are no active papers to remove.")
+
+    for level, message in st.session_state.pop("paper_removal_notices", []):
+        if level == "success":
+            st.sidebar.success(message)
+        else:
+            st.sidebar.error(message)
+
     st.sidebar.markdown("**Add a PDF**")
     uploaded_pdf = st.sidebar.file_uploader(
         "Choose a research paper",
@@ -371,6 +465,24 @@ def render_sidebar(eval_summary: dict) -> None:
 # Main UI
 # ---------------------------------------------------------------------------
 st.set_page_config(page_title="Autonomous RAG Agent", page_icon="🤖")
+
+st.markdown(
+    """
+    <style>
+    section[data-testid="stSidebar"] div[data-testid="stForm"] {
+        border: 1px solid rgba(250, 250, 250, 0.12);
+        border-radius: 0.75rem;
+        padding: 0.75rem;
+        background: rgba(255, 255, 255, 0.025);
+    }
+    section[data-testid="stSidebar"] div[data-testid="stForm"] button[kind="primary"] {
+        width: 100%;
+        border-radius: 0.55rem;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 # Load evaluation summary once; cached across reruns.
 eval_summary = load_eval_summary()
@@ -613,6 +725,9 @@ elif quiz_mode:
                         st.text(passage["text"])
 else:
     st.caption("Ask anything about the documents in your knowledge base.")
+    has_active_papers = bool(list_knowledge_base())
+    if not has_active_papers:
+        st.info("Add a PDF to the knowledge base before asking a question.")
     # 1. Initialize chat history and display it on every rerun.
     if "messages" not in st.session_state:
         st.session_state.messages = []
@@ -627,7 +742,10 @@ else:
             if message.get("chunks"):
                 render_retrieved_context(message["chunks"])
 
-    if question := st.chat_input("Ask a question about your documents:"):
+    if question := st.chat_input(
+        "Ask a question about your documents:",
+        disabled=not has_active_papers,
+    ):
         st.session_state.messages.append({"role": "user", "content": question})
         with st.chat_message("user"):
             st.markdown(question)

@@ -19,6 +19,7 @@ from pathlib import Path
 # so `python query.py` works no matter where it is launched from.
 BASE_DIR = Path(__file__).resolve().parent
 PDF_DIR = BASE_DIR / "data"
+REMOVED_PDF_DIR = BASE_DIR / "removed_pdfs"
 CHROMA_DIR = BASE_DIR / "chroma_db"
 EVAL_RESULTS_PATH = BASE_DIR / "eval_results.json"
 
