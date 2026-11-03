@@ -1,0 +1,47 @@
+Steps to Run the Autonomous RAG Agent
+
+1. Open PowerShell.
+
+2. Go to the project folder:
+
+   cd "C:\Users\ASUS\Downloads\autonomous-rag-agent"
+
+3. Create the virtual environment:
+
+   python -m venv venv
+
+4. Activate the virtual environment:
+
+   .\venv\Scripts\Activate.ps1
+
+5. Install the required packages:
+
+   python -m pip install -r requirements.txt
+
+6. Create the environment file:
+
+   Copy-Item .env.example .env
+
+7. Open the environment file:
+
+   notepad .env
+
+8. Replace the example API key with your Groq API key:
+
+   GROQ_API_KEY=your_actual_groq_api_key
+
+9. Save and close the file.
+
+10. Build the PDF search index:
+
+   python ingest.py
+
+11. Start the application:
+
+   python -m streamlit run app.py
+
+12. Open the local address shown in the terminal, usually:
+
+   http://localhost:8501
+
+13. To stop the application, press Ctrl+C in the PowerShell terminal.
