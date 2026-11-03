@@ -572,11 +572,31 @@ async function sendChat(query, existingTurn = null) {
   state.busy = true;
   updateSendButton();
   try {
-    turn.data = await api("/api/chat", {
-      method: "POST",
-      json: { query, papers: turn.papers, history: historyBefore(turn), top_k: state.settings.topK || undefined },
+    const payload = { query, papers: turn.papers, history: historyBefore(turn), top_k: state.settings.topK || undefined };
+    let frame = 0;
+    await streamChat(payload, event => {
+      if (event.type === "meta") {
+        turn.data = { answer: "", trust: null, query_used: event.query_used, citations: event.citations, context: event.context };
+        turn.status = "streaming";
+        renderTurn(turn);
+      } else if (event.type === "token") {
+        turn.data.answer += event.text;
+        // Re-render the answer at most once per animation frame.
+        if (!frame) frame = requestAnimationFrame(() => {
+          frame = 0;
+          const md = $(`[data-turn="${turn.id}"] .md`);
+          if (md) md.innerHTML = renderMarkdown(stripSourcesLine(turn.data.answer));
+          if (nearBottom()) window.scrollTo({ top: document.body.scrollHeight });
+        });
+      } else if (event.type === "done") {
+        cancelAnimationFrame(frame);
+        Object.assign(turn.data, { answer: event.answer, trust: event.trust });
+        turn.status = "done";
+      } else if (event.type === "error") {
+        throw new Error(event.detail);
+      }
     });
-    turn.status = "done";
+    if (turn.status !== "done") throw new Error("The answer stream ended unexpectedly. Please retry.");
   } catch (error) {
     turn.status = "error";
     turn.error = error.message;
@@ -588,6 +608,37 @@ async function sendChat(query, existingTurn = null) {
   persistChat();
   scrollToBottom();
 }
+
+/** POST to /api/chat/stream and call onEvent for each NDJSON line. */
+async function streamChat(payload, onEvent) {
+  let response;
+  try {
+    response = await fetch("/api/chat/stream", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+    });
+  } catch (_) {
+    throw new Error("Network connection failed. Check that the app server is running.");
+  }
+  if (!response.ok || !response.body) {
+    const data = await response.json().catch(() => ({}));
+    if (response.status === 503 || response.status === 429) refreshHealth();
+    throw new Error(formatApiError(data.detail || data, `Request failed (${response.status})`));
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+    const lines = buffer.split("\n");
+    buffer = lines.pop();
+    for (const line of lines) if (line.trim()) onEvent(JSON.parse(line));
+    if (done) break;
+  }
+  if (buffer.trim()) onEvent(JSON.parse(buffer));
+}
+
+const nearBottom = () => window.innerHeight + window.scrollY >= document.body.scrollHeight - 160;
 
 function scrollToBottom() {
   requestAnimationFrame(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }));
@@ -623,12 +674,16 @@ function renderTurn(turn) {
           ${item.score != null ? `<span class="score" title="Dense similarity">${Number(item.score).toFixed(2)}</span>` : ""}</summary>
         <div class="passage">${escapeHtml(item.text)}</div>
       </details>`).join("");
+    const streaming = turn.status === "streaming";
+    const status = streaming
+      ? `<span class="badge badge-neutral"><span class="spinner" style="width:10px;height:10px;border-width:1.5px"></span>Writing answer…</span>`
+      : trustBadge(data.trust);
     bot = `${rewritten}
-      <div class="md">${renderMarkdown(stripSourcesLine(data.answer))}</div>
-      <div class="msg-meta">${trustBadge(data.trust)}
+      <div class="md${streaming ? " streaming" : ""}">${renderMarkdown(stripSourcesLine(data.answer)) || "<p></p>"}</div>
+      <div class="msg-meta">${status}
         ${turn.papers?.length ? `<span class="badge badge-neutral">Scope: ${turn.papers.map(paperTitle).map(escapeHtml).join(", ")}</span>` : ""}</div>
       ${sources ? `<div class="sources">${sources}</div>` : ""}
-      <div class="msg-actions">
+      <div class="msg-actions${streaming ? " hidden" : ""}">
         <button type="button" class="icon-btn" data-act="copy" title="Copy answer" aria-label="Copy answer">${icon("copy")}</button>
         <button type="button" class="icon-btn" data-act="regenerate" title="Regenerate" aria-label="Regenerate answer">${icon("refresh")}</button>
         <button type="button" class="icon-btn ${turn.feedback === "up" ? "on" : ""}" data-act="up" title="Helpful" aria-label="Helpful" aria-pressed="${turn.feedback === "up"}">${icon("up")}</button>

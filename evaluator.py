@@ -53,7 +53,14 @@ from datetime import datetime, timezone
 from functools import lru_cache
 
 from dotenv import load_dotenv
-from groq import APIConnectionError, APIStatusError, APITimeoutError, Groq, RateLimitError
+from groq import (
+    APIConnectionError,
+    APIStatusError,
+    APITimeoutError,
+    AuthenticationError,
+    Groq,
+    RateLimitError,
+)
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -170,6 +177,10 @@ def call_llm(prompt: str, temperature: float = 0.0, label: str = "llm") -> str:
                 temperature=temperature,
             )
             return response.choices[0].message.content or ""
+        except AuthenticationError:
+            # A bad or missing key never fixes itself; retrying only adds a
+            # ~30 s delay before the same error reaches the user.
+            raise
         except RateLimitError:
             # 429: waiting is the only correct response, retrying immediately
             # just burns another unit of quota.
@@ -187,6 +198,36 @@ def call_llm(prompt: str, temperature: float = 0.0, label: str = "llm") -> str:
                   f"{wait}s (attempt {attempt}/{MAX_ATTEMPTS})", flush=True)
             time.sleep(wait)
     raise RuntimeError("unreachable")
+
+
+def call_llm_stream(prompt: str, temperature: float = 0.0, label: str = "llm"):
+    """Yield the reply as text fragments, for the web UI's streaming chat.
+
+    Retries (same policy as call_llm) apply only while opening the stream:
+    once text has been sent to the browser, a retry would duplicate it, so a
+    mid-stream failure is raised to the caller instead.
+    """
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try:
+            stream = client.chat.completions.create(
+                model=LLM_MODEL,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=temperature,
+                stream=True,
+            )
+            break
+        except AuthenticationError:
+            raise
+        except (RateLimitError, APIConnectionError, APITimeoutError, APIStatusError) as exc:
+            if attempt == MAX_ATTEMPTS:
+                raise
+            wait = BASE_SLEEP_SECONDS * attempt
+            print(f"    [{type(exc).__name__}] {label}: retrying in {wait}s "
+                  f"(attempt {attempt}/{MAX_ATTEMPTS})", flush=True)
+            time.sleep(wait)
+    for chunk in stream:
+        if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
+            yield chunk.choices[0].delta.content
 
 
 def build_chunks(documents: list, chunk_size: int, chunk_overlap: int) -> list:

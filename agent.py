@@ -18,7 +18,6 @@ MAX_RETRIES = 2
 REFUSAL = "I don't know the answer based on the provided documents."
 CHUNK_SIZE = 1500
 CHUNK_OVERLAP = 50
-EXPECTED_CHUNK_COUNT = 281
 INDEX_PATH = BASE_DIR / "chroma_db_eval_1500_50"
 COLLECTION_NAME = "eval_1500_50"
 
@@ -85,11 +84,13 @@ class AutonomousRAGAgent:
             persist_directory=str(INDEX_PATH),
         )
         indexed_count = store._collection.count()
-        if indexed_count != EXPECTED_CHUNK_COUNT or indexed_count != len(chunks):
+        # Compare against the live corpus rather than a frozen count, so adding
+        # a PDF only requires rebuilding the index, not editing this file.
+        if indexed_count != len(chunks):
             raise RuntimeError(
-                "The existing 1500/50 index does not match the expected corpus: "
-                f"index={indexed_count}, chunks={len(chunks)}, "
-                f"expected={EXPECTED_CHUNK_COUNT}"
+                "The 1500/50 evaluation index does not match the PDFs in data/: "
+                f"index={indexed_count}, chunks={len(chunks)}. "
+                "Rebuild it with: python evaluator.py --retrieval-only"
             )
 
         hybrid = self._load_hybrid_module()

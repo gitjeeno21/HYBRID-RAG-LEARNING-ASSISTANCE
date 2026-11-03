@@ -2,7 +2,7 @@
 
 A local study workspace for research PDFs. Ask questions and get answers that cite their pages, quiz yourself on a paper, and compare two papers side by side. Each answer is built only from passages retrieved from your own library.
 
-- **Chat:** answers use hybrid retrieval (BM25 plus dense embeddings, fused with reciprocal-rank fusion). Each answer comes with clickable page citations, the retrieved passages, and a confidence label. Follow-up questions such as "how does *it* compare…" are rewritten into standalone searches.
+- **Chat:** answers use hybrid retrieval (BM25 plus dense embeddings, fused with reciprocal-rank fusion). Each answer comes with clickable page citations, the retrieved passages, and a confidence label. Follow-up questions such as "how does *it* compare…" are rewritten into standalone searches. Answers stream in as they are written.
 - **Quiz:** questions are generated from one paper, with a choice of difficulty, question type, count and page range. The same retrieved passages are used to grade your answers. You can retry missed questions and track your progress over time.
 - **Compare:** two papers are compared using separate evidence for each, so passages from one paper can't leak into the other's answer.
 - **Library:** add PDFs (with drag and drop), then preview, open, rename or delete them. Indexing happens straight away.

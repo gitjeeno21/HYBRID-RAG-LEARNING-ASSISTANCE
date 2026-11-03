@@ -14,7 +14,7 @@ import re
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from groq import APIConnectionError, APITimeoutError, AuthenticationError, RateLimitError
 from langchain_chroma import Chroma
@@ -40,9 +40,9 @@ from config import (
     citation,
     source_filename,
 )
-from evaluator import call_llm
+from evaluator import call_llm, call_llm_stream
 from hybrid import build_bm25, hybrid_search_with_scores
-from ingest import best_chunk_config, load_documents, split_documents
+from ingest import best_chunk_config, split_documents
 from library import remove_pdf_from_library, rename_pdf_in_library
 from quiz import (
     build_quiz_context,
@@ -162,6 +162,30 @@ async def _unreachable(_: Request, __: Exception) -> JSONResponse:
 # ---------------------------------------------------------------------------
 # Index resources
 # ---------------------------------------------------------------------------
+@lru_cache(maxsize=128)
+def _parse_pdf(path: str, mtime_ns: int, size: int) -> tuple:
+    """Parse one PDF; cached by (path, mtime, size) so unchanged files are
+    never re-read when the library changes. The stat values are only part of
+    the key: an edited or replaced file gets a new key and is parsed again."""
+    return tuple(PyPDFLoader(path).load())
+
+
+def load_pdf_pages(path: Path) -> list:
+    """Return fresh copies of a PDF's pages tagged with their filename."""
+    stat = path.stat()
+    pages = []
+    for page in _parse_pdf(str(path), stat.st_mtime_ns, stat.st_size):
+        copy = page.model_copy(deep=True)
+        copy.metadata["filename"] = path.name
+        pages.append(copy)
+    return pages
+
+
+def load_documents() -> list:
+    """Load every PDF in the library (same result as ingest.load_documents)."""
+    return [page for name in list_pdf_names() for page in load_pdf_pages(Path(PDF_DIR) / name)]
+
+
 @lru_cache(maxsize=1)
 def get_embeddings() -> HuggingFaceEmbeddings:
     return HuggingFaceEmbeddings(model=EMBEDDING_MODEL)
@@ -445,7 +469,7 @@ def preview_pdf(filename: str) -> dict[str, Any]:
     if Path(filename).name != filename or not path.is_file():
         raise HTTPException(status_code=404, detail="PDF not found")
     try:
-        pages = PyPDFLoader(str(path)).load()
+        pages = load_pdf_pages(path)
     except Exception as exc:
         raise HTTPException(status_code=422, detail="PDF preview could not be parsed") from exc
     first = pages[0].page_content.strip() if pages else ""
@@ -504,9 +528,7 @@ def rename_pdf(request: RenamePdfRequest) -> dict[str, Any]:
     except (ValueError, FileNotFoundError, FileExistsError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     # Re-index only the renamed paper instead of re-parsing the whole library.
-    pages = PyPDFLoader(str(new_path)).load()
-    for page in pages:
-        page.metadata["filename"] = new
+    pages = load_pdf_pages(new_path)
     store = get_vector_store()
     store.delete(where={"filename": old})
     store.add_documents(split_documents(pages, *best_chunk_config()))
@@ -515,37 +537,87 @@ def rename_pdf(request: RenamePdfRequest) -> dict[str, Any]:
     return {"filename": new}
 
 
-@app.post("/api/chat")
-def chat(request: ChatRequest) -> dict[str, Any]:
-    query = request.query.strip()
+def _prepare_chat(request: ChatRequest) -> tuple[str, list[dict[str, Any]]]:
+    """Shared by /api/chat and /api/chat/stream: rewrite, then retrieve."""
     available = set(list_pdf_names())
     papers = [paper for paper in request.papers if paper in available]
-    standalone_query = rewrite_followup(query, request.history)
-    retrieved = retrieve_for_api(standalone_query, papers, request.top_k or TOP_K)
+    standalone_query = rewrite_followup(request.query.strip(), request.history)
+    return standalone_query, retrieve_for_api(standalone_query, papers, request.top_k or TOP_K)
+
+
+def _chat_prompt(query: str, retrieved: list[dict[str, Any]]) -> str:
+    context = "\n\n".join(f"Source: {item['citation']}\n{item['text']}" for item in retrieved)
+    return PROMPT_TEMPLATE.format(context=context, question=query)
+
+
+NOT_FOUND_TRUST = {"label": "Low", "reason": "no passages were retrieved"}
+
+
+def _citations(retrieved: list[dict[str, Any]]) -> list[dict[str, str]]:
+    return [{"filename": item["filename"], "citation": item["citation"]} for item in retrieved]
+
+
+@app.post("/api/chat")
+def chat(request: ChatRequest) -> dict[str, Any]:
+    standalone_query, retrieved = _prepare_chat(request)
     if not retrieved:
         return {
             "answer": "Not found in the selected papers.",
-            "citations": [],
-            "context": [],
-            "trust": {"label": "Low", "reason": "no passages were retrieved"},
-            "query_used": standalone_query,
+            "citations": [], "context": [],
+            "trust": NOT_FOUND_TRUST, "query_used": standalone_query,
         }
-    context = "\n\n".join(
-        f"Source: {item['citation']}\n{item['text']}" for item in retrieved
-    )
-    prompt = PROMPT_TEMPLATE.format(context=context, question=standalone_query)
-    answer = call_llm(prompt, temperature=0.2, label="api_chat").strip()
-    trust = assess(standalone_query, answer, retrieved)
+    answer = call_llm(_chat_prompt(standalone_query, retrieved), temperature=0.2, label="api_chat").strip()
     return {
         "answer": answer,
-        "citations": [
-            {"filename": item["filename"], "citation": item["citation"]}
-            for item in retrieved
-        ],
+        "citations": _citations(retrieved),
         "context": retrieved,
-        "trust": trust,
+        "trust": assess(standalone_query, answer, retrieved),
         "query_used": standalone_query,
     }
+
+
+def _provider_error_detail(exc: Exception) -> str:
+    if isinstance(exc, RateLimitError):
+        return "The AI service is rate limited. Wait a moment, then try again."
+    if isinstance(exc, AuthenticationError):
+        return "The AI service is not configured. Add a valid GROQ_API_KEY to .env."
+    if isinstance(exc, (APIConnectionError, APITimeoutError)):
+        return "The AI service could not be reached. Check your internet connection."
+    return "The answer could not be generated. Please try again."
+
+
+@app.post("/api/chat/stream")
+def chat_stream(request: ChatRequest) -> StreamingResponse:
+    """Newline-delimited JSON events: meta, then token*, then done (or error).
+
+    Retrieval runs before the response starts, so its failures still become
+    ordinary HTTP errors; only generation happens inside the stream.
+    """
+    standalone_query, retrieved = _prepare_chat(request)
+
+    def events():
+        def line(payload: dict[str, Any]) -> str:
+            return json.dumps(payload, ensure_ascii=False) + "\n"
+
+        yield line({
+            "type": "meta", "query_used": standalone_query,
+            "citations": _citations(retrieved), "context": retrieved,
+        })
+        if not retrieved:
+            yield line({"type": "done", "answer": "Not found in the selected papers.", "trust": NOT_FOUND_TRUST})
+            return
+        parts: list[str] = []
+        try:
+            for piece in call_llm_stream(_chat_prompt(standalone_query, retrieved), temperature=0.2, label="api_chat"):
+                parts.append(piece)
+                yield line({"type": "token", "text": piece})
+        except Exception as exc:  # noqa: BLE001 - reported in-stream; headers are already sent
+            yield line({"type": "error", "detail": _provider_error_detail(exc)})
+            return
+        answer = "".join(parts).strip()
+        yield line({"type": "done", "answer": answer, "trust": assess(standalone_query, answer, retrieved)})
+
+    return StreamingResponse(events(), media_type="application/x-ndjson")
 
 
 def _quiz_evidence(pdf: str, topic: str, difficulty: str, page_range: str | None, question_count: int):

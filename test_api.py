@@ -54,6 +54,54 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 429)
         self.assertIn("rate limited", response.json()["detail"])
 
+    def _stream(self, **patches):
+        retrieved = [{"filename": "a.pdf", "citation": "a.pdf, p. 1", "text": "t", "score": 0.5}]
+        with (
+            patch("main.list_pdf_names", return_value=["a.pdf"]),
+            patch("main.rewrite_followup", side_effect=lambda q, h: q),
+            patch("main.retrieve_for_api", return_value=patches.pop("retrieved", retrieved)),
+            patch("main.assess", return_value={"label": "High", "reason": "ok"}),
+            patch("main.call_llm_stream", **patches),
+        ):
+            response = self.client.post("/api/chat/stream", json={"query": "hello"})
+        return response, [json.loads(line) for line in response.text.splitlines() if line.strip()]
+
+    def test_stream_sends_meta_tokens_then_done(self) -> None:
+        response, events = self._stream(return_value=iter(["Hel", "lo (a.pdf, p. 1)"]))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual([event["type"] for event in events], ["meta", "token", "token", "done"])
+        self.assertEqual(events[0]["context"][0]["citation"], "a.pdf, p. 1")
+        self.assertEqual(events[-1]["answer"], "Hello (a.pdf, p. 1)")
+        self.assertEqual(events[-1]["trust"]["label"], "High")
+
+    def test_stream_reports_provider_error_in_band(self) -> None:
+        def failing(*_, **__):
+            yield "partial"
+            raise ConnectionError("boom")
+        _, events = self._stream(side_effect=failing)
+        self.assertEqual(events[-1]["type"], "error")
+        self.assertIn("could not be generated", events[-1]["detail"])
+
+    def test_stream_without_passages_skips_the_llm(self) -> None:
+        _, events = self._stream(retrieved=[], side_effect=AssertionError("must not call"))
+        self.assertEqual([event["type"] for event in events], ["meta", "done"])
+        self.assertIn("Not found", events[-1]["answer"])
+
+    def test_pdf_parse_cache_reuses_unchanged_files(self) -> None:
+        from langchain_core.documents import Document
+        main._parse_pdf.cache_clear()
+        pdf = Path(self.tmp.name) / "paper.pdf"
+        pdf.write_bytes(b"%PDF-1.4 test")
+        with patch("main.PyPDFLoader") as loader:
+            loader.return_value.load.return_value = [Document(page_content="x", metadata={"page": 0})]
+            first = main.load_pdf_pages(pdf)
+            first[0].metadata["mutated"] = True  # callers must not corrupt the cache
+            second = main.load_pdf_pages(pdf)
+        self.assertEqual(loader.call_count, 1)
+        self.assertEqual(second[0].metadata["filename"], "paper.pdf")
+        self.assertNotIn("mutated", second[0].metadata)
+        main._parse_pdf.cache_clear()
+
     def test_chat_top_k_is_validated(self) -> None:
         response = self.client.post("/api/chat", json={"query": "hello", "top_k": 99})
         self.assertEqual(response.status_code, 422)
