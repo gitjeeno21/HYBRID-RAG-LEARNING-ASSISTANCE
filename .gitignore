@@ -35,3 +35,10 @@ quiz_history.json
 
 # Test cache
 .pytest_cache/
+
+# Local chat ratings and removed-PDF archive
+chat_feedback.json
+removed_pdfs/
+
+# Local tool state
+.freebuff/

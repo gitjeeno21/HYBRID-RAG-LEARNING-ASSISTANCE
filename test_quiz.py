@@ -1,14 +1,12 @@
 """Offline tests for grounded quiz generation, submission, and grading."""
 
 import json
-import os
 import unittest
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
 from langchain_core.documents import Document
-from streamlit.testing.v1 import AppTest
 
 from quiz import (
     build_grading_prompt,
@@ -23,6 +21,11 @@ class QuizGradingApiTests(unittest.TestCase):
     def setUp(self) -> None:
         from main import app
         self.client = TestClient(app)
+        # The payloads cite ML222.pdf; make the library contain it so these
+        # tests do not depend on which PDFs happen to be in data/.
+        pdfs = patch("main.list_pdf_names", return_value=["ML222.pdf"])
+        pdfs.start()
+        self.addCleanup(pdfs.stop)
 
     def _payload(self, answers, question_type="Multiple choice", count=5):
         questions = []
@@ -256,76 +259,6 @@ class QuizWorkflowTests(unittest.TestCase):
         easy_prompt = build_grading_prompt(easy_questions, ["answer"] * 5, context)
         self.assertIn("require key terms or correct reasoning", hard_prompt)
         self.assertIn("accept partial paraphrases", easy_prompt)
-
-    def test_streamlit_submission_persists_answers_and_renders_grade(self) -> None:
-        # Disable dotenv loading so this UI test cannot inspect a developer's
-        # local .env file, and replace the grade request with a fixed response.
-        os.environ["PYTHON_DOTENV_DISABLED"] = "1"
-        results = [
-            {
-                "grade": "Correct",
-                "feedback": "Supported by the retrieved passage.",
-                "correct_answer": f"Reference {index}",
-                "source": "gpt4_technical_report.pdf, p. 1",
-            }
-            for index in range(1, 6)
-        ]
-        state = {
-            "attempt_id": "mocked-ui-attempt",
-            "pdf": "gpt4_technical_report.pdf",
-            "topic": "",
-            "questions": self.questions,
-            "answers": [""] * 5,
-            "grade": None,
-            "context": (
-                "Source: gpt4_technical_report.pdf, p. 1\n"
-                "The retrieved context supports these answers."
-            ),
-            "chunks": [
-                {
-                    "citation": "gpt4_technical_report.pdf, p. 1",
-                    "text": "The retrieved context supports these answers.",
-                }
-            ],
-        }
-        prompts: list[str] = []
-
-        def mock_call(prompt: str, injected_ask: object, label: str) -> str:
-            self.assertIsNone(injected_ask)
-            self.assertEqual(label, "quiz_grade")
-            prompts.append(prompt)
-            return json.dumps({"results": results})
-
-        with patch("quiz._call_llm", side_effect=mock_call):
-            app = AppTest.from_file("app.py", default_timeout=30)
-            app.session_state["quiz_mode"] = True
-            app.session_state["quiz_state"] = state
-            app.run()
-            self.assertFalse(app.exception, [str(error) for error in app.exception])
-            self.assertEqual(len(app.text_area), 5)
-
-            for index, widget in enumerate(app.text_area, start=1):
-                widget.set_value(f"User response {index}")
-            submit = next(
-                button
-                for button in app.button
-                if button.label == "Submit answers for grading"
-            )
-            submit.click().run()
-
-        self.assertFalse(app.exception, [str(error) for error in app.exception])
-        self.assertEqual(len(prompts), 1)
-        self.assertIn("ONLY the retrieved source context", prompts[0])
-        self.assertIn("The retrieved context supports these answers.", prompts[0])
-        persisted = app.session_state["quiz_state"]
-        self.assertEqual(
-            persisted["answers"],
-            [f"User response {index}" for index in range(1, 6)],
-        )
-        self.assertEqual(persisted["grade"]["score"], 5.0)
-        self.assertTrue(
-            any("Final score: 5/5" in item.value for item in app.subheader)
-        )
 
 
 if __name__ == "__main__":

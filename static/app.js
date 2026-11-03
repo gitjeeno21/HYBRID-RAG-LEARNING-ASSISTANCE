@@ -1,26 +1,58 @@
-const state = { questions: [], pdf: "", topic: "", settings: {}, context: [], chatHistory: [] };
+"use strict";
+
+/* ==========================================================================
+   State and small helpers
+   ========================================================================== */
+const state = {
+  mode: "chat",
+  papers: [],            // [{filename, pages, chunks, indexed, size_kb}]
+  scope: new Set(),      // chat paper scope; empty = all papers
+  turns: [],             // [{id, query, status: "loading"|"done"|"error", data, error, feedback}]
+  busy: false,
+  quiz: null,            // active quiz, see generateQuiz()
+  settings: { topK: null, maxTopK: 10, showContext: false, theme: "system" },
+};
+
+const $ = (selector, root = document) => root.querySelector(selector);
+const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+const icon = name => `<svg class="icon" aria-hidden="true"><use href="#i-${name}"/></svg>`;
 
 const escapeHtml = (value) => String(value ?? "")
   .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
   .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
 
-async function api(path, options = {}) {
+const store = {
+  get(key, fallback = null) {
+    try { const value = localStorage.getItem(key); return value === null ? fallback : value; } catch (_) { return fallback; }
+  },
+  set(key, value) { try { localStorage.setItem(key, value); } catch (_) {} },
+  session(key, value) {
+    try {
+      if (value === undefined) return JSON.parse(sessionStorage.getItem(key) || "null");
+      sessionStorage.setItem(key, JSON.stringify(value));
+    } catch (_) { return null; }
+  },
+};
+
+async function api(path, { method = "GET", json, body } = {}) {
+  const options = { method };
+  if (json !== undefined) {
+    options.headers = { "Content-Type": "application/json" };
+    options.body = JSON.stringify(json);
+  } else if (body) {
+    options.body = body;
+  }
   let response;
   try {
     response = await fetch(path, options);
   } catch (_) {
-    showAppError("Network connection failed. Check that the app server is running.", () => location.reload());
-    throw new Error("Network connection failed");
+    throw new Error("Network connection failed. Check that the app server is running.");
   }
   const data = await response.json().catch(() => ({}));
-  if (response.status === 429) {
-    showAppError("AI service rate limit or quota reached. Wait a moment and retry.", () => location.reload());
-  } else if (response.status === 503) {
-    showAppError("GROQ_API_KEY is missing or invalid. Add it to the .env file.", () => location.reload());
-  } else if (!response.ok && /no pdf|empty|no passages/i.test(data.detail || "")) {
-    showAppError("The index has no matching passages. Add or re-index a PDF.", () => loadPdfs());
+  if (!response.ok) {
+    if (response.status === 503 || response.status === 429) refreshHealth();
+    throw new Error(formatApiError(data.detail || data.message || data, `Request failed (${response.status})`));
   }
-  if (!response.ok) throw new Error(formatApiError(data.detail || data.message || data, "Request failed"));
   return data;
 }
 
@@ -38,591 +70,1096 @@ function formatApiError(error, fallback = "Request failed") {
   return typeof error === "string" && error.trim() ? error : fallback;
 }
 
-let appRetryAction = null;
-function showAppError(message, retryAction = null) {
-  document.getElementById("app-error-message").textContent = message;
-  document.getElementById("app-error").classList.remove("hidden");
-  appRetryAction = retryAction;
+function toast(message, type = "info", action = null) {
+  const element = document.createElement("div");
+  element.className = "toast";
+  element.setAttribute("role", type === "error" ? "alert" : "status");
+  const dot = { success: "ok", error: "bad", warn: "warn" }[type] || "";
+  element.innerHTML = `<span class="dot ${dot}"></span><span>${escapeHtml(message)}</span>`;
+  if (action) {
+    const button = document.createElement("button");
+    button.className = "btn btn-sm";
+    button.textContent = action.label;
+    button.addEventListener("click", () => { element.remove(); action.run(); });
+    element.append(button);
+  }
+  $("#toasts").append(element);
+  setTimeout(() => element.remove(), type === "error" ? 6500 : 3500);
 }
-document.getElementById("app-error-retry").addEventListener("click", () => {
-  document.getElementById("app-error").classList.add("hidden");
-  if (appRetryAction) appRetryAction();
-});
 
-function downloadText(filename, content, type) {
+function downloadText(filename, content, type = "text/markdown") {
   const url = URL.createObjectURL(new Blob([content], { type }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
+  const link = Object.assign(document.createElement("a"), { href: url, download: filename });
+  document.body.append(link);
   link.click();
-  URL.revokeObjectURL(url);
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-function toast(message) {
-  const element = document.getElementById("toast");
-  element.textContent = message;
-  element.classList.remove("hidden");
-  setTimeout(() => element.classList.add("hidden"), 3000);
-}
-
-async function loadPdfs() {
-  const { papers } = await api("/api/library");
-  const pdfs = papers.map(paper => paper.filename);
-  document.getElementById("pdf-list").innerHTML = papers.length
-    ? papers.map(paper => `
-      <div class="group rounded-lg border border-transparent px-2 py-2 text-zinc-400 transition hover:border-white/[.07] hover:bg-white/[.025]" data-paper="${escapeHtml(paper.filename)}">
-        <button type="button" class="library-select w-full text-left">
-          <div class="flex items-center gap-2"><span class="h-1.5 w-1.5 rounded-full ${paper.indexed ? "bg-emerald-400" : "bg-amber-400"}"></span><span class="truncate text-zinc-300">${escapeHtml(paper.filename)}</span></div>
-          <div class="mt-1 text-[11px] text-zinc-600">${paper.pages} pages · ${paper.chunks} chunks · ${paper.indexed ? "Indexed" : "Pending"}</div>
-        </button>
-        <details class="relative mt-1"><summary class="cursor-pointer text-right text-xs text-zinc-500">⋮</summary>
-          <div class="absolute right-0 z-20 w-28 rounded-lg border border-white/10 bg-zinc-950 p-1 text-xs">
-            <button type="button" class="library-preview block w-full rounded px-2 py-1.5 text-left hover:bg-white/[.05]">Preview</button>
-            <button type="button" class="library-rename block w-full rounded px-2 py-1.5 text-left hover:bg-white/[.05]">Rename</button>
-            <button type="button" class="library-delete block w-full rounded px-2 py-1.5 text-left text-red-300 hover:bg-white/[.05]">Delete</button>
-          </div>
-        </details>
-      </div>`).join("")
-    : '<div class="text-zinc-600">No PDFs indexed</div>';
-  document.getElementById("paper-count").textContent = pdfs.length;
-  wireLibraryActions();
-  ["quiz-pdf", "compare-pdf-one", "compare-pdf-two"].forEach(id => {
-    const select = document.getElementById(id);
-    select.innerHTML = pdfs.map(pdf => `<option value="${escapeHtml(pdf)}">${escapeHtml(pdf)}</option>`).join("");
-  });
-  const chatPapers = document.getElementById("chat-papers");
-  chatPapers.innerHTML = pdfs.map(pdf => `<option value="${escapeHtml(pdf)}">${escapeHtml(pdf)}</option>`).join("");
-  renderChatEmpty();
-  configureComparePapers(pdfs);
-}
-
-function showLibraryDialog(html) {
-  document.getElementById("library-dialog-content").innerHTML = html;
-  document.getElementById("library-dialog").showModal();
-}
-
-function wireLibraryActions() {
-  document.querySelectorAll("#pdf-list [data-paper]").forEach(row => {
-    const filename = row.dataset.paper;
-    row.querySelector(".library-select").addEventListener("click", () => {
-      state.pdf = filename;
-      const quizPdf = document.getElementById("quiz-pdf");
-      quizPdf.value = filename;
-      [...document.getElementById("chat-papers").options].forEach(option => {
-        option.selected = option.value === filename;
-      });
-      toast(`${filename} selected for Chat and Quiz`);
-    });
-    row.querySelector(".library-preview").addEventListener("click", async () => {
-      const data = await api(`/api/library/${encodeURIComponent(filename)}/preview`);
-      showLibraryDialog(`<h3 class="text-lg font-semibold">${escapeHtml(filename)}</h3>
-        <p class="mt-1 text-sm text-zinc-500">${data.pages} pages · ${escapeHtml(JSON.stringify(data.metadata))}</p>
-        <pre class="mt-4 max-h-72 overflow-auto whitespace-pre-wrap rounded-xl bg-black/30 p-4 text-sm text-zinc-300">${escapeHtml(data.preview)}</pre>
-        <button type="button" id="ask-library-paper" class="primary-button mt-4 rounded-xl px-4 py-2 text-sm text-white">Ask about this paper</button>`);
-      document.getElementById("ask-library-paper").addEventListener("click", () => {
-        document.getElementById("library-dialog").close();
-        document.querySelector('[data-mode="chat"]').click();
-        document.getElementById("chat-input").focus();
-      });
-    });
-    row.querySelector(".library-rename").addEventListener("click", async () => {
-      const current = filename.replace(/\.pdf$/i, "");
-      const next = prompt("New PDF name", current);
-      if (!next || next.trim() === current) return;
-      try {
-        await api("/api/library/rename", {
-          method: "POST", headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({ filename, new_filename: next.trim() })
-        });
-        toast("Paper renamed and re-indexed");
-        await loadPdfs();
-      } catch (error) { toast(error.message); }
-    });
-    row.querySelector(".library-delete").addEventListener("click", async () => {
-      if (!confirm(`Delete "${filename}" and remove its indexed chunks?`)) return;
-      try {
-        await api(`/api/library/${encodeURIComponent(filename)}`, { method: "DELETE" });
-        toast("Paper deleted");
-        await loadPdfs();
-      } catch (error) { toast(error.message); }
-    });
-  });
-}
-
-async function renderChatEmpty() {
-  const container = document.getElementById("chat-messages");
-  if (state.chatHistory.length) return;
-  let starters = [
-    "Summarize the main contribution of each paper.",
-    "How do the methods differ?",
-    "What limitations are reported?",
-    "What datasets and metrics are used?",
-  ];
-  try {
-    starters = (await api("/api/chat/starters")).starters || starters;
-  } catch (_) {}
-  container.innerHTML = `
-    <div class="flex min-h-[55vh] flex-col items-center justify-center text-center">
-      <h2 class="max-w-2xl text-2xl font-semibold text-white sm:text-3xl">Hybrid RAG for Evidence-Grounded Knowledge Discovery &amp; Learning</h2>
-      <p class="mt-3 text-sm text-zinc-400">Explore your research library with answers grounded in retrieved passages.</p>
-      <div class="mt-7 flex max-w-2xl flex-wrap justify-center gap-2">
-        ${starters.map(starter => `<button type="button" class="starter-chip rounded-full border border-white/10 bg-white/[.025] px-3 py-2 text-xs text-zinc-300 hover:bg-white/[.06]">${escapeHtml(starter)}</button>`).join("")}
-      </div>
-    </div>`;
-  container.querySelectorAll(".starter-chip").forEach(chip => chip.addEventListener("click", () => {
-    document.getElementById("chat-input").value = chip.textContent.trim();
-    document.getElementById("chat-input").focus();
-  }));
-}
-
-function configureComparePapers(pdfs) {
-  const first = document.getElementById("compare-pdf-one");
-  const second = document.getElementById("compare-pdf-two");
-  const warning = document.getElementById("compare-library-warning");
-  if (pdfs.length < 2) {
-    warning.classList.remove("hidden");
-    first.disabled = true;
-    second.disabled = true;
-    document.getElementById("compare-button").disabled = true;
-    return;
+function setBusy(button, busy, label) {
+  if (!button) return;
+  if (busy) {
+    button.dataset.label = button.innerHTML;
+    button.innerHTML = `<span class="spinner"></span><span>${escapeHtml(label)}</span>`;
+    button.disabled = true;
+  } else {
+    if (button.dataset.label) button.innerHTML = button.dataset.label;
+    button.disabled = false;
   }
-  warning.classList.add("hidden");
-  first.disabled = false;
-  second.disabled = false;
-  const options = [...second.options];
-  options.forEach(option => { option.disabled = option.value === first.value; });
-  if (!second.value || second.value === first.value) {
-    second.value = pdfs.find(pdf => pdf !== first.value) || "";
-  }
-  updateCompareButton();
 }
 
-function updateCompareButton() {
-  const first = document.getElementById("compare-pdf-one").value;
-  const second = document.getElementById("compare-pdf-two").value;
-  const valid = first && second && first !== second;
-  document.getElementById("compare-button").disabled = !valid;
+function relativeDate(iso) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  const minutes = Math.round((Date.now() - date.getTime()) / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes < 60 * 24) return `${Math.round(minutes / 60)} h ago`;
+  return date.toLocaleDateString();
 }
 
-document.getElementById("compare-pdf-one").addEventListener("change", () => configureComparePapers(
-  [...document.getElementById("compare-pdf-one").options].map(option => option.value)
-));
-document.getElementById("compare-pdf-two").addEventListener("change", updateCompareButton);
+const paperTitle = filename => filename.replace(/\.pdf$/i, "");
 
-document.querySelectorAll(".compare-chip").forEach(chip => chip.addEventListener("click", () => {
-  document.getElementById("compare-question").value = chip.textContent.trim();
+/* ---------- Dialog helpers ---------- */
+function openDialog(id) { const dialog = document.getElementById(id); if (!dialog.open) dialog.showModal(); return dialog; }
+document.addEventListener("click", event => {
+  const close = event.target.closest("[data-close]");
+  if (close) close.closest("dialog")?.close();
+});
+$$("dialog").forEach(dialog => dialog.addEventListener("click", event => {
+  if (event.target === dialog) dialog.close(); // click on backdrop
 }));
-document.getElementById("compare-add-pdf").addEventListener("click", () => document.getElementById("pdf-upload").click());
 
-document.querySelectorAll("[data-mode]").forEach(button => {
-  button.addEventListener("click", () => {
-    document.querySelectorAll("[data-mode]").forEach(item => item.classList.toggle("active", item === button));
-    ["chat", "quiz", "compare"].forEach(mode => {
-      document.getElementById(`${mode}-panel`).classList.toggle("hidden", mode !== button.dataset.mode);
-    });
-    const copy = {
-      chat: ["Evidence-grounded chat", "Ask questions across your research library."],
-      quiz: ["Study quiz", "Generate and grade questions from one selected paper."],
-      compare: ["Paper comparison", "Compare two papers using isolated evidence."]
-    }[button.dataset.mode];
-    document.getElementById("mode-title").textContent = copy[0];
-    document.getElementById("mode-description").textContent = copy[1];
+function confirmDialog({ title, message, okLabel = "OK", danger = false, input = null }) {
+  const dialog = $("#confirm-dialog");
+  $("#confirm-title").textContent = title;
+  $("#confirm-message").textContent = message;
+  const ok = $("#confirm-ok");
+  ok.textContent = okLabel;
+  ok.className = `btn ${danger ? "btn-danger" : "btn-primary"}`;
+  const field = $("#confirm-input");
+  field.classList.toggle("hidden", input === null);
+  field.value = input ?? "";
+  dialog.returnValue = "";
+  dialog.showModal();
+  if (input !== null) { field.focus(); field.select(); }
+  field.onkeydown = event => { if (event.key === "Enter") { event.preventDefault(); dialog.close("ok"); } };
+  return new Promise(resolve => {
+    dialog.addEventListener("close", () => {
+      const confirmed = dialog.returnValue === "ok";
+      resolve(input === null ? confirmed : (confirmed ? field.value.trim() : null));
+    }, { once: true });
   });
-});
-
-document.getElementById("chat-form").addEventListener("submit", async event => {
-  event.preventDefault();
-  const input = document.getElementById("chat-input");
-  const query = input.value.trim();
-  if (!query) return;
-  const container = document.getElementById("chat-messages");
-  if (!state.chatHistory.length) container.innerHTML = "";
-  container.insertAdjacentHTML("beforeend", `<div class="flex justify-end"><div class="max-w-xl rounded-2xl border border-indigo-400/20 bg-indigo-500/[.16] px-4 py-3 text-zinc-100 shadow-lg shadow-indigo-950/20">${escapeHtml(query)}</div></div>`);
-  container.insertAdjacentHTML("beforeend", '<div id="chat-loading" class="glass mr-auto max-w-3xl animate-pulse rounded-2xl px-5 py-4 text-sm text-zinc-500">Searching retrieved passages...</div>');
-  input.value = "";
-  const papers = [...document.getElementById("chat-papers").selectedOptions].map(option => option.value);
-  try {
-    const data = await api("/api/chat", {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ query, papers, history: state.chatHistory.slice(-6) })
-    });
-    document.getElementById("chat-loading")?.remove();
-    const trust = data.trust || {};
-    const colors = { High: "border-emerald-400/15 bg-emerald-400/[.08] text-emerald-300", Medium: "border-amber-400/15 bg-amber-400/[.08] text-amber-300", Low: "border-red-400/15 bg-red-400/[.08] text-red-300", "n/a": "border-white/[.08] bg-white/[.03] text-zinc-400" };
-    const citations = [...new Map(data.citations.map(item => [item.citation, item])).values()]
-      .map(item => `<button type="button" data-citation="${escapeHtml(item.citation)}" class="citation citation-button mr-1 rounded-md px-2 py-1 text-xs">${escapeHtml(item.citation)}</button>`).join("");
-    const passagePanel = (data.context || []).map(item => `
-      <details data-passage="${escapeHtml(item.citation)}" class="hidden mt-3 rounded-xl border border-white/[.08] bg-black/20 p-3">
-        <summary class="cursor-pointer text-xs text-zinc-300">${escapeHtml(item.citation)}</summary>
-        <p class="mt-2 text-sm text-zinc-400">${escapeHtml(item.text)}</p>
-      </details>`).join("");
-    container.insertAdjacentHTML("beforeend",
-      `<div class="glass mr-auto max-w-3xl rounded-2xl px-5 py-4 text-zinc-200">
-        <div class="whitespace-pre-wrap">${escapeHtml(data.answer)}</div>
-        <div class="mt-4 flex flex-wrap items-center gap-2">${citations}
-          <span title="Heuristic based on retrieval similarity and a support check, not a guarantee of correctness." class="${colors[trust.label] || colors["n/a"]} rounded-full border px-3 py-1 text-xs font-semibold">Trust: ${escapeHtml(trust.label || "n/a")}</span>
-        </div>
-        ${passagePanel}
-        <div class="mt-4 flex gap-2 text-xs text-zinc-500">
-          <button type="button" class="chat-copy hover:text-zinc-200">Copy</button>
-          <button type="button" class="chat-regenerate hover:text-zinc-200">Regenerate</button>
-          <button type="button" class="chat-feedback hover:text-zinc-200" data-value="up">👍</button>
-          <button type="button" class="chat-feedback hover:text-zinc-200" data-value="down">👎</button>
-        </div>
-      </div>`);
-    const answerElement = container.lastElementChild;
-    answerElement.querySelectorAll(".citation-button").forEach(button => button.addEventListener("click", () => {
-      const passage = [...answerElement.querySelectorAll("[data-passage]")]
-        .find(details => details.dataset.passage === button.dataset.citation);
-      if (passage) { passage.classList.remove("hidden"); passage.open = true; }
-    }));
-    answerElement.querySelector(".chat-copy").addEventListener("click", () => navigator.clipboard.writeText(data.answer));
-    answerElement.querySelector(".chat-regenerate").addEventListener("click", () => {
-      document.getElementById("chat-input").value = query;
-      document.getElementById("chat-form").requestSubmit();
-    });
-    answerElement.querySelectorAll(".chat-feedback").forEach(button => button.addEventListener("click", async () => {
-      await api("/api/chat/feedback", {
-        method: "POST", headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({ query, message: data.answer, feedback: button.dataset.value })
-      }).catch(error => toast(error.message));
-      toast("Feedback saved");
-    }));
-    state.chatHistory.push({ role: "user", content: query }, { role: "assistant", content: data.answer });
-  } catch (error) {
-    document.getElementById("chat-loading")?.remove();
-    toast(error.message);
-  }
-});
-
-document.getElementById("clear-chat").addEventListener("click", () => {
-  state.chatHistory = [];
-  renderChatEmpty();
-});
-
-function renderQuizHistory() {
-  const history = JSON.parse(sessionStorage.getItem("quizHistory") || "[]");
-  document.getElementById("quiz-history").innerHTML = history.length
-    ? history.slice(0, 5).map(item => `
-      <div class="flex justify-between gap-3 rounded-lg border border-white/[.06] px-3 py-2">
-        <span>${escapeHtml(item.pdf)}</span><span>${escapeHtml(item.difficulty)} · ${item.score}%</span>
-        <span class="text-zinc-600">${escapeHtml(item.date)}</span>
-      </div>`).join("")
-    : "No attempts yet.";
 }
 
-async function generateQuiz(questionsToRetry = null) {
-  state.pdf = document.getElementById("quiz-pdf").value;
-  state.topic = document.getElementById("quiz-topic").value.trim();
-  state.settings = {
-    difficulty: document.getElementById("quiz-difficulty").value,
-    question_count: Number(document.getElementById("quiz-count").value),
-    question_type: document.getElementById("quiz-type").value,
-    page_range: document.getElementById("quiz-pages").value.trim() || null
+/* ==========================================================================
+   Markdown (small, safe: everything is escaped before formatting)
+   ========================================================================== */
+function inlineMarkdown(text) {
+  return text
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*\w])\*([^*\n]+)\*(?!\w)/g, "$1<em>$2</em>")
+    // Citations appear as "(a.pdf, p. 1; p. 4)" or with full-width 【】 brackets.
+    .replace(/[(【]([^()【】]*?\.pdf,\s*p\.[^()【】]*?)[)】]/gi, (_, inner) => citeButtons(inner));
+}
+
+function citeButtons(inner) {
+  let lastFile = "";
+  return inner.split(/\s*;\s*/).filter(Boolean).map(part => {
+    let label = part.trim();
+    const file = label.match(/^(.*?\.pdf),/i);
+    if (file) lastFile = file[1];
+    else if (/^p+\.\s*/i.test(label) && lastFile) label = `${lastFile}, ${label}`;
+    return `<button type="button" class="cite" data-cite="${label}">${label}</button>`;
+  }).join("");
+}
+
+function renderMarkdown(source) {
+  const lines = escapeHtml(source || "").replace(/\r\n/g, "\n").split("\n");
+  const html = [];
+  let list = null;
+  let paragraph = [];
+  let code = null;
+  const flushParagraph = () => {
+    if (paragraph.length) html.push(`<p>${inlineMarkdown(paragraph.join("<br>"))}</p>`);
+    paragraph = [];
   };
-  if (!state.pdf) return toast("Select a PDF.");
-  const button = document.getElementById("generate-quiz");
-  button.disabled = true;
-  button.textContent = "Generating...";
-  document.getElementById("quiz-form").classList.add("hidden");
+  const closeList = () => { if (list) { html.push(`</${list}>`); list = null; } };
+  for (const line of lines) {
+    if (code !== null) {
+      if (/^```/.test(line)) { html.push(`<pre><code>${code.join("\n")}</code></pre>`); code = null; }
+      else code.push(line);
+      continue;
+    }
+    if (/^```/.test(line)) { flushParagraph(); closeList(); code = []; continue; }
+    const heading = line.match(/^#{1,6}\s+(.*)$/);
+    const bullet = line.match(/^\s*[-*•]\s+(.*)$/);
+    const numbered = line.match(/^\s*\d+[.)]\s+(.*)$/);
+    if (heading) { flushParagraph(); closeList(); html.push(`<h4>${inlineMarkdown(heading[1])}</h4>`); }
+    else if (bullet || numbered) {
+      flushParagraph();
+      const type = bullet ? "ul" : "ol";
+      if (list !== type) { closeList(); html.push(`<${type}>`); list = type; }
+      html.push(`<li>${inlineMarkdown((bullet || numbered)[1])}</li>`);
+    } else if (!line.trim()) { flushParagraph(); closeList(); }
+    else { closeList(); paragraph.push(line); }
+  }
+  if (code !== null) html.push(`<pre><code>${code.join("\n")}</code></pre>`);
+  flushParagraph();
+  closeList();
+  return html.join("");
+}
+
+/** Drop the model's trailing "Sources: ..." line; sources are shown as cards. */
+function stripSourcesLine(answer) {
+  return String(answer || "").replace(/\n*\s*\**Sources?\**:\s*[^\n]*\s*$/i, "").trim();
+}
+
+/* ==========================================================================
+   Health / status
+   ========================================================================== */
+async function refreshHealth() {
   try {
-    const quiz = await api("/api/quiz/generate", {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ pdf: state.pdf, topic: state.topic, ...state.settings })
-    });
-    state.questions = quiz.questions || [];
-    state.context = quiz.context || [];
-    if (!quiz.covered) return toast("The retrieved passages do not cover this topic.");
-    const form = document.getElementById("quiz-form");
-    form.innerHTML = state.questions.map((question, index) => `
-      <div class="glass rounded-2xl p-5">
-        <div class="mb-2 font-medium">${index + 1}. ${escapeHtml(question.question)}</div>
-        <span class="mr-1 rounded-full border border-white/10 px-2 py-0.5 text-xs text-cyan-300">${escapeHtml(question.difficulty || state.settings.difficulty)}</span>
-        <span class="citation rounded-md px-2 py-1 text-xs">${escapeHtml(question.source)}</span>
-        ${question.options && Array.isArray(question.options)
-          ? `<fieldset class="mt-3 space-y-2" data-answer-group="${index}">${question.options.map(option => `
-              <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-white/[.08] bg-black/20 px-3 py-2.5 text-sm text-zinc-300 transition hover:border-cyan-400/30">
-                <input type="radio" name="quiz-answer-${index}" data-answer="${index}" value="${escapeHtml(option)}" class="mt-1 accent-cyan-400">
-                <span class="min-w-0 break-words">${escapeHtml(option)}</span>
-              </label>`).join("")}</fieldset>`
-          : `<textarea data-answer="${index}" rows="2" class="field mt-3 w-full rounded-xl p-3" aria-label="Answer for question ${index + 1}"></textarea>`}
-      </div>`).join("") + `<button class="primary-button rounded-xl px-4 py-2 text-white">Grade answers</button>`;
-    form.classList.remove("hidden");
-    document.getElementById("quiz-results").classList.add("hidden");
-  } catch (error) { toast(error.message); }
-  finally {
-    button.disabled = false;
-    button.textContent = `Generate ${state.settings.question_count || 5} questions`;
+    const health = await api("/api/health");
+    const indexDot = $("#index-dot");
+    const llmDot = $("#llm-dot");
+    if (health.index_error) {
+      indexDot.className = "dot bad";
+      $("#index-status").textContent = "Index out of sync. Run python ingest.py";
+      $("#index-status").title = health.index_error;
+    } else if (!health.papers) {
+      indexDot.className = "dot warn";
+      $("#index-status").textContent = "No papers yet";
+    } else {
+      indexDot.className = "dot ok";
+      $("#index-status").textContent = `Index ready · ${health.chunks} passages`;
+    }
+    llmDot.className = `dot ${health.llm_configured ? "ok" : "warn"}`;
+    $("#llm-status").textContent = health.llm_configured ? "AI service configured" : "GROQ_API_KEY missing in .env";
+  } catch (_) {
+    $("#index-dot").className = "dot bad";
+    $("#index-status").textContent = "Server unreachable";
+    $("#llm-dot").className = "dot";
+    $("#llm-status").textContent = "";
   }
 }
 
-document.getElementById("generate-quiz").addEventListener("click", () => generateQuiz());
-
-document.getElementById("quiz-form").addEventListener("submit", async event => {
-  event.preventDefault();
-  const answers = state.questions.map((_, index) => {
-    const selected = document.querySelector(`input[data-answer="${index}"]:checked`);
-    if (selected) return selected.value;
-    const text = document.querySelector(`textarea[data-answer="${index}"]`);
-    return text ? text.value.trim() : "";
-  });
-  const unanswered = answers.map((answer, index) => answer ? null : index).filter(index => index !== null);
-  if (unanswered.length) {
-    unanswered.forEach(index => {
-      const card = document.querySelector(`[data-answer-group="${index}"]`)?.closest(".glass")
-        || document.querySelector(`textarea[data-answer="${index}"]`)?.closest(".glass");
-      card?.classList.add("ring-2", "ring-amber-400/60");
-    });
-    toast(`Please answer all questions before grading (${unanswered.length} unanswered)`);
+/* ==========================================================================
+   Library
+   ========================================================================== */
+async function loadLibrary() {
+  try {
+    const { papers } = await api("/api/library");
+    state.papers = papers;
+  } catch (error) {
+    $("#pdf-list").innerHTML = `<div class="notice notice-error">${escapeHtml(error.message)}</div>`;
     return;
   }
-  try {
-    const result = await api("/api/quiz/grade", {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        pdf: state.pdf, topic: state.topic, questions: state.questions, answers,
-        page_range: state.settings.page_range
-      })
-    });
-    const percentage = Math.round((result.score / result.maximum) * 100);
-    const suggestion = percentage >= 80 ? "You are doing well—try Hard next." : percentage < 40 ? "Try an easier level to build the foundations." : "Medium is a good fit for your current level.";
-    state.lastMissed = state.questions.filter((_, index) => result.results[index].grade !== "Correct");
-    const results = document.getElementById("quiz-results");
-    results.innerHTML = `
-      <div class="glass rounded-2xl p-5">
-        <div class="text-2xl font-semibold text-white">${result.score} / ${result.maximum} <span class="text-sm text-zinc-400">(${percentage}%)</span></div>
-        <div class="mt-2 text-sm text-cyan-300">${escapeHtml(suggestion)}</div>
-      </div>
-      ${result.results.map((item, i) => `
-        <div class="glass rounded-2xl p-5">
-          <div><b>${i + 1}. ${escapeHtml(item.grade)}</b> — ${escapeHtml(item.feedback)}</div>
-          <div class="mt-2 text-sm text-zinc-400">Correct answer: ${escapeHtml(item.correct_answer)}</div>
-          <span class="citation mt-2 inline-block rounded-md px-2 py-1 text-xs">${escapeHtml(item.source)}</span>
-          <details class="mt-3 text-sm text-zinc-400"><summary class="cursor-pointer text-zinc-300">Show source passage</summary>
-            <div class="mt-2 rounded-xl border border-white/[.06] bg-black/20 p-3">${escapeHtml((state.context.find(source => source.citation === item.source) || {}).text || "Source passage unavailable.")}</div>
-          </details>
-        </div>`).join("")}
-      <div class="flex flex-wrap gap-3">
-        <button type="button" id="retry-missed" class="primary-button rounded-xl px-4 py-2 text-sm text-white">Retry only missed questions</button>
-        <button type="button" id="new-same" class="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300">New quiz, same settings</button>
-      </div>`;
-    results.classList.remove("hidden");
-    document.getElementById("retry-missed").addEventListener("click", () => {
-      if (!state.lastMissed.length) return toast("Nothing missed—great work!");
-      state.questions = state.lastMissed;
-      generateQuiz(state.lastMissed);
-    });
-    document.getElementById("new-same").addEventListener("click", () => generateQuiz());
-    const history = JSON.parse(sessionStorage.getItem("quizHistory") || "[]");
-    history.unshift({ pdf: state.pdf, difficulty: state.settings.difficulty, score: percentage, date: new Date().toLocaleDateString() });
-    sessionStorage.setItem("quizHistory", JSON.stringify(history.slice(0, 20)));
-    renderQuizHistory();
-    api("/api/progress/quiz", {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        pdf: state.pdf,
-        difficulty: state.settings.difficulty,
-        score: percentage,
-        topics: state.topic ? [state.topic] : []
-      })
-    }).catch(() => {});
-  } catch (error) { toast(error.message); }
+  const names = state.papers.map(paper => paper.filename);
+  state.scope = new Set([...state.scope].filter(name => names.includes(name)));
+  renderLibrary();
+  renderScope();
+  fillPaperSelects();
+  if (!state.turns.length) renderChatEmpty();
+}
+
+function renderLibrary() {
+  $("#paper-count").textContent = state.papers.length;
+  $("#pdf-list").innerHTML = state.papers.length
+    ? state.papers.map(paper => `
+      <div class="paper" data-paper="${escapeHtml(paper.filename)}">
+        <div class="paper-icon">PDF</div>
+        <div class="paper-body">
+          <div class="paper-name" title="${escapeHtml(paper.filename)}">${escapeHtml(paperTitle(paper.filename))}</div>
+          <div class="paper-meta">${paper.pages} pages · ${paper.chunks} passages${paper.indexed ? "" : " · not indexed"}</div>
+        </div>
+        <button type="button" class="icon-btn paper-menu" aria-label="Actions for ${escapeHtml(paper.filename)}" aria-expanded="false">${icon("dots")}</button>
+      </div>`).join("")
+    : '<div class="empty-library">No papers yet.<br>Add a PDF to get started.</div>';
+}
+
+function closeMenus() {
+  $$(".menu").forEach(menu => menu.remove());
+  $$(".paper-menu[aria-expanded='true']").forEach(button => button.setAttribute("aria-expanded", "false"));
+}
+document.addEventListener("click", event => {
+  if (!event.target.closest(".menu") && !event.target.closest(".paper-menu")) closeMenus();
 });
 
-document.getElementById("compare-button").addEventListener("click", async () => {
-  const pdfs = [
-    document.getElementById("compare-pdf-one").value,
-    document.getElementById("compare-pdf-two").value
-  ];
-  const question = document.getElementById("compare-question").value.trim();
-  if (!question || pdfs[0] === pdfs[1]) return toast("Enter a question and select two different papers.");
-  const button = document.getElementById("compare-button");
-  button.disabled = true;
-  button.textContent = "Comparing...";
-  const result = document.getElementById("compare-result");
-  try {
-    const data = await api("/api/compare", {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({ pdfs, question })
-    });
-    result.classList.remove("hidden");
-    const getSection = heading => {
-      const escapedHeading = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const normalizedSummary = data.summary
-        .replace(/\*\*##/g, "##")
-        .replace(/^(##[^\n]*?)\*\*\s*$/gm, "$1");
-      const match = normalizedSummary.match(new RegExp(`##\\s*${escapedHeading}\\s*\n([\\s\\S]*?)(?=\n##\\s|$)`, "i"));
-      return match ? match[1].trim() : "";
-    };
-    const names = Object.keys(data.papers);
-    const paperA = names[0] || document.getElementById("compare-pdf-one").value;
-    const paperB = names[1] || document.getElementById("compare-pdf-two").value;
-    const paperColumn = (name, index) => `
-      <section class="glass rounded-2xl p-4">
-        <h3 class="mb-3 font-semibold text-white">Paper ${index === 0 ? "A" : "B"} · ${escapeHtml(name)}</h3>
-        <div class="whitespace-pre-wrap text-sm text-zinc-300">${escapeHtml(getSection(name) || getSection(name.replace(/\.pdf$/i, "")) || data.summary || "Not found in this paper for this question.")}</div>
-        <details class="mt-4 text-sm text-zinc-400"><summary class="cursor-pointer text-zinc-300">Retrieved context</summary>
-          <div class="mt-2 space-y-2">${data.papers[name].length
-            ? data.papers[name].map(item => `<div class="rounded-xl border border-white/[.06] bg-black/20 p-3"><span class="citation text-xs">${escapeHtml(item.citation)}</span><div class="mt-2">${escapeHtml(item.text)}</div></div>`).join("")
-            : '<div class="text-zinc-500">No passages retrieved.</div>'}</div>
-        </details>
-      </section>`;
-    const difference = getSection("Difference");
-    const similarities = getSection("Similarities");
-    result.innerHTML = `
-      <div class="grid gap-4 md:grid-cols-2">${paperColumn(paperA, 0)}${paperColumn(paperB, 1)}</div>
-      <section class="mt-5 rounded-2xl border border-white/[.08] bg-white/[.025] p-4">
-        <h3 class="font-semibold text-white">Key differences</h3><p class="mt-2 text-sm text-zinc-300">${escapeHtml(difference)}</p>
-        <h3 class="mt-4 font-semibold text-white">Similarities</h3><p class="mt-2 text-sm text-zinc-300">${escapeHtml(similarities)}</p>
-      </section>`;
-  } catch (error) {
-    const message = /429|rate/i.test(error.message)
-      ? "The AI service is rate limited. Wait a moment, then try again."
-      : /key|auth/i.test(error.message)
-        ? "The AI service key is missing or invalid. Add GROQ_API_KEY to .env."
-        : /network|failed to fetch/i.test(error.message)
-          ? "Network connection failed. Check your connection and try again."
-          : "Comparison generation failed. Please try again.";
-    result.innerHTML = `<div class="rounded-xl border border-rose-400/20 bg-rose-400/[.08] p-4 text-sm text-rose-200">${escapeHtml(message)} <button id="compare-retry" type="button" class="ml-2 font-semibold underline">Retry</button></div>`;
-    document.getElementById("compare-retry").addEventListener("click", () => document.getElementById("compare-button").click());
-  } finally {
-    button.disabled = false;
-    button.textContent = "Compare papers";
-    updateCompareButton();
+$("#pdf-list").addEventListener("click", event => {
+  const button = event.target.closest(".paper-menu");
+  if (!button) return;
+  const row = button.closest(".paper");
+  const open = button.getAttribute("aria-expanded") === "true";
+  closeMenus();
+  if (open) return;
+  button.setAttribute("aria-expanded", "true");
+  const filename = row.dataset.paper;
+  const menu = document.createElement("div");
+  menu.className = "menu";
+  menu.setAttribute("role", "menu");
+  menu.innerHTML = `
+    <button type="button" data-action="ask" role="menuitem">${icon("chat")}Ask about this paper</button>
+    <button type="button" data-action="quiz" role="menuitem">${icon("quiz")}Quiz me on it</button>
+    <button type="button" data-action="preview" role="menuitem">${icon("eye")}Preview</button>
+    <button type="button" data-action="open" role="menuitem">${icon("open")}Open PDF</button>
+    <button type="button" data-action="rename" role="menuitem">${icon("edit")}Rename</button>
+    <button type="button" data-action="delete" class="danger" role="menuitem">${icon("trash")}Delete</button>`;
+  row.append(menu);
+  menu.querySelector("button").focus();
+  menu.addEventListener("click", item => {
+    const action = item.target.closest("[data-action]")?.dataset.action;
+    if (!action) return;
+    closeMenus();
+    paperAction(action, filename);
+  });
+});
+
+function paperAction(action, filename) {
+  closeSidebar();
+  if (action === "ask") {
+    state.scope = new Set([filename]);
+    renderScope();
+    setMode("chat");
+    $("#chat-input").focus();
+  } else if (action === "quiz") {
+    $("#quiz-pdf").value = filename;
+    setMode("quiz");
+  } else if (action === "open") {
+    window.open(`/api/library/${encodeURIComponent(filename)}/file`, "_blank", "noopener");
+  } else if (action === "preview") {
+    previewPaper(filename);
+  } else if (action === "rename") {
+    renamePaper(filename);
+  } else if (action === "delete") {
+    deletePaper(filename);
   }
-});
+}
 
-document.getElementById("upload-button").addEventListener("click", () => document.getElementById("pdf-upload").click());
-document.getElementById("library-dialog-close").addEventListener("click", () => document.getElementById("library-dialog").close());
-const dropzone = document.getElementById("upload-dropzone");
-dropzone.classList.remove("hidden");
-["dragenter", "dragover"].forEach(type => dropzone.addEventListener(type, event => {
-  event.preventEventDefault?.();
-  event.preventDefault();
-  dropzone.classList.add("border-indigo-400/70");
-}));
-["dragleave", "drop"].forEach(type => dropzone.addEventListener(type, event => {
-  event.preventDefault();
-  dropzone.classList.remove("border-indigo-400/70");
-}));
-dropzone.addEventListener("drop", event => uploadPdf(event.dataTransfer.files[0]));
-document.getElementById("pdf-upload").addEventListener("change", async event => {
-  const file = event.target.files[0];
-  if (!file) return;
-  await uploadPdf(file);
+async function previewPaper(filename) {
+  $("#library-dialog-title").textContent = paperTitle(filename);
+  $("#library-dialog-content").innerHTML = '<div class="skeleton" style="height:18px;width:40%"></div><div class="skeleton" style="height:200px;margin-top:14px"></div>';
+  $("#library-dialog-foot").innerHTML = "";
+  openDialog("library-dialog");
+  try {
+    const data = await api(`/api/library/${encodeURIComponent(filename)}/preview`);
+    const meta = Object.entries(data.metadata || {})
+      .map(([key, value]) => `<span class="badge badge-neutral">${escapeHtml(key)}: ${escapeHtml(String(value).slice(0, 60))}</span>`).join(" ");
+    $("#library-dialog-content").innerHTML = `
+      <div class="row"><span class="badge badge-accent">${data.pages} pages</span>${meta}</div>
+      <div class="hint" style="margin-top:12px">First page</div>
+      <div class="preview-text">${escapeHtml(data.preview || "No extractable text on the first page.")}</div>`;
+    $("#library-dialog-foot").innerHTML = `
+      <button type="button" class="btn" data-preview="open">${icon("open")}Open PDF</button>
+      <button type="button" class="btn" data-preview="quiz">${icon("quiz")}Quiz me</button>
+      <button type="button" class="btn btn-primary" data-preview="ask">${icon("chat")}Ask about this paper</button>`;
+    $$("[data-preview]", $("#library-dialog-foot")).forEach(button => button.addEventListener("click", () => {
+      $("#library-dialog").close();
+      paperAction(button.dataset.preview, filename);
+    }));
+  } catch (error) {
+    $("#library-dialog-content").innerHTML = `<div class="notice notice-error">${escapeHtml(error.message)}</div>`;
+  }
+}
+
+async function renamePaper(filename) {
+  const next = await confirmDialog({
+    title: "Rename paper", message: "Enter a new file name. The paper is re-indexed under the new name.",
+    okLabel: "Rename", input: paperTitle(filename),
+  });
+  if (!next || next === paperTitle(filename)) return;
+  try {
+    const { filename: renamed } = await api("/api/library/rename", { method: "POST", json: { filename, new_filename: next } });
+    if (state.scope.delete(filename)) state.scope.add(renamed);
+    toast(`Renamed to ${renamed}`, "success");
+    await loadLibrary();
+  } catch (error) { toast(error.message, "error"); }
+}
+
+async function deletePaper(filename) {
+  const confirmed = await confirmDialog({
+    title: "Delete paper?", message: `"${filename}" and all of its indexed passages will be removed. This cannot be undone.`,
+    okLabel: "Delete", danger: true,
+  });
+  if (!confirmed) return;
+  try {
+    await api(`/api/library/${encodeURIComponent(filename)}`, { method: "DELETE" });
+    toast("Paper deleted", "success");
+    await loadLibrary();
+    refreshHealth();
+  } catch (error) { toast(error.message, "error"); }
+}
+
+/* ---------- Upload ---------- */
+async function uploadFiles(fileList) {
+  const files = [...fileList].filter(file => /\.pdf$/i.test(file.name) || file.type === "application/pdf");
+  if (!files.length) return toast("Only PDF files can be added.", "warn");
+  const status = $("#upload-status");
+  const button = $("#upload-button");
+  button.disabled = true;
+  status.classList.remove("hidden");
+  let added = 0;
+  for (const [index, file] of files.entries()) {
+    status.innerHTML = `Indexing <strong>${escapeHtml(file.name)}</strong>${files.length > 1 ? ` (${index + 1}/${files.length})` : ""}…
+      <div class="bar"><span></span></div>`;
+    const form = new FormData();
+    form.append("file", file);
+    try {
+      const data = await api("/api/upload", { method: "POST", body: form });
+      added += 1;
+      toast(`${data.filename}: ${data.chunks_indexed} passages indexed`, "success");
+    } catch (error) {
+      toast(`${file.name}: ${error.message}`, "error");
+    }
+  }
+  status.classList.add("hidden");
+  button.disabled = false;
+  if (added) { await loadLibrary(); refreshHealth(); }
+}
+
+$("#upload-button").addEventListener("click", () => $("#pdf-upload").click());
+$("#compare-add-pdf").addEventListener("click", () => $("#pdf-upload").click());
+$("#pdf-upload").addEventListener("change", async event => {
+  await uploadFiles(event.target.files);
   event.target.value = "";
 });
 
-async function uploadPdf(file) {
-  const form = new FormData();
-  form.append("file", file);
-  const progress = document.getElementById("upload-progress");
-  try {
-    progress.textContent = "Parsing → Chunking → Embedding → Indexed";
-    const data = await api("/api/upload", { method: "POST", body: form });
-    toast(`${data.filename}: ${data.chunks_indexed} chunks indexed`);
-    progress.textContent = "Parsing ✓ → Chunking ✓ → Embedding ✓ → Indexed ✓";
-    await loadPdfs();
-  } catch (error) { toast(error.message); }
-}
-
-document.getElementById("chat-input").addEventListener("keydown", event => {
-  if (event.key === "Enter" && !event.shiftKey) {
-    event.preventDefault();
-    document.getElementById("chat-form").requestSubmit();
-  }
+let dragDepth = 0;
+const hasFiles = event => [...(event.dataTransfer?.types || [])].includes("Files");
+window.addEventListener("dragenter", event => {
+  if (!hasFiles(event)) return;
+  event.preventDefault();
+  dragDepth += 1;
+  $("#drop-overlay").classList.remove("hidden");
 });
-document.addEventListener("keydown", event => {
-  if (event.key === "Escape") {
-    document.querySelectorAll("dialog[open]").forEach(dialog => dialog.close());
-    document.getElementById("sidebar").classList.remove("open");
-    document.getElementById("sidebar-scrim").classList.remove("open");
-  }
+window.addEventListener("dragover", event => { if (hasFiles(event)) event.preventDefault(); });
+window.addEventListener("dragleave", () => {
+  dragDepth = Math.max(0, dragDepth - 1);
+  if (!dragDepth) $("#drop-overlay").classList.add("hidden");
 });
-document.getElementById("menu-button").addEventListener("click", () => {
-  document.getElementById("sidebar").classList.add("open");
-  document.getElementById("sidebar-scrim").classList.add("open");
-});
-document.getElementById("sidebar-scrim").addEventListener("click", () => {
-  document.getElementById("sidebar").classList.remove("open");
-  document.getElementById("sidebar-scrim").classList.remove("open");
+window.addEventListener("drop", event => {
+  if (!hasFiles(event)) return;
+  event.preventDefault();
+  dragDepth = 0;
+  $("#drop-overlay").classList.add("hidden");
+  uploadFiles(event.dataTransfer.files);
 });
 
-document.getElementById("settings-button").addEventListener("click", async () => {
-  const settings = await api("/api/settings");
-  document.getElementById("setting-top-k").value = settings.top_k;
-  document.getElementById("setting-model").value = settings.model;
-  document.getElementById("setting-theme").checked = localStorage.getItem("theme") === "light";
-  document.getElementById("setting-context").checked = localStorage.getItem("showContext") === "true";
-  document.getElementById("settings-dialog").showModal();
-});
-document.getElementById("settings-close").addEventListener("click", () => {
-  localStorage.setItem("showContext", document.getElementById("setting-context").checked);
-  const light = document.getElementById("setting-theme").checked;
-  localStorage.setItem("theme", light ? "light" : "dark");
-  document.body.classList.toggle("light", light);
-  document.getElementById("settings-dialog").close();
-});
-if (localStorage.getItem("theme") === "light") document.body.classList.add("light");
-
-document.getElementById("dismiss-hint").addEventListener("click", () => {
-  localStorage.setItem("firstRunHintDismissed", "true");
-  document.getElementById("first-run-hint").classList.add("hidden");
-});
-if (localStorage.getItem("firstRunHintDismissed") === "true") {
-  document.getElementById("first-run-hint").classList.add("hidden");
-}
-
-document.getElementById("export-chat").addEventListener("click", () => {
-  const markdown = state.chatHistory.map(item =>
-    item.role === "user"     ? `## You\n${item.content}` : `## Hybrid RAG for Evidence-Grounded Knowledge Discovery & Learning\n${item.content}`
-  ).join("\n\n");
-  downloadText("chat-export.md", `# Chat export\n\n${markdown}\n`, "text/markdown");
-});
-
-document.getElementById("progress-button").addEventListener("click", async () => {
-  const progress = await api("/api/progress");
-  document.getElementById("progress-content").innerHTML = `
-    <p><strong>${progress.quizzes_taken}</strong> quizzes taken</p>
-    <h3 class="mt-4 font-semibold text-white">Average score by difficulty</h3>
-    <p>${Object.entries(progress.averages).map(([level, score]) => `${escapeHtml(level)}: ${score}%`).join("<br>") || "No completed quizzes yet."}</p>
-    <h3 class="mt-4 font-semibold text-white">Most-missed topics</h3>
-    <p>${progress.most_missed_topics.map(escapeHtml).join(", ") || "None yet."}</p>`;
-  document.getElementById("progress-dialog").showModal();
-});
-document.getElementById("progress-close").addEventListener("click", () => document.getElementById("progress-dialog").close());
-
-document.getElementById("export-quiz").addEventListener("click", () => {
-  if (!state.questions.length) return toast("Generate a quiz before exporting.");
-  const markdown = state.questions.map((question, index) =>
-    `## ${index + 1}. ${question.question}\n- Difficulty: ${question.difficulty || state.settings.difficulty}\n- Source: ${question.source}\n`
-  ).join("\n");
-  downloadText("quiz-results.md", `# Quiz\n\n${markdown}`, "text/markdown");
-});
-
-function downloadQuizPdf() {
-  if (!state.questions.length) return toast("Generate a quiz before exporting.");
-  const lines = ["Quiz results"].concat(state.questions.map((q, i) => `${i + 1}. ${q.question}`));
-  const escaped = lines.join("\n").replace(/[^\x20-\x7E]/g, "").replaceAll("\\", "\\\\").replaceAll("(", "\\(").replaceAll(")", "\\)");
-  const stream = `BT /F1 11 Tf 50 790 Td 14 TL (${escaped.replaceAll("\n", ") Tj T* (")}) Tj ET`;
-  const objects = [
-    "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj",
-    "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj",
-    "3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj",
-    "4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj",
-    `5 0 obj\n<< /Length ${stream.length} >>\nstream\n${stream}\nendstream\nendobj`,
-  ];
-  let pdf = "%PDF-1.4\n";
-  const offsets = [0];
-  objects.forEach((object, index) => {
-    offsets.push(pdf.length);
-    pdf += object + "\n";
+function fillPaperSelects() {
+  const names = state.papers.map(paper => paper.filename);
+  const options = names.map(name => `<option value="${escapeHtml(name)}">${escapeHtml(paperTitle(name))}</option>`).join("");
+  ["quiz-pdf", "compare-pdf-one", "compare-pdf-two"].forEach(id => {
+    const select = document.getElementById(id);
+    const previous = select.value;
+    select.innerHTML = options || '<option value="">No papers yet</option>';
+    if (names.includes(previous)) select.value = previous;
   });
-  const xref = pdf.length;
-  pdf += `xref\n0 6\n0000000000 65535 f \n${offsets.slice(1).map(offset => `${String(offset).padStart(10, "0")} 00000 n \n`).join("")}trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
-  downloadText("quiz-results.pdf", pdf, "application/pdf");
+  const second = $("#compare-pdf-two");
+  if (second.value === $("#compare-pdf-one").value && names.length > 1) {
+    second.value = names.find(name => name !== $("#compare-pdf-one").value);
+  }
+  $("#generate-quiz").disabled = !names.length;
+  updateCompareControls();
 }
-document.getElementById("export-quiz-pdf").addEventListener("click", downloadQuizPdf);
 
-renderQuizHistory();
-loadPdfs().catch(error => showAppError("Could not load the paper library. Check the server connection.", () => loadPdfs()));
+/* ==========================================================================
+   Modes
+   ========================================================================== */
+const MODE_COPY = {
+  chat: ["Chat", "Ask questions answered only from your papers, with citations."],
+  quiz: ["Quiz", "Test yourself with questions generated and graded from one paper."],
+  compare: ["Compare", "Compare two papers side by side, using separate evidence for each."],
+};
+
+function setMode(mode) {
+  state.mode = mode;
+  $$("[data-mode]").forEach(item => {
+    item.classList.toggle("active", item.dataset.mode === mode);
+    item.setAttribute("aria-current", item.dataset.mode === mode ? "page" : "false");
+  });
+  Object.keys(MODE_COPY).forEach(name => $(`#${name}-panel`).classList.toggle("hidden", name !== mode));
+  $("#mode-title").textContent = MODE_COPY[mode][0];
+  $("#mode-description").textContent = MODE_COPY[mode][1];
+  store.set("mode", mode);
+  closeSidebar();
+  if (mode === "quiz") loadQuizHistory();
+}
+$$("[data-mode]").forEach(button => button.addEventListener("click", () => setMode(button.dataset.mode)));
+
+function closeSidebar() {
+  $("#sidebar").classList.remove("open");
+  $("#sidebar-scrim").classList.remove("open");
+}
+$("#menu-button").addEventListener("click", () => {
+  $("#sidebar").classList.add("open");
+  $("#sidebar-scrim").classList.add("open");
+});
+$("#sidebar-scrim").addEventListener("click", closeSidebar);
+
+/* ==========================================================================
+   Chat
+   ========================================================================== */
+function renderScope() {
+  const all = !state.scope.size;
+  $("#chat-scope").innerHTML =
+    `<button type="button" class="chip" data-scope="" aria-pressed="${all}">All papers</button>` +
+    state.papers.map(paper => `<button type="button" class="chip" data-scope="${escapeHtml(paper.filename)}"
+      aria-pressed="${state.scope.has(paper.filename)}" title="${escapeHtml(paper.filename)}">${escapeHtml(paperTitle(paper.filename))}</button>`).join("");
+}
+$("#chat-scope").addEventListener("click", event => {
+  const chip = event.target.closest("[data-scope]");
+  if (!chip) return;
+  const name = chip.dataset.scope;
+  if (!name) state.scope.clear();
+  else if (state.scope.has(name)) state.scope.delete(name);
+  else state.scope.add(name);
+  renderScope();
+});
+
+async function renderChatEmpty() {
+  const container = $("#chat-messages");
+  if (state.turns.length) return;
+  if (!state.papers.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="orb">${icon("upload")}</div>
+        <h2>Add your first paper</h2>
+        <p>Upload a PDF and ask questions about it. Every answer cites the pages it came from.</p>
+        <button type="button" class="btn btn-primary" style="margin-top:20px" id="empty-upload">${icon("upload")}Add PDF</button>
+      </div>`;
+    $("#empty-upload").addEventListener("click", () => $("#pdf-upload").click());
+    return;
+  }
+  let starters = ["Summarize the main contribution of each paper.", "What limitations are discussed?"];
+  try { starters = (await api("/api/chat/starters")).starters || starters; } catch (_) {}
+  if (state.turns.length) return;
+  container.innerHTML = `
+    <div class="empty-state">
+      <div class="orb">${icon("sparkle")}</div>
+      <h2>What would you like to learn?</h2>
+      <p>Ask anything about your ${state.papers.length} paper${state.papers.length === 1 ? "" : "s"}. Answers come only from retrieved passages and include page citations.</p>
+      <div class="starters">${starters.map(starter => `<button type="button" class="starter">${escapeHtml(starter)}</button>`).join("")}</div>
+    </div>`;
+  $$(".starter", container).forEach(button => button.addEventListener("click", () => sendChat(button.textContent.trim())));
+}
+
+const historyBefore = turn => state.turns
+  .slice(0, state.turns.indexOf(turn))
+  .filter(item => item.status === "done")
+  .flatMap(item => [{ role: "user", content: item.query }, { role: "assistant", content: item.data.answer }])
+  .slice(-6);
+
+function persistChat() {
+  store.session("chatTurns", state.turns.filter(turn => turn.status === "done").slice(-30));
+  $("#export-chat").disabled = !state.turns.some(turn => turn.status === "done");
+  $("#clear-chat").disabled = !state.turns.length;
+}
+
+async function sendChat(query, existingTurn = null) {
+  query = query.trim();
+  if (!query || state.busy) return;
+  const container = $("#chat-messages");
+  if (!state.turns.length) container.innerHTML = "";
+  const turn = existingTurn || { id: crypto.randomUUID?.() || String(Date.now()), query };
+  Object.assign(turn, { status: "loading", data: null, error: null, feedback: null, papers: [...state.scope] });
+  if (!existingTurn) {
+    state.turns.push(turn);
+    container.insertAdjacentHTML("beforeend", `<div class="turn" data-turn="${turn.id}"></div>`);
+  }
+  renderTurn(turn);
+  scrollToBottom();
+  state.busy = true;
+  updateSendButton();
+  try {
+    turn.data = await api("/api/chat", {
+      method: "POST",
+      json: { query, papers: turn.papers, history: historyBefore(turn), top_k: state.settings.topK || undefined },
+    });
+    turn.status = "done";
+  } catch (error) {
+    turn.status = "error";
+    turn.error = error.message;
+  } finally {
+    state.busy = false;
+    updateSendButton();
+  }
+  renderTurn(turn);
+  persistChat();
+  scrollToBottom();
+}
+
+function scrollToBottom() {
+  requestAnimationFrame(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }));
+}
+
+function trustBadge(trust = {}) {
+  const label = trust.label || "n/a";
+  const cls = { High: "badge-high", Medium: "badge-medium", Low: "badge-low" }[label] || "badge-neutral";
+  const text = label === "n/a" ? "No answer found" : `${label} confidence`;
+  const reason = trust.reason ? `${trust.reason}. ` : "";
+  return `<span class="badge ${cls}" title="${escapeHtml(reason)}A heuristic from retrieval similarity and a support check, not a guarantee.">${escapeHtml(text)}</span>`;
+}
+
+function renderTurn(turn) {
+  const wrapper = $(`[data-turn="${turn.id}"]`);
+  if (!wrapper) return;
+  const user = `<div class="msg-user">${escapeHtml(turn.query)}</div>`;
+  let bot;
+  if (turn.status === "loading") {
+    bot = `<div class="typing" aria-label="Searching papers"><span></span><span></span><span></span></div>
+      <div class="typing-label">Searching your papers and writing a grounded answer…</div>`;
+  } else if (turn.status === "error") {
+    bot = `<div class="notice notice-error"><span>${escapeHtml(turn.error)}</span>
+      <button type="button" class="btn btn-sm" data-act="retry" style="margin-left:auto">${icon("refresh")}Retry</button></div>`;
+  } else {
+    const data = turn.data;
+    const rewritten = data.query_used && data.query_used.trim().toLowerCase() !== turn.query.trim().toLowerCase()
+      ? `<div class="rewritten">Searched for: “${escapeHtml(data.query_used)}”</div>` : "";
+    const open = state.settings.showContext ? " open" : "";
+    const sources = (data.context || []).map(item => `
+      <details class="source" data-citation="${escapeHtml(item.citation)}"${open}>
+        <summary>${icon("eye")}<span class="cite">${escapeHtml(item.citation)}</span>
+          ${item.score != null ? `<span class="score" title="Dense similarity">${Number(item.score).toFixed(2)}</span>` : ""}</summary>
+        <div class="passage">${escapeHtml(item.text)}</div>
+      </details>`).join("");
+    bot = `${rewritten}
+      <div class="md">${renderMarkdown(stripSourcesLine(data.answer))}</div>
+      <div class="msg-meta">${trustBadge(data.trust)}
+        ${turn.papers?.length ? `<span class="badge badge-neutral">Scope: ${turn.papers.map(paperTitle).map(escapeHtml).join(", ")}</span>` : ""}</div>
+      ${sources ? `<div class="sources">${sources}</div>` : ""}
+      <div class="msg-actions">
+        <button type="button" class="icon-btn" data-act="copy" title="Copy answer" aria-label="Copy answer">${icon("copy")}</button>
+        <button type="button" class="icon-btn" data-act="regenerate" title="Regenerate" aria-label="Regenerate answer">${icon("refresh")}</button>
+        <button type="button" class="icon-btn ${turn.feedback === "up" ? "on" : ""}" data-act="up" title="Helpful" aria-label="Helpful" aria-pressed="${turn.feedback === "up"}">${icon("up")}</button>
+        <button type="button" class="icon-btn ${turn.feedback === "down" ? "on" : ""}" data-act="down" title="Not helpful" aria-label="Not helpful" aria-pressed="${turn.feedback === "down"}">${icon("down")}</button>
+      </div>`;
+  }
+  wrapper.innerHTML = `<div class="stack">${user}<div class="msg-bot"><div class="avatar">AI</div><div class="msg-body">${bot}</div></div></div>`;
+}
+
+$("#chat-messages").addEventListener("click", async event => {
+  const wrapper = event.target.closest("[data-turn]");
+  if (!wrapper) return;
+  const turn = state.turns.find(item => item.id === wrapper.dataset.turn);
+  const cite = event.target.closest(".cite");
+  if (cite && cite.dataset.cite) {
+    const source = $$(".source", wrapper).find(item => item.dataset.citation === cite.dataset.cite);
+    if (source) {
+      source.open = true;
+      source.classList.remove("flash");
+      void source.offsetWidth;
+      source.classList.add("flash");
+      source.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    } else {
+      toast("That page was cited but is not among the retrieved passages.", "warn");
+    }
+    return;
+  }
+  const act = event.target.closest("[data-act]")?.dataset.act;
+  if (!act || !turn) return;
+  if (act === "retry" || act === "regenerate") return sendChat(turn.query, turn);
+  if (act === "copy") {
+    try { await navigator.clipboard.writeText(turn.data.answer); toast("Answer copied", "success"); }
+    catch (_) { toast("Clipboard is not available in this browser.", "warn"); }
+    return;
+  }
+  if (act === "up" || act === "down") {
+    if (turn.feedback === act) return;
+    try {
+      await api("/api/chat/feedback", { method: "POST", json: { query: turn.query, message: turn.data.answer, feedback: act } });
+      turn.feedback = act;
+      renderTurn(turn);
+      toast("Thanks for the feedback", "success");
+    } catch (error) { toast(error.message, "error"); }
+  }
+});
+
+const chatInput = $("#chat-input");
+function autosize() {
+  chatInput.style.height = "auto";
+  chatInput.style.height = `${Math.min(chatInput.scrollHeight, 200)}px`;
+}
+function updateSendButton() {
+  $("#chat-send").disabled = state.busy || !chatInput.value.trim();
+}
+chatInput.addEventListener("input", () => { autosize(); updateSendButton(); });
+chatInput.addEventListener("keydown", event => {
+  if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+    event.preventDefault();
+    $("#chat-form").requestSubmit();
+  }
+});
+$("#chat-form").addEventListener("submit", event => {
+  event.preventDefault();
+  const query = chatInput.value;
+  if (!query.trim() || state.busy) return;
+  chatInput.value = "";
+  autosize();
+  sendChat(query);
+});
+
+$("#clear-chat").addEventListener("click", () => {
+  if (state.busy) return;
+  state.turns = [];
+  persistChat();
+  renderChatEmpty();
+  chatInput.focus();
+});
+
+$("#export-chat").addEventListener("click", () => {
+  const body = state.turns.filter(turn => turn.status === "done").map(turn => {
+    const sources = (turn.data.context || []).map(item => `- ${item.citation}`).join("\n");
+    return `## Q: ${turn.query}\n\n${turn.data.answer}\n\n**Confidence:** ${turn.data.trust?.label || "n/a"}\n\n**Retrieved sources**\n${sources || "- none"}`;
+  }).join("\n\n---\n\n");
+  downloadText(`chat-${new Date().toISOString().slice(0, 10)}.md`, `# Chat export\n\n${body}\n`);
+});
+
+function restoreChat() {
+  const saved = store.session("chatTurns");
+  if (!Array.isArray(saved) || !saved.length) return;
+  state.turns = saved.filter(turn => turn && turn.status === "done" && turn.data);
+  const container = $("#chat-messages");
+  container.innerHTML = state.turns.map(turn => `<div class="turn" data-turn="${turn.id}"></div>`).join("");
+  state.turns.forEach(renderTurn);
+  persistChat();
+}
+
+/* ==========================================================================
+   Quiz
+   ========================================================================== */
+function quizSettings() {
+  return {
+    pdf: $("#quiz-pdf").value,
+    topic: $("#quiz-topic").value.trim(),
+    difficulty: $("#quiz-difficulty").value,
+    question_count: Number($("#quiz-count").value),
+    question_type: $("#quiz-type").value,
+    page_range: $("#quiz-pages").value.trim() || null,
+  };
+}
+
+function updateGenerateLabel() {
+  $("#generate-quiz span").textContent = `Generate ${$("#quiz-count").value} questions`;
+}
+$("#quiz-count").addEventListener("change", updateGenerateLabel);
+
+async function generateQuiz(settings = quizSettings()) {
+  if (!settings.pdf) return toast("Add a paper first.", "warn");
+  if (settings.page_range && !/^\s*\d+\s*[-–]\s*\d+\s*$/.test(settings.page_range)) {
+    return toast("Page range must look like 1-12.", "warn");
+  }
+  const button = $("#generate-quiz");
+  setBusy(button, true, "Generating…");
+  const area = $("#quiz-area");
+  area.innerHTML = `<div class="stack">${Array.from({ length: 3 }, () => '<div class="card card-pad"><div class="skeleton" style="height:16px;width:70%"></div><div class="skeleton" style="height:38px;margin-top:14px"></div></div>').join("")}</div>`;
+  try {
+    const quiz = await api("/api/quiz/generate", { method: "POST", json: settings });
+    if (!quiz.covered || !quiz.questions?.length) {
+      area.innerHTML = `<div class="notice notice-warn">The retrieved passages do not cover “${escapeHtml(settings.topic || "this topic")}” well enough. Try a different topic or page range.</div>`;
+      return;
+    }
+    state.quiz = {
+      settings, questions: quiz.questions, context: quiz.context || [],
+      answers: quiz.questions.map(() => ""), result: null, retry: false,
+    };
+    renderQuiz();
+    area.scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (error) {
+    area.innerHTML = `<div class="notice notice-error"><span>${escapeHtml(error.message)}</span>
+      <button type="button" class="btn btn-sm" id="quiz-retry-generate" style="margin-left:auto">Retry</button></div>`;
+    $("#quiz-retry-generate").addEventListener("click", () => generateQuiz(settings));
+  } finally {
+    setBusy(button, false);
+  }
+}
+$("#generate-quiz").addEventListener("click", () => generateQuiz());
+
+function questionCard(question, index) {
+  const answer = state.quiz.answers[index];
+  const tags = `<div class="q-tags">
+      <span class="badge badge-neutral">${escapeHtml(question.type || "Question")}</span>
+      <span class="badge badge-accent">${escapeHtml(question.difficulty || state.quiz.settings.difficulty)}</span>
+      <span class="cite">${escapeHtml(question.source)}</span></div>`;
+  const input = Array.isArray(question.options) && question.options.length
+    ? `<div class="options" role="radiogroup" aria-label="Answer for question ${index + 1}">${question.options.map(option => `
+        <label class="option"><input type="radio" name="q-${index}" data-answer="${index}" value="${escapeHtml(option)}" ${answer === option ? "checked" : ""}>
+        <span>${escapeHtml(option)}</span></label>`).join("")}</div>`
+    : `<textarea data-answer="${index}" rows="3" class="field answer-box" placeholder="Type your answer…" aria-label="Answer for question ${index + 1}">${escapeHtml(answer)}</textarea>`;
+  return `<div class="card question" data-question="${index}">
+      <div class="question-head"><div class="q-num">${index + 1}</div><div><div class="q-text">${escapeHtml(question.question)}</div>${tags}</div></div>
+      ${input}
+    </div>`;
+}
+
+function renderQuiz() {
+  const quiz = state.quiz;
+  const total = quiz.questions.length;
+  $("#quiz-area").innerHTML = `
+    <form id="quiz-form" class="stack" novalidate>
+      <div class="card quiz-progress no-print">
+        <strong>${quiz.retry ? "Retry missed questions" : escapeHtml(paperTitle(quiz.settings.pdf))}</strong>
+        <div class="progress-track"><span id="quiz-bar" style="width:0%"></span></div>
+        <span id="quiz-count-label" class="hint">0 / ${total}</span>
+      </div>
+      ${quiz.questions.map(questionCard).join("")}
+      <div class="row no-print">
+        <button type="submit" id="grade-quiz" class="btn btn-primary">${icon("quiz")}<span>Grade answers</span></button>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-ghost btn-sm" data-quiz="export">${icon("download")}Export</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-quiz="print">${icon("print")}Print / PDF</button>
+      </div>
+    </form>`;
+  updateQuizProgress();
+}
+
+function updateQuizProgress() {
+  const answered = state.quiz.answers.filter(answer => answer.trim()).length;
+  const total = state.quiz.answers.length;
+  $("#quiz-bar").style.width = `${(answered / total) * 100}%`;
+  $("#quiz-count-label").textContent = `${answered} / ${total} answered`;
+}
+
+$("#quiz-area").addEventListener("input", event => {
+  const target = event.target.closest("[data-answer]");
+  if (!target || !state.quiz) return;
+  const index = Number(target.dataset.answer);
+  state.quiz.answers[index] = target.value;
+  target.closest(".question")?.classList.remove("needs-answer");
+  updateQuizProgress();
+});
+
+$("#quiz-area").addEventListener("submit", async event => {
+  event.preventDefault();
+  const quiz = state.quiz;
+  const missing = quiz.answers.map((answer, index) => answer.trim() ? null : index).filter(index => index !== null);
+  if (missing.length) {
+    missing.forEach(index => $(`[data-question="${index}"]`)?.classList.add("needs-answer"));
+    $(`[data-question="${missing[0]}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    return toast(`Please answer all questions (${missing.length} left).`, "warn");
+  }
+  const button = $("#grade-quiz");
+  setBusy(button, true, "Grading…");
+  try {
+    const result = await api("/api/quiz/grade", {
+      method: "POST",
+      json: {
+        pdf: quiz.settings.pdf, topic: quiz.settings.topic, questions: quiz.questions,
+        answers: quiz.answers.map(answer => answer.trim()), page_range: quiz.settings.page_range,
+        difficulty: quiz.settings.difficulty, question_count: quiz.settings.question_count,
+      },
+    });
+    quiz.result = result;
+    renderQuizResults();
+    if (!quiz.retry) {
+      const percentage = Math.round((result.score / result.maximum) * 100);
+      api("/api/progress/quiz", {
+        method: "POST",
+        json: { pdf: quiz.settings.pdf, difficulty: quiz.settings.difficulty, score: percentage, topics: [quiz.settings.topic || "General"] },
+      }).then(loadQuizHistory).catch(() => {});
+    }
+  } catch (error) {
+    toast(error.message, "error");
+    setBusy(button, false);
+  }
+});
+
+function renderQuizResults() {
+  const quiz = state.quiz;
+  const { result } = quiz;
+  const percentage = Math.round((result.score / result.maximum) * 100);
+  const color = percentage >= 80 ? "var(--success)" : percentage >= 50 ? "var(--warn)" : "var(--danger)";
+  const headline = percentage >= 80 ? "Excellent work!" : percentage >= 50 ? "Good progress" : "Keep practising";
+  const suggestion = percentage >= 80
+    ? (quiz.settings.difficulty === "Hard" ? "You have mastered this material." : "Ready for a harder level.")
+    : percentage < 40 ? "Review the source passages below, then try an easier level." : "Review the missed questions and retry them.";
+  const missed = result.results.map((item, index) => item.grade !== "Correct" ? index : null).filter(index => index !== null);
+  const passageFor = source => (quiz.context.find(item => item.citation === source) || {}).text;
+  $("#quiz-area").innerHTML = `
+    <div class="stack">
+      <div class="card score-card">
+        <div class="ring" style="--p:${percentage}; --c:${color}"><b>${percentage}%</b></div>
+        <div><h3>${headline}</h3><p>${result.score} of ${result.maximum} points · ${escapeHtml(suggestion)}</p></div>
+      </div>
+      ${result.results.map((item, index) => {
+        const grade = item.grade.toLowerCase();
+        const badge = { correct: "badge-high", partial: "badge-medium", incorrect: "badge-low" }[grade];
+        const passage = passageFor(item.source);
+        return `<div class="card result ${grade}">
+          <div class="question-head"><div class="q-num">${index + 1}</div>
+            <div style="flex:1"><div class="q-text">${escapeHtml(quiz.questions[index].question)}</div>
+              <div class="q-tags"><span class="badge ${badge}">${escapeHtml(item.grade)}</span><span class="cite">${escapeHtml(item.source)}</span></div>
+              <dl>
+                <dt>Your answer</dt><dd>${escapeHtml(quiz.answers[index])}</dd>
+                <dt>Correct answer</dt><dd>${escapeHtml(item.correct_answer)}</dd>
+                <dt>Feedback</dt><dd>${escapeHtml(item.feedback)}</dd>
+              </dl>
+              ${passage ? `<details class="source" style="margin-top:10px"><summary>${icon("eye")}Show source passage</summary><div class="passage">${escapeHtml(passage)}</div></details>` : ""}
+            </div></div>
+        </div>`;
+      }).join("")}
+      <div class="row no-print">
+        ${missed.length ? `<button type="button" class="btn btn-primary" data-quiz="retry-missed">${icon("refresh")}Retry ${missed.length} missed</button>` : ""}
+        <button type="button" class="btn" data-quiz="new">${icon("sparkle")}New quiz, same settings</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-ghost btn-sm" data-quiz="export">${icon("download")}Export</button>
+        <button type="button" class="btn btn-ghost btn-sm" data-quiz="print">${icon("print")}Print / PDF</button>
+      </div>
+    </div>`;
+  $("#quiz-area").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+$("#quiz-area").addEventListener("click", event => {
+  const action = event.target.closest("[data-quiz]")?.dataset.quiz;
+  const quiz = state.quiz;
+  if (!action || !quiz) return;
+  if (action === "retry-missed") {
+    const missed = quiz.result.results.map((item, index) => item.grade !== "Correct" ? index : null).filter(index => index !== null);
+    state.quiz = {
+      ...quiz, retry: true, result: null,
+      questions: missed.map(index => quiz.questions[index]),
+      answers: missed.map(() => ""),
+    };
+    renderQuiz();
+  } else if (action === "new") {
+    generateQuiz(quiz.settings);
+  } else if (action === "export") {
+    exportQuiz();
+  } else if (action === "print") {
+    window.print();
+  }
+});
+
+function exportQuiz() {
+  const quiz = state.quiz;
+  const lines = [`# Quiz: ${paperTitle(quiz.settings.pdf)}`, "",
+    `- Topic: ${quiz.settings.topic || "main concepts"}`, `- Difficulty: ${quiz.settings.difficulty}`, ""];
+  if (quiz.result) lines.push(`**Score:** ${quiz.result.score} / ${quiz.result.maximum}`, "");
+  quiz.questions.forEach((question, index) => {
+    lines.push(`## ${index + 1}. ${question.question}`, "");
+    (question.options || []).forEach(option => lines.push(`- ${option}`));
+    if (question.options) lines.push("");
+    const result = quiz.result?.results[index];
+    if (quiz.answers[index]) lines.push(`**Your answer:** ${quiz.answers[index]}`);
+    if (result) lines.push(`**Grade:** ${result.grade}`, `**Correct answer:** ${result.correct_answer}`, `**Feedback:** ${result.feedback}`);
+    lines.push(`*Source: ${question.source}*`, "");
+  });
+  downloadText(`quiz-${paperTitle(quiz.settings.pdf).replace(/\s+/g, "-")}.md`, lines.join("\n"));
+}
+
+async function loadQuizHistory() {
+  try {
+    const progress = await api("/api/progress");
+    $("#quiz-history-summary").textContent = progress.quizzes_taken
+      ? `${progress.quizzes_taken} quizzes · ${progress.overall_average}% average` : "";
+    $("#quiz-history").innerHTML = progress.recent.length
+      ? progress.recent.slice(0, 5).map(item => {
+        const score = Math.round(item.score);
+        const badge = score >= 80 ? "badge-high" : score >= 50 ? "badge-medium" : "badge-low";
+        return `<div class="history-item"><span class="name" title="${escapeHtml(item.pdf)}">${escapeHtml(paperTitle(item.pdf))}</span>
+          <span class="badge badge-neutral">${escapeHtml(item.difficulty)}</span><span class="badge ${badge}">${score}%</span>
+          <span class="hint" style="width:76px;text-align:right">${escapeHtml(relativeDate(item.date))}</span></div>`;
+      }).join("")
+      : "No attempts yet.";
+  } catch (_) { /* history is optional */ }
+}
+
+/* ==========================================================================
+   Compare
+   ========================================================================== */
+function updateCompareControls() {
+  const enough = state.papers.length >= 2;
+  $("#compare-library-warning").classList.toggle("hidden", enough);
+  $("#compare-pdf-one").disabled = !enough;
+  $("#compare-pdf-two").disabled = !enough;
+  $("#compare-swap").disabled = !enough;
+  const first = $("#compare-pdf-one").value;
+  $$("option", $("#compare-pdf-two")).forEach(option => { option.disabled = option.value === first; });
+  $("#compare-button").disabled = !enough || first === $("#compare-pdf-two").value;
+}
+$("#compare-pdf-one").addEventListener("change", () => {
+  const second = $("#compare-pdf-two");
+  if (second.value === $("#compare-pdf-one").value) {
+    second.value = state.papers.map(paper => paper.filename).find(name => name !== $("#compare-pdf-one").value) || "";
+  }
+  updateCompareControls();
+});
+$("#compare-pdf-two").addEventListener("change", updateCompareControls);
+$("#compare-swap").addEventListener("click", () => {
+  const one = $("#compare-pdf-one"), two = $("#compare-pdf-two");
+  [one.value, two.value] = [two.value, one.value];
+  updateCompareControls();
+});
+$$(".compare-chip").forEach(chip => chip.addEventListener("click", () => {
+  $("#compare-question").value = chip.textContent.trim();
+  $("#compare-button").click();
+}));
+$("#compare-question").addEventListener("keydown", event => {
+  if (event.key === "Enter") { event.preventDefault(); $("#compare-button").click(); }
+});
+
+$("#compare-result").addEventListener("click", event => {
+  const cite = event.target.closest(".cite[data-cite]");
+  if (!cite) return;
+  const file = cite.dataset.cite.split(",")[0];
+  const column = $$(".paper-col", $("#compare-result")).find(col => col.dataset.paper === file);
+  const details = column?.querySelector("details");
+  if (!details) return;
+  details.open = true;
+  details.classList.remove("flash");
+  void details.offsetWidth;
+  details.classList.add("flash");
+  details.scrollIntoView({ behavior: "smooth", block: "nearest" });
+});
+
+function summarySection(summary, heading) {
+  const escapedHeading = heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const normalized = summary.replace(/\*\*##/g, "##").replace(/^(##[^\n]*?)\*\*\s*$/gm, "$1");
+  const match = normalized.match(new RegExp(`##\\s*${escapedHeading}\\s*\\n([\\s\\S]*?)(?=\\n##\\s|$)`, "i"));
+  return match ? match[1].trim().replace(/^Answer:\s*/i, "") : "";
+}
+
+$("#compare-button").addEventListener("click", async () => {
+  const pdfs = [$("#compare-pdf-one").value, $("#compare-pdf-two").value];
+  const question = $("#compare-question").value.trim();
+  if (!question) { $("#compare-question").focus(); return toast("Enter what you want to compare.", "warn"); }
+  if (!pdfs[0] || pdfs[0] === pdfs[1]) return toast("Select two different papers.", "warn");
+  const button = $("#compare-button");
+  setBusy(button, true, "Comparing…");
+  const result = $("#compare-result");
+  result.innerHTML = `<div class="grid-2">${'<div class="card card-pad"><div class="skeleton" style="height:16px;width:50%"></div><div class="skeleton" style="height:120px;margin-top:14px"></div></div>'.repeat(2)}</div>`;
+  try {
+    const data = await api("/api/compare", { method: "POST", json: { pdfs, question } });
+    const names = Object.keys(data.papers);
+    const column = (name, index) => {
+      const section = summarySection(data.summary, name) || summarySection(data.summary, paperTitle(name));
+      const passages = data.papers[name] || [];
+      return `<section class="card card-pad paper-col" data-paper="${escapeHtml(name)}">
+        <h3><span class="badge badge-accent">${index === 0 ? "A" : "B"}</span><span class="name" title="${escapeHtml(name)}">${escapeHtml(paperTitle(name))}</span></h3>
+        <div class="md">${renderMarkdown(section || "Not found in this paper for this question.")}</div>
+        <details class="source" style="margin-top:14px"><summary>${icon("eye")}${passages.length} retrieved passage${passages.length === 1 ? "" : "s"}</summary>
+          <div class="passage">${passages.map(item => `<strong>${escapeHtml(item.citation)}</strong>\n${escapeHtml(item.text)}`).join("\n\n") || "No passages retrieved."}</div>
+        </details>
+      </section>`;
+    };
+    const difference = summarySection(data.summary, "Difference");
+    const similarities = summarySection(data.summary, "Similarities");
+    result.innerHTML = `
+      <div class="stack">
+        <div class="grid-2">${names.map(column).join("")}</div>
+        <div class="card card-pad">
+          <div class="summary-section"><h4>Key differences</h4><div class="md">${renderMarkdown(difference || "Not stated.")}</div></div>
+          <div class="summary-section"><h4>Similarities</h4><div class="md">${renderMarkdown(similarities || "Not stated.")}</div></div>
+        </div>
+      </div>`;
+  } catch (error) {
+    result.innerHTML = `<div class="notice notice-error"><span>${escapeHtml(error.message)}</span>
+      <button id="compare-retry" type="button" class="btn btn-sm" style="margin-left:auto">Retry</button></div>`;
+    $("#compare-retry").addEventListener("click", () => $("#compare-button").click());
+  } finally {
+    setBusy(button, false);
+    updateCompareControls();
+  }
+});
+
+/* ==========================================================================
+   Settings, theme and progress
+   ========================================================================== */
+function applyTheme(theme) {
+  state.settings.theme = theme;
+  store.set("theme", theme);
+  const dark = theme === "dark" || (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  $$("[data-theme-value]").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.themeValue === theme)));
+}
+matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => {
+  if (state.settings.theme === "system") applyTheme("system");
+});
+$("#theme-toggle").addEventListener("click", event => {
+  const value = event.target.closest("[data-theme-value]")?.dataset.themeValue;
+  if (value) applyTheme(value);
+});
+
+$("#settings-button").addEventListener("click", async () => {
+  openDialog("settings-dialog");
+  try {
+    const settings = await api("/api/settings");
+    state.settings.maxTopK = settings.max_top_k || 10;
+    const topK = $("#setting-top-k");
+    topK.max = state.settings.maxTopK;
+    topK.value = state.settings.topK || settings.top_k;
+    topK.dataset.default = settings.top_k;
+    $("#setting-model").textContent = `${settings.model} · embeddings ${settings.embedding_model} · chunks ${settings.chunk_size}/${settings.chunk_overlap}`;
+  } catch (error) { $("#setting-model").textContent = error.message; }
+});
+$("#setting-top-k").addEventListener("change", event => {
+  const value = Math.round(Number(event.target.value));
+  if (!value || value < 1 || value > state.settings.maxTopK) {
+    event.target.value = state.settings.topK || event.target.dataset.default || 3;
+    return toast(`Choose a value between 1 and ${state.settings.maxTopK}.`, "warn");
+  }
+  state.settings.topK = value;
+  store.set("topK", String(value));
+});
+$("#setting-context").addEventListener("change", event => {
+  state.settings.showContext = event.target.checked;
+  store.set("showContext", String(event.target.checked));
+  state.turns.forEach(renderTurn);
+});
+
+$("#progress-button").addEventListener("click", async () => {
+  const content = $("#progress-content");
+  content.innerHTML = '<div class="skeleton" style="height:70px"></div>';
+  openDialog("progress-dialog");
+  try {
+    const progress = await api("/api/progress");
+    if (!progress.quizzes_taken) {
+      content.innerHTML = `<div class="empty-state" style="padding:20px 0"><div class="orb">${icon("chart")}</div>
+        <h2 style="font-size:17px">No quizzes yet</h2><p>Take a quiz to start tracking your progress.</p>
+        <button type="button" class="btn btn-primary" id="progress-start" style="margin-top:16px">Start a quiz</button></div>`;
+      $("#progress-start").addEventListener("click", () => { $("#progress-dialog").close(); setMode("quiz"); });
+      return;
+    }
+    const best = Object.entries(progress.averages).sort((a, b) => b[1] - a[1])[0];
+    content.innerHTML = `
+      <div class="stats">
+        <div class="stat"><div class="v">${progress.quizzes_taken}</div><div class="k">Quizzes taken</div></div>
+        <div class="stat"><div class="v">${progress.overall_average ?? "–"}%</div><div class="k">Average score</div></div>
+        <div class="stat"><div class="v">${best ? escapeHtml(best[0]) : "–"}</div><div class="k">Strongest level</div></div>
+      </div>
+      <h3 style="font-size:13px;margin:20px 0 4px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em">By difficulty</h3>
+      ${Object.entries(progress.averages).map(([level, score]) => `
+        <div class="bar-row"><span>${escapeHtml(level)}</span><div class="progress-track"><span style="width:${score}%"></span></div><span>${score}%</span></div>`).join("")}
+      <h3 style="font-size:13px;margin:20px 0 8px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em">Topics to review</h3>
+      <div class="row">${progress.most_missed_topics.map(topic => `<span class="chip">${escapeHtml(topic)}</span>`).join("") || '<span class="hint">Nothing below 70%. Nice work.</span>'}</div>`;
+  } catch (error) {
+    content.innerHTML = `<div class="notice notice-error">${escapeHtml(error.message)}</div>`;
+  }
+});
+
+/* ==========================================================================
+   Keyboard shortcuts
+   ========================================================================== */
+document.addEventListener("keydown", event => {
+  const typing = event.target.closest("input, textarea, select, [contenteditable]");
+  if (event.key === "Escape") { closeMenus(); closeSidebar(); return; }
+  if (typing || event.metaKey || event.ctrlKey || event.altKey || document.querySelector("dialog[open]")) return;
+  if (["1", "2", "3"].includes(event.key)) setMode(["chat", "quiz", "compare"][Number(event.key) - 1]);
+  if (event.key === "/") { event.preventDefault(); setMode("chat"); chatInput.focus(); }
+});
+
+/* ==========================================================================
+   Init
+   ========================================================================== */
+(function init() {
+  state.settings.topK = Number(store.get("topK")) || null;
+  state.settings.showContext = store.get("showContext") === "true";
+  $("#setting-context").checked = state.settings.showContext;
+  applyTheme(store.get("theme", "system"));
+  updateGenerateLabel();
+  restoreChat();
+  const mode = store.get("mode", "chat");
+  setMode(MODE_COPY[mode] ? mode : "chat");
+  refreshHealth();
+  loadLibrary();
+})();

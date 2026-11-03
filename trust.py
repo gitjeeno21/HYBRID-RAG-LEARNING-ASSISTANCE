@@ -118,7 +118,7 @@ def retrieval_strength(scores: list[float | None]) -> dict:
     WHY top and mean, not just top: a single chunk can be similar to the
     question by coincidence (shared boilerplate, a figure caption), so looking
     at the average too makes an accidental match less likely to be called
-    "strong". WHY None-safe: app.py can replay chat history written by an older
+    "strong". WHY None-safe: main.py can replay chat history written by an older
     version that stored chunks without scores, and a missing score must not
     raise.
     """
@@ -232,7 +232,7 @@ def combine_labels(strength: dict, verdict: str | None) -> tuple[str, str]:
 
 
 # ---------------------------------------------------------------------------
-# Public entry point used by app.py
+# Public entry point used by main.py
 # ---------------------------------------------------------------------------
 def is_refusal(answer: str) -> bool:
     """True if the answer is the fixed 'I don't know' sentence from config.
@@ -246,7 +246,7 @@ def is_refusal(answer: str) -> bool:
 def assess(question: str, answer: str, chunks: list, ask=None) -> dict:
     """Return {"label", "reason", "verdict", "top_score", "mean_score", "refused"}.
 
-    WHY a dict and not a bare string: app.py stores the whole result in
+    WHY a dict and not a bare string: main.py stores the whole result in
     st.session_state so the label, its reason and the scores behind it survive a
     Streamlit rerun; recomputing would mean paying for the LLM call twice.
 
@@ -296,7 +296,7 @@ def assess(question: str, answer: str, chunks: list, ask=None) -> dict:
 def _answer_for_eval(question: str, store, ask) -> str:
     """Answer one question with the production index and prompt.
 
-    Uses the same PROMPT_TEMPLATE / TOP_K as app.py so the refusal rate measures
+    Uses the same PROMPT_TEMPLATE / TOP_K as main.py so the refusal rate measures
     the system the user actually chats with, not a second prompt that happens to
     behave differently.
     """

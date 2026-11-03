@@ -16,7 +16,7 @@ Two phases, deliberately separated:
    stability signal.
 
 Results are written to eval_results.json after every step, so a crash or a
-rate limit never loses completed work, and ingest.py / app.py read
+rate limit never loses completed work, and ingest.py / main.py read
 "best_config" from that file.
 
 Usage:
@@ -362,7 +362,7 @@ def pick_best(configs: list) -> dict | None:
 
 
 def summarize_configs(configs: list) -> dict:
-    """Build the compact best_config block that ingest.py and app.py read."""
+    """Build the compact best_config block that ingest.py and main.py read."""
     best = pick_best(configs)
     if best is None:
         return {}

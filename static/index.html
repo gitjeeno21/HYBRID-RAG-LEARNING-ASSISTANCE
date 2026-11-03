@@ -3,261 +3,233 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Hybrid RAG for Evidence-Grounded Knowledge Discovery & Learning</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    :root { color-scheme: dark; }
-    * { scrollbar-width: thin; scrollbar-color: rgba(148,163,184,.25) transparent; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      overflow-x: hidden;
-      background:
-        radial-gradient(circle at 78% 8%, rgba(14,165,233,.09), transparent 24rem),
-        radial-gradient(circle at 28% 88%, rgba(20,184,166,.07), transparent 28rem),
-        #09090b;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-    .glass {
-      background: rgba(255,255,255,.035);
-      border: 1px solid rgba(255,255,255,.09);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.025), 0 24px 70px rgba(0,0,0,.18);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-    }
-    .sidebar-link.active {
-      background: linear-gradient(90deg, rgba(99,102,241,.16), rgba(99,102,241,.04));
-      border-color: rgba(129,140,248,.24);
-      color: #c7d2fe;
-      box-shadow: inset 2px 0 0 #818cf8;
-    }
-    .sidebar-link .nav-dot { opacity: 0; transform: scale(.7); }
-    .sidebar-link.active .nav-dot { opacity: 1; transform: scale(1); }
-    .citation {
-      border: 1px solid rgba(129,140,248,.18);
-      background: rgba(99,102,241,.09);
-      color: #c7d2fe;
-    }
-    .field {
-      background: rgba(255,255,255,.025);
-      border: 1px solid rgba(255,255,255,.09);
-      color: #f4f4f5;
-      outline: none;
-      transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
-    }
-    .field::placeholder { color: #71717a; }
-    .field:focus {
-      border-color: rgba(129,140,248,.48);
-      background: rgba(255,255,255,.04);
-      box-shadow: 0 0 0 3px rgba(99,102,241,.09);
-    }
-    select.field option { background: #18181b; color: #f4f4f5; }
-    .primary-button {
-      background: linear-gradient(135deg, #6366f1, #4f46e5);
-      box-shadow: 0 10px 30px rgba(79,70,229,.22), inset 0 1px 0 rgba(255,255,255,.18);
-      transition: transform .2s ease, box-shadow .2s ease, filter .2s ease;
-    }
-    .primary-button:hover { transform: translateY(-1px); filter: brightness(1.08); box-shadow: 0 14px 36px rgba(79,70,229,.32); }
-    .pulse-dot { animation: pulse-ring 2s ease-out infinite; }
-    :focus-visible { outline: 2px solid #818cf8 !important; outline-offset: 2px; }
-    body.light { background: #f4f4f5; color: #18181b; color-scheme: light; }
-    body.light .glass { background: rgba(255,255,255,.78); border-color: rgba(0,0,0,.12); }
-    @media (max-width: 1023px) {
-      #sidebar { position: fixed; z-index: 40; inset: 0 auto 0 0; width: min(18rem, 88vw); transform: translateX(-105%); transition: transform .2s ease; overflow-y: auto; }
-      #sidebar.open { transform: translateX(0); }
-      #sidebar-scrim.open { display: block !important; }
-    }
-    @keyframes pulse-ring {
-      0% { box-shadow: 0 0 0 0 rgba(52,211,153,.35); }
-      70% { box-shadow: 0 0 0 5px rgba(52,211,153,0); }
-      100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); }
-    }
-  </style>
+  <title>Hybrid RAG Study Assistant</title>
+  <meta name="description" content="Evidence-grounded chat, quizzes and paper comparison over your own PDFs.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%236366f1'/><path d='M9 10h9a4 4 0 0 1 0 8h-4l5 5M9 10v13' stroke='white' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+  <script>
+    // Apply the saved theme before first paint so there is no flash.
+    try {
+      const saved = localStorage.getItem("theme") || "system";
+      const dark = saved === "dark" || (saved === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+      document.documentElement.dataset.theme = dark ? "dark" : "light";
+    } catch (_) { document.documentElement.dataset.theme = "dark"; }
+  </script>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
-<body class="text-zinc-100 antialiased">
-  <div class="pointer-events-none fixed inset-0 overflow-hidden">
-    <div class="absolute -left-40 top-1/4 h-80 w-80 rounded-full bg-indigo-500/[.055] blur-[100px]"></div>
-    <div class="absolute bottom-[-12rem] right-[-5rem] h-96 w-96 rounded-full bg-cyan-400/[.055] blur-[110px]"></div>
-  </div>
+<body>
+  <!-- Icon sprite -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></symbol>
+      <symbol id="i-quiz" viewBox="0 0 24 24"><path d="M9 11l2 2 4-4"/><rect x="3" y="3" width="18" height="18" rx="4"/></symbol>
+      <symbol id="i-compare" viewBox="0 0 24 24"><rect x="3" y="4" width="7" height="16" rx="2"/><rect x="14" y="4" width="7" height="16" rx="2"/></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 15V4m0 0L8 8m4-4 4 4M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+      <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+      <symbol id="i-send" viewBox="0 0 24 24"><path d="M12 19V5m0 0-6 6m6-6 6 6"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.5 6.2L3 16m0 5v-5h5"/></symbol>
+      <symbol id="i-up" viewBox="0 0 24 24"><path d="M7 10v11H4V10h3Zm0 0 4-7a2.5 2.5 0 0 1 3 2.5V9h5a2 2 0 0 1 2 2.3l-1.3 7.5A2 2 0 0 1 17.7 21H7"/></symbol>
+      <symbol id="i-down" viewBox="0 0 24 24"><path d="M17 14V3h3v11h-3Zm0 0-4 7a2.5 2.5 0 0 1-3-2.5V15H5a2 2 0 0 1-2-2.3l1.3-7.5A2 2 0 0 1 6.3 3H17"/></symbol>
+      <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></symbol>
+      <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+      <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+      <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></symbol>
+      <symbol id="i-open" viewBox="0 0 24 24"><path d="M14 3h7v7M10 14 21 3M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></symbol>
+      <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11m0 0-4-4m4 4 4-4M4 19h16"/></symbol>
+      <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></symbol>
+      <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></symbol>
+      <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/></symbol>
+      <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z"/></symbol>
+    </defs>
+  </svg>
 
-  <div class="relative min-h-screen lg:flex">
-    <aside id="sidebar" class="border-b border-white/[.07] bg-zinc-950/70 px-4 py-4 backdrop-blur-xl lg:min-h-screen lg:w-72 lg:border-b-0 lg:border-r lg:px-5 lg:py-5">
-      <div class="flex items-center gap-3">
-        <div class="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/[.06] font-semibold text-white shadow-lg shadow-indigo-950/30">
-          RAG
-        </div>
+  <div class="app">
+    <aside id="sidebar" class="sidebar" aria-label="Navigation and paper library">
+      <div class="brand">
+        <div class="brand-mark">RAG</div>
         <div>
-          <div class="leading-tight">
-            <div class="text-[15px] font-semibold tracking-tight text-white">Hybrid RAG</div>
-            <div class="text-[10px] font-medium text-zinc-500">Evidence-Grounded Knowledge Discovery &amp; Learning</div>
-          </div>
-          <div class="mt-0.5 flex items-center gap-1.5 text-[11px] text-zinc-500">
-            <span class="pulse-dot h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-            Research workspace
-          </div>
+          <div class="brand-name">Hybrid RAG</div>
+          <div class="brand-sub">Evidence-grounded study assistant</div>
         </div>
       </div>
 
-      <nav class="mt-5 grid grid-cols-3 gap-1.5 lg:mt-9 lg:block lg:space-y-1.5">
-        <button data-mode="chat" class="sidebar-link active flex items-center justify-center rounded-xl border border-transparent px-3 py-3 text-sm font-medium transition lg:justify-start">
-          <span class="mr-3 hidden h-1.5 w-1.5 rounded-full bg-indigo-400 nav-dot lg:block"></span>
-          Chat
-        </button>
-        <button data-mode="quiz" class="sidebar-link flex items-center justify-center rounded-xl border border-transparent px-3 py-3 text-sm font-medium text-zinc-500 transition hover:bg-white/[.035] hover:text-zinc-200 lg:justify-start">
-          <span class="mr-3 hidden h-1.5 w-1.5 rounded-full bg-indigo-400 nav-dot lg:block"></span>
-          Quiz
-        </button>
-        <button data-mode="compare" class="sidebar-link flex items-center justify-center rounded-xl border border-transparent px-3 py-3 text-sm font-medium text-zinc-500 transition hover:bg-white/[.035] hover:text-zinc-200 lg:justify-start">
-          <span class="mr-3 hidden h-1.5 w-1.5 rounded-full bg-indigo-400 nav-dot lg:block"></span>
-          Compare
-        </button>
+      <nav class="nav" aria-label="Modes">
+        <button class="nav-item active" data-mode="chat"><svg class="icon"><use href="#i-chat"/></svg>Chat<kbd>1</kbd></button>
+        <button class="nav-item" data-mode="quiz"><svg class="icon"><use href="#i-quiz"/></svg>Quiz<kbd>2</kbd></button>
+        <button class="nav-item" data-mode="compare"><svg class="icon"><use href="#i-compare"/></svg>Compare<kbd>3</kbd></button>
       </nav>
 
-      <div class="mt-5 hidden border-t border-white/[.07] pt-5 lg:block">
-        <div class="mb-3 flex items-center justify-between">
-          <label class="text-[11px] font-semibold uppercase tracking-[.16em] text-zinc-500">Paper library</label>
-          <span id="paper-count" class="rounded-full border border-white/[.07] bg-white/[.035] px-2 py-0.5 text-[10px] text-zinc-400">0</span>
-        </div>
-        <button id="upload-button" class="mb-3 w-full rounded-xl border border-dashed border-indigo-400/25 px-3 py-2.5 text-sm font-medium text-indigo-300 transition hover:border-indigo-400/50 hover:bg-indigo-400/[.06]">
-          + Add PDF
-        </button>
-        <input id="pdf-upload" type="file" accept=".pdf,application/pdf" class="hidden">
-        <div id="upload-dropzone" class="mb-3 hidden rounded-xl border border-dashed border-indigo-400/30 p-3 text-center text-xs text-zinc-400">
-          Drop PDF here
-          <div id="upload-progress" class="mt-2 text-indigo-300"></div>
-        </div>
-        <div id="pdf-list" class="max-h-52 space-y-1 overflow-auto text-sm text-zinc-400"></div>
-      </div>
-    </aside>
-
-    <main class="flex min-h-screen flex-1 flex-col">
-      <header class="flex items-center justify-between border-b border-white/[.07] bg-black/10 px-5 py-4 backdrop-blur-md lg:px-8">
-        <div>
-          <button id="menu-button" class="mr-2 rounded-lg border border-white/10 px-3 py-2 lg:hidden" aria-label="Open navigation menu">☰</button>
-          <button id="settings-button" aria-label="Open settings" class="rounded-lg border border-white/10 px-3 py-2">Settings</button>
-          <h1 id="mode-title" class="text-xl font-semibold tracking-tight text-white">Evidence-grounded chat</h1>
-          <p id="mode-description" class="mt-1 text-sm text-zinc-500">Ask questions across your research library.</p>
-        </div>
-        <div class="hidden items-center gap-2 rounded-full border border-white/[.08] bg-white/[.025] px-3 py-1.5 text-xs text-zinc-400 sm:flex">
-          <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-          Local index online
-        </div>
-      </header>
-      <div id="sidebar-scrim" class="fixed inset-0 hidden bg-black/70 lg:hidden"></div>
-
-      <section class="flex-1 px-4 py-6 lg:px-8">
-        <div id="first-run-hint" class="glass mb-5 flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-sm text-zinc-300">
-          <span>Add a PDF, ask a question, then test yourself with a quiz.</span>
-          <button id="dismiss-hint" aria-label="Dismiss hint" class="text-zinc-500 hover:text-white">Dismiss</button>
-        </div>
-        <div id="chat-panel" class="mx-auto max-w-4xl">
-          <div class="mb-3 flex justify-end gap-2">
-            <button id="progress-button" type="button" class="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300">Progress</button>
-            <button id="export-chat" type="button" class="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300">Export chat</button>
-          </div>
-          <div class="glass mb-4 flex flex-wrap items-center gap-3 rounded-2xl px-4 py-3">
-            <label for="chat-papers" class="text-xs font-semibold uppercase tracking-wider text-zinc-500">Paper scope</label>
-            <select id="chat-papers" multiple class="field min-h-10 min-w-48 rounded-xl px-3 py-2"></select>
-            <span class="text-xs text-zinc-500">Select none for All papers</span>
-            <button type="button" id="clear-chat" class="ml-auto rounded-xl border border-white/10 px-3 py-2 text-xs text-zinc-300">Clear conversation</button>
-          </div>
-          <div id="chat-messages" class="mb-6 min-h-[55vh] space-y-5"></div>
-          <form id="chat-form" class="glass sticky bottom-4 rounded-2xl p-3">
-            <div class="flex gap-3">
-              <textarea id="chat-input" rows="2" required placeholder="Ask a question grounded in your papers..." class="field flex-1 resize-none rounded-xl px-4 py-3"></textarea>
-              <button class="primary-button rounded-xl px-5 text-sm font-semibold text-white">Send</button>
-            </div>
-          </form>
-        </div>
-
-        <div id="quiz-panel" class="mx-auto hidden max-w-4xl">
-          <div class="glass mb-6 rounded-2xl p-5">
-            <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-              <select id="quiz-pdf" class="field rounded-xl px-3 py-2.5"></select>
-              <input id="quiz-topic" placeholder="Quiz topic" class="field rounded-xl px-3 py-2.5">
-              <input id="quiz-pages" placeholder="Page range (e.g. 1-12)" class="field rounded-xl px-3 py-2.5">
-              <select id="quiz-difficulty" class="field rounded-xl px-3 py-2.5">
-                <option>Easy</option><option selected>Medium</option><option>Hard</option><option>Mixed</option>
-              </select>
-              <select id="quiz-count" class="field rounded-xl px-3 py-2.5">
-                <option selected>5</option><option>10</option><option>15</option>
-              </select>
-              <select id="quiz-type" class="field rounded-xl px-3 py-2.5">
-                <option>Multiple choice</option><option>Short answer</option><option>True/False</option><option selected>Mixed</option>
-              </select>
-            </div>
-            <button id="generate-quiz" class="primary-button mt-4 rounded-xl px-4 py-2.5 text-sm font-medium text-white">Generate five questions</button>
-          </div>
-          <form id="quiz-form" class="hidden space-y-4"></form>
-          <div id="quiz-results" class="mt-5 hidden space-y-4"></div>
-          <button id="export-quiz" type="button" class="mt-4 rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300">Export quiz Markdown</button>
-          <button id="export-quiz-pdf" type="button" class="mt-4 ml-2 rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300">Export quiz PDF</button>
-          <div class="glass mt-6 rounded-2xl p-5">
-            <h3 class="mb-3 text-sm font-semibold text-zinc-300">Past attempts</h3>
-            <div id="quiz-history" class="space-y-2 text-sm text-zinc-500">No attempts yet.</div>
-          </div>
-        </div>
-
-        <div id="compare-panel" class="mx-auto hidden max-w-4xl">
-          <div class="glass mb-6 rounded-2xl p-5">
-            <div class="grid gap-3 md:grid-cols-2">
-              <select id="compare-pdf-one" class="field rounded-xl px-3 py-2.5"></select>
-              <select id="compare-pdf-two" class="field rounded-xl px-3 py-2.5"></select>
-            </div>
-            <div id="compare-library-warning" class="mt-3 hidden rounded-xl border border-amber-400/20 bg-amber-400/[.08] p-3 text-sm text-amber-200">
-              Add at least two PDFs to compare papers.
-              <button type="button" id="compare-add-pdf" class="ml-2 font-semibold underline">Add PDF</button>
-            </div>
-            <input id="compare-question" required placeholder="What should I compare?" class="field mt-3 w-full rounded-xl px-3 py-2.5">
-            <div class="mt-3 flex flex-wrap gap-2" aria-label="Comparison suggestions">
-              <button type="button" class="compare-chip rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">Main objective</button>
-              <button type="button" class="compare-chip rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">Methodology</button>
-              <button type="button" class="compare-chip rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">Results and metrics</button>
-              <button type="button" class="compare-chip rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">Limitations</button>
-              <button type="button" class="compare-chip rounded-full border border-white/10 px-3 py-1.5 text-xs text-zinc-300">Data used</button>
-            </div>
-            <button id="compare-button" class="primary-button mt-4 rounded-xl px-4 py-2.5 text-sm font-medium text-white">Compare papers</button>
-          </div>
-          <article id="compare-result" class="glass hidden rounded-2xl p-5 text-zinc-300"></article>
+      <section class="library" aria-labelledby="library-label">
+        <div class="section-label"><span id="library-label">Paper library</span><span id="paper-count" class="count-pill">0</span></div>
+        <button id="upload-button" class="dropzone" type="button"><svg class="icon"><use href="#i-upload"/></svg>Add PDF</button>
+        <input id="pdf-upload" type="file" accept=".pdf,application/pdf" class="hidden" multiple>
+        <div id="upload-status" class="upload-status hidden" aria-live="polite"></div>
+        <div id="pdf-list" class="paper-list">
+          <div class="skeleton" style="height:44px"></div>
+          <div class="skeleton" style="height:44px"></div>
         </div>
       </section>
-      <footer class="border-t border-white/[.07] px-5 py-4 text-center text-xs text-zinc-500">
-        Study aid only. Answers are grounded in retrieved passages but not guaranteed correct.
-      </footer>
+
+      <div class="sidebar-footer">
+        <div class="status"><span id="index-dot" class="dot"></span><span id="index-status">Checking index…</span></div>
+        <div class="status"><span id="llm-dot" class="dot"></span><span id="llm-status">Checking AI service…</span></div>
+      </div>
+    </aside>
+    <div id="sidebar-scrim" class="scrim"></div>
+
+    <main class="main">
+      <header class="topbar">
+        <button id="menu-button" class="icon-btn" aria-label="Open navigation"><svg class="icon"><use href="#i-menu"/></svg></button>
+        <div>
+          <h1 id="mode-title">Chat</h1>
+          <p id="mode-description">Ask questions answered only from your papers, with citations.</p>
+        </div>
+        <div class="topbar-actions">
+          <button id="progress-button" class="btn btn-ghost btn-sm" type="button"><svg class="icon"><use href="#i-chart"/></svg><span>Progress</span></button>
+          <button id="settings-button" class="icon-btn" type="button" aria-label="Settings"><svg class="icon"><use href="#i-settings"/></svg></button>
+        </div>
+      </header>
+
+      <div class="content">
+        <!-- CHAT -->
+        <section id="chat-panel" class="chat-panel" aria-label="Chat">
+          <div class="scope-bar">
+            <span class="label">Search in</span>
+            <div id="chat-scope" class="row" role="group" aria-label="Paper scope"></div>
+            <span class="spacer"></span>
+            <button id="export-chat" type="button" class="btn btn-ghost btn-sm" disabled><svg class="icon"><use href="#i-download"/></svg>Export</button>
+            <button id="clear-chat" type="button" class="btn btn-ghost btn-sm" disabled><svg class="icon"><use href="#i-refresh"/></svg>New chat</button>
+          </div>
+          <div id="chat-messages" class="messages" aria-live="polite"></div>
+          <form id="chat-form" class="composer">
+            <div class="composer-box">
+              <label for="chat-input" class="sr-only">Your question</label>
+              <textarea id="chat-input" rows="1" placeholder="Ask a question about your papers…" autocomplete="off"></textarea>
+              <button id="chat-send" class="btn btn-primary send" type="submit" aria-label="Send" disabled><svg class="icon"><use href="#i-send"/></svg></button>
+            </div>
+            <div class="composer-hint"><span>Answers use only retrieved passages. Always check the sources.</span><span class="keys"><kbd>Enter</kbd> send · <kbd>Shift</kbd>+<kbd>Enter</kbd> new line</span></div>
+          </form>
+        </section>
+
+        <!-- QUIZ -->
+        <section id="quiz-panel" class="hidden stack" aria-label="Quiz">
+          <div id="quiz-setup" class="card card-pad no-print">
+            <div class="grid-2">
+              <label class="form-label">Paper<select id="quiz-pdf" class="field"></select></label>
+              <label class="form-label">Topic <input id="quiz-topic" class="field" placeholder="e.g. attention, evaluation (optional)"></label>
+            </div>
+            <div class="grid-3" style="margin-top:12px">
+              <label class="form-label">Difficulty
+                <select id="quiz-difficulty" class="field"><option>Easy</option><option selected>Medium</option><option>Hard</option><option>Mixed</option></select>
+              </label>
+              <label class="form-label">Question type
+                <select id="quiz-type" class="field"><option>Multiple choice</option><option>Short answer</option><option>True/False</option><option selected>Mixed</option></select>
+              </label>
+              <label class="form-label">Questions
+                <select id="quiz-count" class="field"><option selected>5</option><option>10</option><option>15</option></select>
+              </label>
+            </div>
+            <div class="row" style="margin-top:12px; align-items:flex-end">
+              <label class="form-label" style="flex:1; min-width:180px">Page range <input id="quiz-pages" class="field" placeholder="e.g. 1-12 (optional)" inputmode="numeric"></label>
+              <button id="generate-quiz" class="btn btn-primary" type="button"><svg class="icon"><use href="#i-sparkle"/></svg><span>Generate quiz</span></button>
+            </div>
+          </div>
+
+          <div id="quiz-area"></div>
+
+          <div class="card card-pad no-print">
+            <div class="row"><strong>Recent attempts</strong><span class="spacer"></span><span id="quiz-history-summary" class="hint"></span></div>
+            <div id="quiz-history" class="hint" style="margin-top:8px">No attempts yet.</div>
+          </div>
+        </section>
+
+        <!-- COMPARE -->
+        <section id="compare-panel" class="hidden stack" aria-label="Compare">
+          <div class="card card-pad">
+            <div class="compare-pick">
+              <label class="form-label">Paper A<select id="compare-pdf-one" class="field"></select></label>
+              <button id="compare-swap" class="icon-btn swap" type="button" aria-label="Swap papers" style="margin-bottom:4px"><svg class="icon"><use href="#i-swap"/></svg></button>
+              <label class="form-label">Paper B<select id="compare-pdf-two" class="field"></select></label>
+            </div>
+            <div id="compare-library-warning" class="notice notice-warn hidden" style="margin-top:12px">
+              <span>Add at least two PDFs to compare papers.</span>
+              <button type="button" id="compare-add-pdf" class="btn btn-sm" style="margin-left:auto">Add PDF</button>
+            </div>
+            <label class="form-label" style="margin-top:14px">What should be compared?
+              <input id="compare-question" class="field" placeholder="e.g. How do they evaluate their models?">
+            </label>
+            <div class="row" style="margin-top:10px" aria-label="Suggestions">
+              <button type="button" class="chip compare-chip">Main objective</button>
+              <button type="button" class="chip compare-chip">Methodology</button>
+              <button type="button" class="chip compare-chip">Results and metrics</button>
+              <button type="button" class="chip compare-chip">Limitations</button>
+              <button type="button" class="chip compare-chip">Data used</button>
+              <span class="spacer"></span>
+              <button id="compare-button" class="btn btn-primary" type="button"><svg class="icon"><use href="#i-compare"/></svg><span>Compare</span></button>
+            </div>
+          </div>
+          <div id="compare-result"></div>
+        </section>
+      </div>
+
+      <footer class="footer">Study aid only. Answers are grounded in retrieved passages but are not guaranteed to be correct.</footer>
     </main>
   </div>
 
-  <div id="toast" class="glass fixed bottom-5 right-5 hidden rounded-xl px-4 py-3 text-sm text-white shadow-2xl"></div>
-  <div id="app-error" class="fixed bottom-5 left-5 hidden max-w-sm rounded-xl border border-red-400/20 bg-red-950/95 p-4 text-sm text-red-100 shadow-2xl" role="alert">
-    <div id="app-error-message"></div>
-    <button id="app-error-retry" type="button" class="mt-3 rounded-lg border border-red-300/30 px-3 py-1.5 text-xs">Retry</button>
-  </div>
-  <dialog id="settings-dialog" class="rounded-2xl border border-white/10 bg-zinc-950 p-0 text-zinc-200 backdrop:bg-black/70">
-    <div class="w-[min(92vw,520px)] p-5">
-      <h2 class="text-lg font-semibold text-white">Settings</h2>
-      <label class="mt-5 block text-sm text-zinc-400">Top-k
-        <input id="setting-top-k" type="number" min="1" max="20" class="field mt-2 block w-full rounded-xl px-3 py-2">
-      </label>
-      <label class="mt-4 block text-sm text-zinc-400">Model
-        <input id="setting-model" readonly class="field mt-2 block w-full rounded-xl px-3 py-2 text-zinc-500">
-      </label>
-      <label class="mt-4 flex items-center gap-3 text-sm"><input id="setting-theme" type="checkbox"> Light theme</label>
-      <label class="mt-4 flex items-center gap-3 text-sm"><input id="setting-context" type="checkbox"> Show retrieved context by default</label>
-      <button id="settings-close" type="button" class="primary-button mt-6 rounded-xl px-4 py-2 text-sm">Done</button>
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+  <div id="drop-overlay" class="drop-overlay hidden"><div>Drop PDFs to add them to your library</div></div>
+
+  <dialog id="settings-dialog" aria-labelledby="settings-title">
+    <div class="dialog-head"><h2 id="settings-title">Settings</h2><button class="icon-btn" data-close aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button></div>
+    <div class="dialog-body">
+      <div class="setting-row">
+        <div><div class="title">Theme</div><div class="desc">Follow your system or pick one.</div></div>
+        <div id="theme-toggle" class="segmented" role="group" aria-label="Theme">
+          <button type="button" data-theme-value="system">System</button>
+          <button type="button" data-theme-value="light">Light</button>
+          <button type="button" data-theme-value="dark">Dark</button>
+        </div>
+      </div>
+      <div class="setting-row">
+        <div><div class="title">Passages per search</div><div class="desc">How many passages chat retrieves from each paper (top-k).</div></div>
+        <input id="setting-top-k" type="number" min="1" max="10" class="field" style="width:76px">
+      </div>
+      <div class="setting-row">
+        <div><div class="title">Show sources expanded</div><div class="desc">Open retrieved passages under each answer by default.</div></div>
+        <label class="switch"><input id="setting-context" type="checkbox"><span></span></label>
+      </div>
+      <div class="setting-row">
+        <div><div class="title">Models</div><div id="setting-model" class="desc">—</div></div>
+      </div>
     </div>
+    <div class="dialog-foot"><button class="btn btn-primary" data-close type="button">Done</button></div>
   </dialog>
-  <dialog id="progress-dialog" class="rounded-2xl border border-white/10 bg-zinc-950 p-0 text-zinc-200 backdrop:bg-black/70">
-    <div class="w-[min(92vw,520px)] p-5">
-      <h2 class="text-lg font-semibold text-white">Progress</h2>
-      <div id="progress-content" class="mt-4 text-sm text-zinc-400">Loading progress...</div>
-      <button id="progress-close" type="button" class="mt-5 rounded-xl border border-white/10 px-4 py-2 text-sm">Close</button>
-    </div>
+
+  <dialog id="progress-dialog" aria-labelledby="progress-title">
+    <div class="dialog-head"><h2 id="progress-title">Your progress</h2><button class="icon-btn" data-close aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button></div>
+    <div id="progress-content" class="dialog-body">Loading…</div>
   </dialog>
-  <dialog id="library-dialog" class="rounded-2xl border border-white/10 bg-zinc-950 p-0 text-zinc-200 backdrop:bg-black/70">
-    <div class="w-[min(92vw,560px)] p-5">
-      <div id="library-dialog-content"></div>
-      <button type="button" id="library-dialog-close" class="mt-4 rounded-xl border border-white/10 px-3 py-2 text-sm">Close</button>
-    </div>
+
+  <dialog id="library-dialog" class="wide" aria-labelledby="library-dialog-title">
+    <div class="dialog-head"><h2 id="library-dialog-title">Paper</h2><button class="icon-btn" data-close aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button></div>
+    <div id="library-dialog-content" class="dialog-body"></div>
+    <div id="library-dialog-foot" class="dialog-foot"></div>
+  </dialog>
+
+  <dialog id="confirm-dialog" aria-labelledby="confirm-title">
+    <form method="dialog">
+      <div class="dialog-head"><h2 id="confirm-title">Confirm</h2></div>
+      <div class="dialog-body">
+        <p id="confirm-message" style="margin:0; color:var(--muted)"></p>
+        <input id="confirm-input" class="field hidden" style="margin-top:12px">
+      </div>
+      <div class="dialog-foot">
+        <button class="btn" value="cancel" type="submit">Cancel</button>
+        <button id="confirm-ok" class="btn btn-primary" value="ok" type="submit">OK</button>
+      </div>
+    </form>
   </dialog>
 
   <script src="/static/app.js"></script>

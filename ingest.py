@@ -93,7 +93,7 @@ def split_documents(documents: list, chunk_size: int | None = None,
     WHY pass them as arguments rather than always reading best_chunk_config():
     evaluator.py calls this function with explicit sizes (one per grid cell) so
     it can sweep the parameter space without mutating the module-level defaults.
-    Callers that do NOT pass arguments (app.py, main()) get the best evaluated
+    Callers that do NOT pass arguments (main.py, main()) get the best evaluated
     values automatically.
 
     RecursiveCharacterTextSplitter tries paragraph, then line, then sentence

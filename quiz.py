@@ -50,18 +50,27 @@ def retrieve_quiz_chunks(
     topic: str,
     difficulty: str = "Medium",
     page_range: str | None = None,
+    question_count: int = 5,
 ) -> list[Document]:
-    """Retrieve quiz evidence with hybrid search restricted to the chosen PDF."""
-    n_results = 12 if difficulty == "Hard" else TOP_K
+    """Retrieve quiz evidence with hybrid search restricted to the chosen PDF.
+
+    WHY the evidence size scales with question_count: three passages cannot
+    support fifteen distinct, non-repetitive questions. Generation and grading
+    must call this with the same arguments, because grading validates every
+    citation against the passages it retrieves.
+    """
+    n_results = 12 if difficulty == "Hard" else max(TOP_K, min(question_count, 12))
+    # A page range is applied after fusion, so fetch the widest candidate pool
+    # first; otherwise a narrow range could filter the top few results to zero.
     evidence = hybrid_search(
         topic,
         vector_store,
         bm25,
         list(chunks),
-        n_results=n_results,
+        n_results=20 if page_range and page_range.strip() else n_results,
         metadata_filter={"filename": pdf_name},
     )
-    return page_range_filter(evidence, page_range)
+    return page_range_filter(evidence, page_range)[:n_results]
 
 
 QUIZ_PROMPT_TEMPLATE = (
@@ -305,9 +314,24 @@ def grade_quiz(
         source.strip()
         for source in re.findall(r"^Source:\s*(.+)$", context, flags=re.M)
     }
+    normalized_sources = {
+        re.sub(r"\s+", " ", source).casefold(): source for source in valid_sources
+    }
     validated_results = []
     points = 0.0
-    for item in results:
+    for question, item in zip(questions, results):
+        if isinstance(item, dict) and item.get("source") not in valid_sources:
+            # WHY repair instead of failing the whole grade: the model often
+            # reformats a citation ("p.3", different case) or cites nothing.
+            # Accept a whitespace/case variant of a real label, else fall back
+            # to the question's own source, which was validated at generation.
+            raw = re.sub(r"\s+", " ", str(item.get("source") or "")).strip().casefold()
+            fallback = question.get("source") if isinstance(question, Mapping) else None
+            item = {
+                **item,
+                "source": normalized_sources.get(raw)
+                or (fallback if fallback in valid_sources else item.get("source")),
+            }
         if not isinstance(item, dict):
             raise ValueError("Each grading result must be a JSON object")
         grade = item.get("grade")

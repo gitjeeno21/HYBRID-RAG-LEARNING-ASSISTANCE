@@ -43,7 +43,7 @@ CHUNK_OVERLAP = 50
 TOP_K = 3
 
 # --- Prompting -------------------------------------------------------------
-# Kept here so app.py (Streamlit) and rag.py (CLI) send the identical prompt;
+# Kept here so main.py (web app) and rag.py (CLI) send the identical prompt;
 # otherwise the two answer paths would drift and results would not compare.
 NO_ANSWER_TEXT = "I don't know based on the provided documents."
 
