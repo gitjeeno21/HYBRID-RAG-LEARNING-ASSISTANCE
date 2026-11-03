@@ -89,7 +89,9 @@ QUIZ_PROMPT_TEMPLATE = (
     "Assign most questions difficulty \"Hard\".\n"
     "- Mixed: approximately 40% Easy, 40% Medium, and 20% Hard.\n\n"
     "Question-type requirements:\n"
-    "- Multiple choice: include exactly four distinct options and set answer to the correct option text.\n"
+    "- Multiple choice: include exactly four distinct options, set correct_index to the 0-based "
+    "position of the correct option, and set answer to that option's text copied character for "
+    "character (never paraphrase it).\n"
     "- Short answer: use a concise open-answer question; omit options.\n"
     "- True/False: include options [\"True\", \"False\"] and answer \"True\" or \"False\".\n"
     "- Mixed: distribute Multiple choice, Short answer, and True/False across the quiz. "
@@ -106,7 +108,7 @@ QUIZ_PROMPT_TEMPLATE = (
     "Return only valid JSON in this shape:\n"
     '{{"covered": true, "questions": [{{"question": "...", "answer": "...", '
     '"difficulty": "Easy|Medium|Hard", "type": "Multiple choice", '
-    '"options": ["...", "...", "...", "..."], "source": "filename, p. X"}}]}}'
+    '"options": ["...", "...", "...", "..."], "correct_index": 0, "source": "filename, p. X"}}]}}'
 )
 
 GRADE_PROMPT_TEMPLATE = (
@@ -158,6 +160,60 @@ def _parse_json(reply: str) -> dict:
     if not isinstance(parsed, dict):
         raise ValueError("Quiz model response must be a JSON object")
     return parsed
+
+
+def _normalize_choice(text: object) -> str:
+    """Fold case, dash/quote variants, spacing and trailing punctuation."""
+    value = str(text).casefold()
+    value = re.sub(r"[‐-―−]", "-", value)
+    value = re.sub(r"[‘’]", "'", value)
+    value = re.sub(r"[“”]", '"', value)
+    value = re.sub(r"\s+", " ", value).strip()
+    return value.rstrip(" .")
+
+
+_FILLER_WORDS = {
+    "a", "an", "the", "and", "or", "of", "to", "in", "on", "for", "with", "by",
+    "is", "are", "was", "were", "be", "it", "its", "that", "this", "as", "at", "from",
+}
+
+
+def _content_words(text: str) -> set[str]:
+    """Words that carry meaning, for comparing a paraphrase with an option."""
+    return {word for word in re.findall(r"\w+", text) if word not in _FILLER_WORDS}
+
+
+def _match_option(answer: str, options: Sequence[object]) -> str | None:
+    """Return the option the model's answer refers to, or None.
+
+    WHY: models often restate the right option with small differences
+    ("B", "B) Elbow method", a different dash or a missing full stop).
+    Rejecting the whole quiz for that throws away an otherwise good result.
+    """
+    texts = [str(option) for option in options]
+    if answer in texts:
+        return answer
+    letter = re.fullmatch(r"\s*\(?([A-Da-d])[\).:]?\s*(.*)", answer)
+    if letter and len(texts) == 4:
+        index = "abcd".index(letter.group(1).lower())
+        rest = letter.group(2)
+        if not rest or _normalize_choice(rest) == _normalize_choice(texts[index]):
+            return texts[index]
+    target = _normalize_choice(answer)
+    matches = [text for text in texts if _normalize_choice(text) == target]
+    if len(matches) == 1:
+        return matches[0]
+    # Paraphrased answer: accept the option whose words it covers best, but
+    # only when that option is a clear winner, so ambiguity still fails.
+    answer_words = _content_words(target)
+    scores = []
+    for text in texts:
+        option_words = _content_words(_normalize_choice(text))
+        scores.append(len(option_words & answer_words) / len(option_words) if option_words else 0.0)
+    ranked = sorted(scores, reverse=True)
+    if len(ranked) > 1 and ranked[0] >= 0.5 and ranked[0] - ranked[1] >= 0.2:
+        return texts[scores.index(ranked[0])]
+    return None
 
 
 def generate_quiz(
@@ -239,7 +295,16 @@ def generate_quiz(
         if item_type in {"Multiple choice", "True/False"}:
             if not isinstance(options, list) or len(options) != (4 if item_type == "Multiple choice" else 2):
                 raise ValueError(f"{item_type} questions need valid options")
-            if answer not in options:
+            index = item.get("correct_index")
+            if answer in options:
+                pass
+            elif (item_type == "Multiple choice" and isinstance(index, int)
+                    and not isinstance(index, bool) and 0 <= index < len(options)):
+                # The index is unambiguous even when the model paraphrases the answer text.
+                answer = str(options[index])
+            else:
+                answer = _match_option(answer, options)
+            if answer is None:
                 raise ValueError(f"{item_type} answer must match one of its options")
         validated.append(
             {

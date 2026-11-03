@@ -11,6 +11,8 @@ Embeddings (`all-MiniLM-L6-v2`) and the Chroma index run locally on CPU. Only an
 
 ## Quick start (Windows / PowerShell)
 
+For detailed steps and troubleshooting, see [HOW_TO_RUN.md](HOW_TO_RUN.md).
+
 ```powershell
 cd autonomous-rag-agent
 python -m venv venv

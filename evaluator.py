@@ -163,6 +163,20 @@ def parse_score(reply: str) -> int | None:
     return int(match.group(1)) if match else None
 
 
+def _generation_options() -> dict:
+    """Extra request options that keep reasoning models from truncating replies.
+
+    WHY: Groq caps completions at 2048 tokens by default, and gpt-oss models
+    spend hidden "reasoning" tokens out of that same budget. The reasoning
+    alone can use all of it, so the visible reply comes back empty or cut off
+    mid-JSON. A larger cap plus low reasoning effort leaves room for the answer.
+    """
+    options: dict = {"max_completion_tokens": 8192}
+    if LLM_MODEL.startswith("openai/gpt-oss"):
+        options["reasoning_effort"] = "low"
+    return options
+
+
 def call_llm(prompt: str, temperature: float = 0.0, label: str = "llm") -> str:
     """Send one prompt to Groq, retrying on rate limits and transient errors.
 
@@ -175,6 +189,7 @@ def call_llm(prompt: str, temperature: float = 0.0, label: str = "llm") -> str:
                 model=LLM_MODEL,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=temperature,
+                **_generation_options(),
             )
             return response.choices[0].message.content or ""
         except AuthenticationError:
@@ -214,6 +229,7 @@ def call_llm_stream(prompt: str, temperature: float = 0.0, label: str = "llm"):
                 messages=[{"role": "user", "content": prompt}],
                 temperature=temperature,
                 stream=True,
+                **_generation_options(),
             )
             break
         except AuthenticationError:
