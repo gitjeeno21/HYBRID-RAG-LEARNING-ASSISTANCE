@@ -1,0 +1,65 @@
+How to run the Autonomous RAG Agent (Windows)
+
+Requirements
+- Python 3.11 (the version this project was tested with)
+- A Groq API key: https://console.groq.com/keys
+- Internet access on first run to install dependencies and download the embedding model
+
+1. Open PowerShell and go to the project folder:
+
+   cd "C:\Users\ASUS\Downloads\autonomous-rag-agent"
+
+2. Create and activate a virtual environment:
+
+   python -m venv venv
+   .\venv\Scripts\Activate.ps1
+
+   If PowerShell blocks activation, open Command Prompt in the project folder
+   and activate with:
+
+   venv\Scripts\activate.bat
+
+3. Install the project dependencies:
+
+   .\venv\Scripts\python.exe -m pip install --upgrade pip
+   .\venv\Scripts\python.exe -m pip install -r requirements.txt
+
+4. Configure your Groq API key:
+
+   If you do not already have a .env file, copy the example:
+
+   Copy-Item .env.example .env
+
+   Open .env and replace "your_groq_api_key_here" with your actual key:
+
+   GROQ_API_KEY=your_actual_groq_api_key
+
+   Keep the key private; do not share or commit the .env file.
+
+5. Start the web app:
+
+   
+   
+
+6. Open the local URL printed by Streamlit (usually http://localhost:8501).
+   The PDFs in the data folder are the knowledge base. If the vector index is
+   missing or empty, the app builds it the first time it needs it. The first
+   run may take a few minutes while the embedding model is downloaded and PDFs
+   are indexed.
+
+   In the app sidebar, use **Remove papers** to remove selected PDFs and their
+   indexed chunks. Choose to keep a copy in `removed_pdfs` or permanently
+   delete the PDF files. Move an archived PDF back into `data` to add it again.
+
+To stop the app, press Ctrl+C in the terminal.
+
+Optional: Build or rebuild the local vector index before opening the app:
+
+   .\venv\Scripts\python.exe ingest.py
+
+This rebuilds chroma_db from the PDFs in data. It is not required for the
+normal app startup.
+
+Optional: Run the command-line RAG example (after the index is available):
+
+   .\venv\Scripts\python.exe rag.py
