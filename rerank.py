@@ -14,7 +14,8 @@ from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from sentence_transformers import CrossEncoder
 
-from config import BASE_DIR, TOP_K, page_number, source_filename
+from config import BASE_DIR, page_number, source_filename
+from config import LEGACY_EVAL_TOP_K as TOP_K  # pinned: this experiment ran at k=3
 from evaluator import build_chunks, get_embeddings
 from hybrid import (
     CANDIDATES_PER_METHOD,

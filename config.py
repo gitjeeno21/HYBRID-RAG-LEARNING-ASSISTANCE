@@ -40,7 +40,39 @@ LLM_MODEL = "openai/gpt-oss-120b"
 # overwrites these at runtime with the configuration it measured as best.
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 50
-TOP_K = 3
+# Passages sent to the model per question (per selected paper). Raised from 3
+# to 5 in Phase 3: it never loses a hit, gains on both eval sets, and lifts
+# multi-hop coverage from 5/10 to 8/10 for ~59% more context tokens
+# (eval/ABLATION.md). RAG_TOP_K=3 restores the previous behaviour.
+TOP_K = int(os.getenv("RAG_TOP_K", "5"))
+# The historical experiments (evaluator.py grid, hybrid.py/rerank.py/run_judging.py)
+# were run at k=3; they stay pinned so their recorded results remain reproducible.
+LEGACY_EVAL_TOP_K = 3
+
+
+def _env_flag(name: str, default: bool) -> bool:
+    """Read an on/off switch from the environment (1/true/yes/on)."""
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+# --- Retrieval switches (Phase 3 ablations; see eval/ABLATION.md) -----------
+# Every change to live retrieval is behind a switch. A switch is only turned
+# on after eval/ablation.py shows it does not lose on the dev set AND improves
+# the held-out set. Each can also be overridden from the environment for A/B
+# runs without editing code, e.g. `RAG_RERANK=0 python -m uvicorn main:app`.
+#
+# Candidates each retriever (dense, BM25) contributes before RRF fusion.
+RETRIEVAL_CANDIDATES = int(os.getenv("RAG_CANDIDATES", "10"))
+# Re-score the first RERANK_POOL fused results with a cross-encoder.
+RERANK_ENABLED = _env_flag("RAG_RERANK", False)
+RERANK_POOL = int(os.getenv("RAG_RERANK_POOL", "10"))
+RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+# Split each PDF as one text so chunks can cross page breaks (cited by the
+# page they start on). Changing this requires re-running `python ingest.py`.
+CROSS_PAGE_CHUNKS = _env_flag("RAG_CROSS_PAGE", False)
 
 # --- Prompting -------------------------------------------------------------
 # Kept here so main.py (web app) and rag.py (CLI) send the identical prompt;

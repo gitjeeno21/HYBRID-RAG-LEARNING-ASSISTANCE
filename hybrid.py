@@ -39,7 +39,19 @@ from typing import Protocol
 from langchain_core.documents import Document
 from rank_bm25 import BM25Okapi
 
-from config import BASE_DIR, TOP_K, page_number, source_filename
+from functools import lru_cache
+
+from config import (
+    BASE_DIR,
+    LEGACY_EVAL_TOP_K,
+    RERANK_ENABLED,
+    RERANK_POOL,
+    RERANKER_MODEL,
+    RETRIEVAL_CANDIDATES,
+    TOP_K,
+    page_number,
+    source_filename,
+)
 
 QUESTIONS_PATH = BASE_DIR / "eval_questions.json"
 RESULTS_PATH = BASE_DIR / "hybrid_results.json"
@@ -48,10 +60,37 @@ RESULTS_PATH = BASE_DIR / "hybrid_results.json"
 DENSE_CHUNK_SIZE = 1500
 DENSE_CHUNK_OVERLAP = 50
 RRF_K = 60
-# Retrieve 10 per method before fusing: fusing only 3+3 would let a single
+# Retrieve N per method before fusing: fusing only 3+3 would let a single
 # disagreement between the lists decide the result, while a deep candidate pool
-# gives RRF something to actually re-rank. 10 is a conventional choice.
-CANDIDATES_PER_METHOD = 10
+# gives RRF something to actually re-rank. Set in config.RETRIEVAL_CANDIDATES
+# (default 10) so ablations can change it behind a switch.
+CANDIDATES_PER_METHOD = RETRIEVAL_CANDIDATES
+
+
+@lru_cache(maxsize=1)
+def _cross_encoder():
+    """Load the reranker once, only when reranking is switched on."""
+    from sentence_transformers import CrossEncoder
+
+    return CrossEncoder(RERANKER_MODEL)
+
+
+def rerank_indices(query: str, chunks: list[Document], fused: list[int],
+                   pool: int = RERANK_POOL) -> list[int]:
+    """Re-order the first `pool` fused results by cross-encoder score.
+
+    Mirrors eval/run_eval.py's "hybrid_rerank" method exactly, so what the
+    evaluation measured is what the app runs. Results beyond the pool keep
+    their RRF order after the reranked ones.
+    """
+    head = fused[:pool]
+    if not head:
+        return fused
+    scores = _cross_encoder().predict(
+        [(query, chunks[index].page_content) for index in head], show_progress_bar=False
+    )
+    order = sorted(range(len(head)), key=lambda j: (-float(scores[j]), j))
+    return [head[j] for j in order] + fused[pool:]
 
 
 class VectorSearchStore(Protocol):
@@ -227,6 +266,8 @@ def _hybrid_search(
         if _document_key(document) in position
     ]
     fused = reciprocal_rank_fusion([dense_idx, lexical_idx])
+    if RERANK_ENABLED:
+        fused = rerank_indices(query, chunks, fused)
     return [
         (chunks[index], dense_scores.get(_document_key(chunks[index])))
         for index in fused[:n_results]
@@ -322,13 +363,14 @@ def evaluate() -> dict:
         for q in group_questions:
             # Existing dense path, unchanged.
             dense_hit = question_is_hit(store, q)
-            dense_docs = store.similarity_search(q["question"], k=TOP_K)
+            dense_docs = store.similarity_search(q["question"], k=LEGACY_EVAL_TOP_K)
             # Guard against the two hit definitions drifting apart.
             if docs_hit(dense_docs, q) != dense_hit:
                 drift += 1
                 dense_hit = docs_hit(dense_docs, q)
 
-            hybrid_docs = hybrid_search(q["question"], store, bm25, chunks)
+            hybrid_docs = hybrid_search(q["question"], store, bm25, chunks,
+                                        n_results=LEGACY_EVAL_TOP_K)
             hybrid_hit = docs_hit(hybrid_docs, q)
 
             per_question[q["id"]] = {"dense": dense_hit, "hybrid": hybrid_hit}
@@ -361,7 +403,7 @@ def evaluate() -> dict:
             "dense_chunk_overlap": DENSE_CHUNK_OVERLAP,
             "rrf_k": RRF_K,
             "candidates_per_method": CANDIDATES_PER_METHOD,
-            "top_k": TOP_K,
+            "top_k": LEGACY_EVAL_TOP_K,
             "retrieval_only": True,
             "fixed_before_measurement": True,
         },

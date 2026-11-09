@@ -71,7 +71,7 @@ from config import (
     EVAL_RESULTS_PATH,
     LLM_MODEL,
     PROMPT_TEMPLATE,
-    TOP_K,
+    LEGACY_EVAL_TOP_K,
     citation,
 )
 from ingest import load_documents
@@ -306,7 +306,7 @@ def build_context(docs: list) -> str:
 # ---------------------------------------------------------------------------
 def question_is_hit(store: Chroma, question: dict) -> bool:
     """True if one top-k chunk is from the expected PDF and has a keyword."""
-    docs = store.similarity_search(question["question"], k=TOP_K)
+    docs = store.similarity_search(question["question"], k=LEGACY_EVAL_TOP_K)
     for doc in docs:
         metadata = doc.metadata
         filename = metadata.get("filename") or ""
@@ -338,7 +338,7 @@ def evaluate_retrieval(store: Chroma, questions: list) -> dict:
 # ---------------------------------------------------------------------------
 def answer_question(store: Chroma, question: str) -> tuple[str, str]:
     """Return (retrieved context, answer) for one question."""
-    docs = store.similarity_search(question, k=TOP_K)
+    docs = store.similarity_search(question, k=LEGACY_EVAL_TOP_K)
     context = build_context(docs)
     prompt = PROMPT_TEMPLATE.format(context=context, question=question)
     return context, call_llm(prompt, temperature=0.2, label="answer")
@@ -483,7 +483,7 @@ def main() -> None:
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "questions_hash": q_hash,
         "num_questions": len(questions),
-        "top_k": TOP_K,
+        "top_k": LEGACY_EVAL_TOP_K,
         "runs_per_config": RUNS_PER_CONFIG,
         "chunk_sizes": CHUNK_SIZES,
         "chunk_overlaps": CHUNK_OVERLAPS,

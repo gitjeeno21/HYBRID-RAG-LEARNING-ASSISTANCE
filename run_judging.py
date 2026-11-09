@@ -43,7 +43,7 @@ from config import (
     EVAL_RESULTS_PATH,
     LLM_MODEL,
     PROMPT_TEMPLATE,
-    TOP_K,
+    LEGACY_EVAL_TOP_K,
     citation,
 )
 
@@ -481,7 +481,7 @@ def main() -> None:
 
                 for i, q in enumerate(questions, start=1):
                     # Step 1: retrieve context.
-                    docs = store.similarity_search(q["question"], k=TOP_K)
+                    docs = store.similarity_search(q["question"], k=LEGACY_EVAL_TOP_K)
                     context = build_context(docs)
 
                     # Step 2: generate an answer with the RAG prompt.

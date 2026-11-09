@@ -160,12 +160,13 @@ def make_chunks(pages: list, settings: IndexSettings) -> list:
     """Split exactly like the live app (per page), unless cross_page is on."""
     from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=settings.chunk_size, chunk_overlap=settings.chunk_overlap
-    )
     if not settings.cross_page:
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=settings.chunk_size, chunk_overlap=settings.chunk_overlap
+        )
         return splitter.split_documents(pages)
-    raise NotImplementedError("cross_page chunking is added in Phase 3")
+    from ingest import split_documents_cross_page
+    return split_documents_cross_page(pages, settings.chunk_size, settings.chunk_overlap)
 
 
 def index_fingerprint(files: list[Path], settings: IndexSettings) -> str:
@@ -174,6 +175,13 @@ def index_fingerprint(files: list[Path], settings: IndexSettings) -> str:
         digest.update(path.name.encode())
         digest.update(hashlib.sha1(path.read_bytes()).digest())
     digest.update(json.dumps(asdict(settings), sort_keys=True).encode())
+    if settings.cross_page:
+        # The splitter's code is part of the index identity, so an edited
+        # splitter never silently reuses chunks built by the old one.
+        import inspect
+
+        from ingest import split_documents_cross_page
+        digest.update(inspect.getsource(split_documents_cross_page).encode())
     return digest.hexdigest()[:12]
 
 
@@ -184,7 +192,10 @@ def get_store(chunks: list, files: list[Path], settings: IndexSettings):
 
     fingerprint = index_fingerprint(files, settings)
     path = INDEX_ROOT / fingerprint
-    embeddings = HuggingFaceEmbeddings(model=settings.embedding_model)
+    # Normalised vectors: a no-op for MiniLM (its pipeline already ends with a
+    # Normalize layer, so the baseline is unchanged) and required for bge.
+    embeddings = HuggingFaceEmbeddings(model=settings.embedding_model,
+                                       encode_kwargs={"normalize_embeddings": True})
     store = Chroma(collection_name="eval", embedding_function=embeddings,
                    persist_directory=str(path))
     count = store._collection.count()
@@ -259,6 +270,15 @@ class Retriever:
 # ---------------------------------------------------------------------------
 # Scoring
 # ---------------------------------------------------------------------------
+def chunk_pages(meta: dict) -> list[int]:
+    """Pages a chunk covers: its own page, or start..end for cross-page chunks."""
+    start = page_number(meta)
+    if not start.isdecimal():
+        return []
+    end = str(meta.get("page_end_label") or start)
+    return list(range(int(start), int(end) + 1)) if end.isdecimal() else [int(start)]
+
+
 def gold_ranks(ranking: list[int], chunks: list, question: dict) -> dict[int, int | None]:
     """For each gold page, the 1-based rank of its first chunk (None if absent)."""
     ranks: dict[int, int | None] = {page: None for page in question["page"]}
@@ -266,18 +286,18 @@ def gold_ranks(ranking: list[int], chunks: list, question: dict) -> dict[int, in
         meta = chunks[index].metadata
         if source_filename(meta) != question["file"]:
             continue
-        label = page_number(meta)
-        if label.isdecimal() and int(label) in ranks and ranks[int(label)] is None:
-            ranks[int(label)] = rank
+        for page in chunk_pages(meta):
+            if page in ranks and ranks[page] is None:
+                ranks[page] = rank
     return ranks
 
 
 def near_page_hit(ranking: list[int], chunks: list, question: dict, top_k: int) -> bool:
     for index in ranking[:top_k]:
         meta = chunks[index].metadata
-        label = page_number(meta)
-        if (source_filename(meta) == question["file"] and label.isdecimal()
-                and any(abs(int(label) - page) <= 1 for page in question["page"])):
+        if source_filename(meta) == question["file"] and any(
+            abs(covered - page) <= 1 for covered in chunk_pages(meta) for page in question["page"]
+        ):
             return True
     return False
 
