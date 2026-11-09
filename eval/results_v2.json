@@ -1,0 +1,2473 @@
+{
+  "generated_at": "2026-11-09T19:56:08+00:00",
+  "git_commit": "b075a07",
+  "questions_file": "eval/heldout_v2_questions.json",
+  "corpus": {
+    "files": [
+      "90-Day ML Engineer Roadmap.pdf",
+      "ML111.pdf",
+      "ML222.pdf",
+      "gpt4_technical_report.pdf",
+      "source_doc.pdf"
+    ],
+    "chunks": 368,
+    "index": "38aa73feeb2d"
+  },
+  "index_settings": {
+    "chunk_size": 1500,
+    "chunk_overlap": 50,
+    "embedding_model": "all-MiniLM-L6-v2",
+    "cross_page": false
+  },
+  "retrieval_only": true,
+  "llm_calls": 0,
+  "bootstrap": {
+    "samples": 10000,
+    "seed": 0,
+    "method": "percentile"
+  },
+  "n_questions": 60,
+  "n_answerable_scored": 47,
+  "n_unanswerable_skipped": 13,
+  "configs": {
+    "dense": {
+      "config": {
+        "name": "dense",
+        "method": "dense",
+        "top_k": 3,
+        "candidates_per_method": 10,
+        "rrf_k": 60,
+        "rerank_pool": 0
+      },
+      "hit@3": {
+        "count": 38.0,
+        "n": 47,
+        "mean": 0.8085,
+        "ci95": [
+          0.7016,
+          0.9149
+        ]
+      },
+      "mrr@10": {
+        "count": 30.844,
+        "n": 47,
+        "mean": 0.6563,
+        "ci95": [
+          0.5509,
+          0.7548
+        ]
+      },
+      "near_page_hit": {
+        "count": 43.0,
+        "n": 47,
+        "mean": 0.9149,
+        "ci95": [
+          0.8298,
+          0.9787
+        ]
+      },
+      "by_type": {
+        "exact_term": {
+          "hits": 8,
+          "n": 12,
+          "mrr": 0.5766
+        },
+        "lookup": {
+          "hits": 9,
+          "n": 12,
+          "mrr": 0.5882
+        },
+        "multi_hop": {
+          "hits": 10,
+          "n": 10,
+          "mrr": 0.75,
+          "all_pages_hits": 3
+        },
+        "paraphrase": {
+          "hits": 11,
+          "n": 13,
+          "mrr": 0.7205
+        }
+      },
+      "seconds": 1.14,
+      "vs_baseline": {
+        "hit": {
+          "delta": -0.0638,
+          "ci95": [
+            -0.1702,
+            0.0426
+          ],
+          "better_on": 2,
+          "worse_on": 5
+        },
+        "rr": {
+          "delta": -0.0936,
+          "ci95": [
+            -0.1901,
+            0.0032
+          ],
+          "better_on": 9,
+          "worse_on": 17
+        }
+      }
+    },
+    "bm25": {
+      "config": {
+        "name": "bm25",
+        "method": "bm25",
+        "top_k": 3,
+        "candidates_per_method": 10,
+        "rrf_k": 60,
+        "rerank_pool": 0
+      },
+      "hit@3": {
+        "count": 38.0,
+        "n": 47,
+        "mean": 0.8085,
+        "ci95": [
+          0.7021,
+          0.9149
+        ]
+      },
+      "mrr@10": {
+        "count": 35.2345,
+        "n": 47,
+        "mean": 0.7497,
+        "ci95": [
+          0.6366,
+          0.8532
+        ]
+      },
+      "near_page_hit": {
+        "count": 40.0,
+        "n": 47,
+        "mean": 0.8511,
+        "ci95": [
+          0.7447,
+          0.9362
+        ]
+      },
+      "by_type": {
+        "exact_term": {
+          "hits": 12,
+          "n": 12,
+          "mrr": 0.8472
+        },
+        "lookup": {
+          "hits": 11,
+          "n": 12,
+          "mrr": 0.875
+        },
+        "multi_hop": {
+          "hits": 10,
+          "n": 10,
+          "mrr": 0.9333,
+          "all_pages_hits": 7
+        },
+        "paraphrase": {
+          "hits": 5,
+          "n": 13,
+          "mrr": 0.4027
+        }
+      },
+      "seconds": 0.02,
+      "vs_baseline": {
+        "hit": {
+          "delta": -0.0638,
+          "ci95": [
+            -0.1489,
+            0.0213
+          ],
+          "better_on": 1,
+          "worse_on": 4
+        },
+        "rr": {
+          "delta": -0.0002,
+          "ci95": [
+            -0.0742,
+            0.0766
+          ],
+          "better_on": 6,
+          "worse_on": 8
+        }
+      }
+    },
+    "hybrid_rrf60": {
+      "config": {
+        "name": "hybrid_rrf60",
+        "method": "hybrid",
+        "top_k": 3,
+        "candidates_per_method": 10,
+        "rrf_k": 60,
+        "rerank_pool": 0
+      },
+      "hit@3": {
+        "count": 41.0,
+        "n": 47,
+        "mean": 0.8723,
+        "ci95": [
+          0.766,
+          0.9574
+        ]
+      },
+      "mrr@10": {
+        "count": 35.2429,
+        "n": 47,
+        "mean": 0.7498,
+        "ci95": [
+          0.653,
+          0.844
+        ]
+      },
+      "near_page_hit": {
+        "count": 44.0,
+        "n": 47,
+        "mean": 0.9362,
+        "ci95": [
+          0.8511,
+          1.0
+        ]
+      },
+      "by_type": {
+        "exact_term": {
+          "hits": 11,
+          "n": 12,
+          "mrr": 0.7014
+        },
+        "lookup": {
+          "hits": 11,
+          "n": 12,
+          "mrr": 0.7917
+        },
+        "multi_hop": {
+          "hits": 10,
+          "n": 10,
+          "mrr": 0.9333,
+          "all_pages_hits": 5
+        },
+        "paraphrase": {
+          "hits": 9,
+          "n": 13,
+          "mrr": 0.6148
+        }
+      },
+      "seconds": 0.02
+    },
+    "hybrid_rerank_top10": {
+      "config": {
+        "name": "hybrid_rerank_top10",
+        "method": "hybrid_rerank",
+        "top_k": 3,
+        "candidates_per_method": 10,
+        "rrf_k": 60,
+        "rerank_pool": 10
+      },
+      "hit@3": {
+        "count": 45.0,
+        "n": 47,
+        "mean": 0.9574,
+        "ci95": [
+          0.8936,
+          1.0
+        ]
+      },
+      "mrr@10": {
+        "count": 41.1667,
+        "n": 47,
+        "mean": 0.8759,
+        "ci95": [
+          0.7943,
+          0.9468
+        ]
+      },
+      "near_page_hit": {
+        "count": 46.0,
+        "n": 47,
+        "mean": 0.9787,
+        "ci95": [
+          0.9362,
+          1.0
+        ]
+      },
+      "by_type": {
+        "exact_term": {
+          "hits": 12,
+          "n": 12,
+          "mrr": 0.9583
+        },
+        "lookup": {
+          "hits": 11,
+          "n": 12,
+          "mrr": 0.8333
+        },
+        "multi_hop": {
+          "hits": 10,
+          "n": 10,
+          "mrr": 0.95,
+          "all_pages_hits": 6
+        },
+        "paraphrase": {
+          "hits": 12,
+          "n": 13,
+          "mrr": 0.7821
+        }
+      },
+      "seconds": 26.94,
+      "vs_baseline": {
+        "hit": {
+          "delta": 0.0851,
+          "ci95": [
+            0.0213,
+            0.1702
+          ],
+          "better_on": 4,
+          "worse_on": 0
+        },
+        "rr": {
+          "delta": 0.126,
+          "ci95": [
+            0.044,
+            0.2111
+          ],
+          "better_on": 14,
+          "worse_on": 2
+        }
+      }
+    },
+    "hybrid_rerank_top20": {
+      "config": {
+        "name": "hybrid_rerank_top20",
+        "method": "hybrid_rerank",
+        "top_k": 3,
+        "candidates_per_method": 10,
+        "rrf_k": 60,
+        "rerank_pool": 20
+      },
+      "hit@3": {
+        "count": 45.0,
+        "n": 47,
+        "mean": 0.9574,
+        "ci95": [
+          0.8936,
+          1.0
+        ]
+      },
+      "mrr@10": {
+        "count": 40.6667,
+        "n": 47,
+        "mean": 0.8652,
+        "ci95": [
+          0.7801,
+          0.9397
+        ]
+      },
+      "near_page_hit": {
+        "count": 46.0,
+        "n": 47,
+        "mean": 0.9787,
+        "ci95": [
+          0.9362,
+          1.0
+        ]
+      },
+      "by_type": {
+        "exact_term": {
+          "hits": 12,
+          "n": 12,
+          "mrr": 0.9583
+        },
+        "lookup": {
+          "hits": 11,
+          "n": 12,
+          "mrr": 0.7917
+        },
+        "multi_hop": {
+          "hits": 10,
+          "n": 10,
+          "mrr": 0.95,
+          "all_pages_hits": 6
+        },
+        "paraphrase": {
+          "hits": 12,
+          "n": 13,
+          "mrr": 0.7821
+        }
+      },
+      "seconds": 51.54,
+      "vs_baseline": {
+        "hit": {
+          "delta": 0.0851,
+          "ci95": [
+            0.0213,
+            0.1702
+          ],
+          "better_on": 4,
+          "worse_on": 0
+        },
+        "rr": {
+          "delta": 0.1154,
+          "ci95": [
+            0.0284,
+            0.2044
+          ],
+          "better_on": 14,
+          "worse_on": 3
+        }
+      }
+    }
+  },
+  "per_question": {
+    "v2_01": {
+      "type": "exact_term",
+      "file": "source_doc.pdf",
+      "page": [
+        8
+      ],
+      "dense": {
+        "first_gold_rank": 10,
+        "gold_page_ranks": {
+          "8": 10
+        },
+        "hit": false
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "8": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 3,
+        "gold_page_ranks": {
+          "8": 3
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "8": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "8": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_02": {
+      "type": "exact_term",
+      "file": "source_doc.pdf",
+      "page": [
+        9
+      ],
+      "dense": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "9": 2
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 3,
+        "gold_page_ranks": {
+          "9": 3
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 3,
+        "gold_page_ranks": {
+          "9": 3
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "9": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "9": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_03": {
+      "type": "exact_term",
+      "file": "source_doc.pdf",
+      "page": [
+        10
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "10": 1
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 3,
+        "gold_page_ranks": {
+          "10": 3
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "10": 2
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "10": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "10": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_04": {
+      "type": "lookup",
+      "file": "source_doc.pdf",
+      "page": [
+        8
+      ],
+      "dense": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "8": 2
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "8": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "8": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "8": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "8": 2
+        },
+        "hit": true
+      }
+    },
+    "v2_05": {
+      "type": "lookup",
+      "file": "source_doc.pdf",
+      "page": [
+        7
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 1
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_06": {
+      "type": "multi_hop",
+      "file": "source_doc.pdf",
+      "page": [
+        8,
+        10
+      ],
+      "dense": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "8": 17,
+          "10": 2
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 3,
+        "gold_page_ranks": {
+          "8": 3,
+          "10": 6
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 3,
+        "gold_page_ranks": {
+          "8": 4,
+          "10": 3
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "8": 3,
+          "10": 2
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "8": 3,
+          "10": 2
+        },
+        "hit": true
+      }
+    },
+    "v2_07": {
+      "type": "multi_hop",
+      "file": "source_doc.pdf",
+      "page": [
+        7,
+        8
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 8,
+          "8": 1
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 2,
+          "8": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 3,
+          "8": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 4,
+          "8": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 4,
+          "8": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_08": {
+      "type": "paraphrase",
+      "file": "source_doc.pdf",
+      "page": [
+        8
+      ],
+      "dense": {
+        "first_gold_rank": 38,
+        "gold_page_ranks": {
+          "8": 38
+        },
+        "hit": false
+      },
+      "bm25": {
+        "first_gold_rank": 14,
+        "gold_page_ranks": {
+          "8": 14
+        },
+        "hit": false
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": null,
+        "gold_page_ranks": {
+          "8": null
+        },
+        "hit": false
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": null,
+        "gold_page_ranks": {
+          "8": null
+        },
+        "hit": false
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": null,
+        "gold_page_ranks": {
+          "8": null
+        },
+        "hit": false
+      }
+    },
+    "v2_09": {
+      "type": "paraphrase",
+      "file": "source_doc.pdf",
+      "page": [
+        5
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "5": 1
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 7,
+        "gold_page_ranks": {
+          "5": 7
+        },
+        "hit": false
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 4,
+        "gold_page_ranks": {
+          "5": 4
+        },
+        "hit": false
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "5": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "5": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_13": {
+      "type": "exact_term",
+      "file": "gpt4_technical_report.pdf",
+      "page": [
+        54,
+        96
+      ],
+      "dense": {
+        "first_gold_rank": 7,
+        "gold_page_ranks": {
+          "54": 7,
+          "96": 25
+        },
+        "hit": false
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "54": 1,
+          "96": 2
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 4,
+        "gold_page_ranks": {
+          "54": 4,
+          "96": 7
+        },
+        "hit": false
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "54": 1,
+          "96": 3
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "54": 1,
+          "96": 3
+        },
+        "hit": true
+      }
+    },
+    "v2_14": {
+      "type": "exact_term",
+      "file": "gpt4_technical_report.pdf",
+      "page": [
+        56
+      ],
+      "dense": {
+        "first_gold_rank": 3,
+        "gold_page_ranks": {
+          "56": 3
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "56": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "56": 2
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "56": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "56": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_15": {
+      "type": "exact_term",
+      "file": "gpt4_technical_report.pdf",
+      "page": [
+        82
+      ],
+      "dense": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "82": 2
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "82": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "82": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "82": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "82": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_16": {
+      "type": "exact_term",
+      "file": "gpt4_technical_report.pdf",
+      "page": [
+        51
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "51": 1
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "51": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "51": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "51": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "51": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_17": {
+      "type": "lookup",
+      "file": "gpt4_technical_report.pdf",
+      "page": [
+        25
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "25": 1
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "25": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "25": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "25": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "25": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_18": {
+      "type": "lookup",
+      "file": "gpt4_technical_report.pdf",
+      "page": [
+        45
+      ],
+      "dense": {
+        "first_gold_rank": 10,
+        "gold_page_ranks": {
+          "45": 10
+        },
+        "hit": false
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "45": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "45": 2
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "45": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "45": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_19": {
+      "type": "lookup",
+      "file": "gpt4_technical_report.pdf",
+      "page": [
+        52
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "52": 1
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "52": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "52": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "52": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "52": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_20": {
+      "type": "lookup",
+      "file": "gpt4_technical_report.pdf",
+      "page": [
+        53
+      ],
+      "dense": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "53": 2
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "53": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "53": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "53": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "53": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_21": {
+      "type": "multi_hop",
+      "file": "gpt4_technical_report.pdf",
+      "page": [
+        5,
+        25,
+        30
+      ],
+      "dense": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "5": 20,
+          "25": 2,
+          "30": 32
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "5": 7,
+          "25": 1,
+          "30": 4
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "5": 12,
+          "25": 1,
+          "30": 6
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "5": 12,
+          "25": 1,
+          "30": 4
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "5": 12,
+          "25": 1,
+          "30": 5
+        },
+        "hit": true
+      }
+    },
+    "v2_22": {
+      "type": "multi_hop",
+      "file": "gpt4_technical_report.pdf",
+      "page": [
+        56,
+        57,
+        99
+      ],
+      "dense": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "56": 2,
+          "57": 27,
+          "99": 45
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "56": 1,
+          "57": 9,
+          "99": 11
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "56": 1,
+          "57": 14,
+          "99": null
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "56": 1,
+          "57": 14,
+          "99": null
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "56": 1,
+          "57": 9,
+          "99": null
+        },
+        "hit": true
+      }
+    },
+    "v2_23": {
+      "type": "multi_hop",
+      "file": "gpt4_technical_report.pdf",
+      "page": [
+        46,
+        64
+      ],
+      "dense": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "46": 3,
+          "64": 2
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "46": 1,
+          "64": 2
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "46": 1,
+          "64": 2
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "46": 1,
+          "64": 2
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "46": 1,
+          "64": 2
+        },
+        "hit": true
+      }
+    },
+    "v2_24": {
+      "type": "paraphrase",
+      "file": "gpt4_technical_report.pdf",
+      "page": [
+        55
+      ],
+      "dense": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "55": 2
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "55": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "55": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "55": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "55": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_25": {
+      "type": "paraphrase",
+      "file": "gpt4_technical_report.pdf",
+      "page": [
+        29
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "29": 1
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 12,
+        "gold_page_ranks": {
+          "29": 12
+        },
+        "hit": false
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "29": 2
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "29": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "29": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_26": {
+      "type": "paraphrase",
+      "file": "gpt4_technical_report.pdf",
+      "page": [
+        58
+      ],
+      "dense": {
+        "first_gold_rank": 3,
+        "gold_page_ranks": {
+          "58": 3
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "58": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "58": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "58": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "58": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_27": {
+      "type": "paraphrase",
+      "file": "gpt4_technical_report.pdf",
+      "page": [
+        59
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "59": 1
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "59": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "59": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "59": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "59": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_31": {
+      "type": "exact_term",
+      "file": "ML111.pdf",
+      "page": [
+        4
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 1
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_32": {
+      "type": "exact_term",
+      "file": "ML111.pdf",
+      "page": [
+        7
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 1
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_33": {
+      "type": "exact_term",
+      "file": "90-Day ML Engineer Roadmap.pdf",
+      "page": [
+        2
+      ],
+      "dense": {
+        "first_gold_rank": 5,
+        "gold_page_ranks": {
+          "2": 5
+        },
+        "hit": false
+      },
+      "bm25": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "2": 2
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "2": 2
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "2": 2
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "2": 2
+        },
+        "hit": true
+      }
+    },
+    "v2_34": {
+      "type": "lookup",
+      "file": "ML111.pdf",
+      "page": [
+        2
+      ],
+      "dense": {
+        "first_gold_rank": 3,
+        "gold_page_ranks": {
+          "2": 3
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "2": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "2": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "2": 2
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "2": 2
+        },
+        "hit": true
+      }
+    },
+    "v2_35": {
+      "type": "lookup",
+      "file": "ML111.pdf",
+      "page": [
+        4
+      ],
+      "dense": {
+        "first_gold_rank": 8,
+        "gold_page_ranks": {
+          "4": 8
+        },
+        "hit": false
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "4": 2
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_36": {
+      "type": "lookup",
+      "file": "90-Day ML Engineer Roadmap.pdf",
+      "page": [
+        2
+      ],
+      "dense": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "2": 2
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "2": 2
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "2": 2
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "2": 2
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "2": 2
+        },
+        "hit": true
+      }
+    },
+    "v2_37": {
+      "type": "lookup",
+      "file": "90-Day ML Engineer Roadmap.pdf",
+      "page": [
+        3
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "3": 1
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "3": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "3": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "3": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "3": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_38": {
+      "type": "multi_hop",
+      "file": "ML111.pdf",
+      "page": [
+        3,
+        6
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "3": 1,
+          "6": 19
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "3": 1,
+          "6": 3
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "3": 1,
+          "6": 5
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "3": 1,
+          "6": 3
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "3": 1,
+          "6": 3
+        },
+        "hit": true
+      }
+    },
+    "v2_39": {
+      "type": "multi_hop",
+      "file": "ML111.pdf",
+      "page": [
+        2,
+        4
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "2": 18,
+          "4": 1
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "2": 3,
+          "4": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "2": 4,
+          "4": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "2": 10,
+          "4": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "2": 17,
+          "4": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_40": {
+      "type": "multi_hop",
+      "file": "90-Day ML Engineer Roadmap.pdf",
+      "page": [
+        3,
+        4
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "3": 1,
+          "4": 2
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "3": 2,
+          "4": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "3": 1,
+          "4": 2
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "3": 2,
+          "4": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "3": 2,
+          "4": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_41": {
+      "type": "paraphrase",
+      "file": "ML111.pdf",
+      "page": [
+        7
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 1
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 8,
+        "gold_page_ranks": {
+          "7": 8
+        },
+        "hit": false
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "7": 2
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_42": {
+      "type": "paraphrase",
+      "file": "ML111.pdf",
+      "page": [
+        7
+      ],
+      "dense": {
+        "first_gold_rank": 3,
+        "gold_page_ranks": {
+          "7": 3
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 5,
+        "gold_page_ranks": {
+          "7": 5
+        },
+        "hit": false
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 7,
+        "gold_page_ranks": {
+          "7": 7
+        },
+        "hit": false
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "7": 2
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "7": 2
+        },
+        "hit": true
+      }
+    },
+    "v2_43": {
+      "type": "paraphrase",
+      "file": "ML111.pdf",
+      "page": [
+        3
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "3": 1
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 6,
+        "gold_page_ranks": {
+          "3": 6
+        },
+        "hit": false
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "3": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 3,
+        "gold_page_ranks": {
+          "3": 3
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 3,
+        "gold_page_ranks": {
+          "3": 3
+        },
+        "hit": true
+      }
+    },
+    "v2_44": {
+      "type": "paraphrase",
+      "file": "90-Day ML Engineer Roadmap.pdf",
+      "page": [
+        3
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "3": 1
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 10,
+        "gold_page_ranks": {
+          "3": 10
+        },
+        "hit": false
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "3": 2
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "3": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "3": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_49": {
+      "type": "exact_term",
+      "file": "ML222.pdf",
+      "page": [
+        4
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 1
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_50": {
+      "type": "exact_term",
+      "file": "ML222.pdf",
+      "page": [
+        6
+      ],
+      "dense": {
+        "first_gold_rank": 7,
+        "gold_page_ranks": {
+          "6": 7
+        },
+        "hit": false
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "6": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "6": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "6": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "6": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_51": {
+      "type": "lookup",
+      "file": "ML222.pdf",
+      "page": [
+        3
+      ],
+      "dense": {
+        "first_gold_rank": 44,
+        "gold_page_ranks": {
+          "3": 44
+        },
+        "hit": false
+      },
+      "bm25": {
+        "first_gold_rank": 18,
+        "gold_page_ranks": {
+          "3": 18
+        },
+        "hit": false
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": null,
+        "gold_page_ranks": {
+          "3": null
+        },
+        "hit": false
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": null,
+        "gold_page_ranks": {
+          "3": null
+        },
+        "hit": false
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": null,
+        "gold_page_ranks": {
+          "3": null
+        },
+        "hit": false
+      }
+    },
+    "v2_52": {
+      "type": "lookup",
+      "file": "ML222.pdf",
+      "page": [
+        7
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 1
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "7": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_53": {
+      "type": "multi_hop",
+      "file": "ML222.pdf",
+      "page": [
+        4,
+        5
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 1,
+          "5": 2
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 1,
+          "5": 2
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 1,
+          "5": 2
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 1,
+          "5": 2
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 1,
+          "5": 2
+        },
+        "hit": true
+      }
+    },
+    "v2_54": {
+      "type": "multi_hop",
+      "file": "ML222.pdf",
+      "page": [
+        4,
+        7
+      ],
+      "dense": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "4": 4,
+          "7": 2
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 2,
+          "7": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 3,
+          "7": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 1,
+          "7": 2
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "4": 1,
+          "7": 2
+        },
+        "hit": true
+      }
+    },
+    "v2_55": {
+      "type": "paraphrase",
+      "file": "ML222.pdf",
+      "page": [
+        8
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "8": 1
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 2,
+        "gold_page_ranks": {
+          "8": 2
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "8": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "8": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "8": 1
+        },
+        "hit": true
+      }
+    },
+    "v2_56": {
+      "type": "paraphrase",
+      "file": "ML222.pdf",
+      "page": [
+        3
+      ],
+      "dense": {
+        "first_gold_rank": 5,
+        "gold_page_ranks": {
+          "3": 5
+        },
+        "hit": false
+      },
+      "bm25": {
+        "first_gold_rank": 16,
+        "gold_page_ranks": {
+          "3": 16
+        },
+        "hit": false
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 10,
+        "gold_page_ranks": {
+          "3": 10
+        },
+        "hit": false
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 3,
+        "gold_page_ranks": {
+          "3": 3
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 3,
+        "gold_page_ranks": {
+          "3": 3
+        },
+        "hit": true
+      }
+    },
+    "v2_57": {
+      "type": "paraphrase",
+      "file": "ML222.pdf",
+      "page": [
+        9
+      ],
+      "dense": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "9": 1
+        },
+        "hit": true
+      },
+      "bm25": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "9": 1
+        },
+        "hit": true
+      },
+      "hybrid_rrf60": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "9": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top10": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "9": 1
+        },
+        "hit": true
+      },
+      "hybrid_rerank_top20": {
+        "first_gold_rank": 1,
+        "gold_page_ranks": {
+          "9": 1
+        },
+        "hit": true
+      }
+    }
+  }
+}

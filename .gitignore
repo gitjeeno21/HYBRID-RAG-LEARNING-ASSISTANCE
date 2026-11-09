@@ -42,3 +42,7 @@ removed_pdfs/
 
 # Local tool state
 .freebuff/
+
+# Personal documents: never commit (contain contact details)
+data/*Resume*.pdf
+eval/.index/
