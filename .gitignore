@@ -46,3 +46,4 @@ removed_pdfs/
 # Personal documents: never commit (contain contact details)
 data/*Resume*.pdf
 eval/.index/
+eval/.cache/

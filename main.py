@@ -22,6 +22,7 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_huggingface import HuggingFaceEmbeddings
 from pydantic import BaseModel, Field
 
+from citations import check_citations
 from compare import (
     expand_compare_query,
     generate_comparison,
@@ -572,6 +573,7 @@ def chat(request: ChatRequest) -> dict[str, Any]:
         "citations": _citations(retrieved),
         "context": retrieved,
         "trust": assess(standalone_query, answer, retrieved),
+        "citation_check": check_citations(answer, retrieved, list_pdf_names()),
         "query_used": standalone_query,
     }
 
@@ -615,7 +617,11 @@ def chat_stream(request: ChatRequest) -> StreamingResponse:
             yield line({"type": "error", "detail": _provider_error_detail(exc)})
             return
         answer = "".join(parts).strip()
-        yield line({"type": "done", "answer": answer, "trust": assess(standalone_query, answer, retrieved)})
+        yield line({
+            "type": "done", "answer": answer,
+            "trust": assess(standalone_query, answer, retrieved),
+            "citation_check": check_citations(answer, retrieved, list_pdf_names()),
+        })
 
     return StreamingResponse(events(), media_type="application/x-ndjson")
 

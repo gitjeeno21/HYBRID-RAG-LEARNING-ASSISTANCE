@@ -9,6 +9,12 @@ the answer. A
 correct with probability X". Treat the label as a prompt to look closer, never
 as evidence.
 
+MEASURED (Phase 4, eval/ANSWER_QUALITY_k5.md, held-out v2, top-k 5): all 38
+answered questions were correct, labelled High 8 and Medium 30, never Low.
+Both labels were 100% correct, so on this set the label does NOT separate
+right from wrong answers. The retrieval-strength cut-off (0.40) put 30 correct
+answers at Medium. Do not present the label as an accuracy estimate.
+
 Two signals are combined:
 
 (a) RETRIEVAL STRENGTH -- how similar the retrieved chunks were to the question,

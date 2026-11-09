@@ -590,7 +590,7 @@ async function sendChat(query, existingTurn = null) {
         });
       } else if (event.type === "done") {
         cancelAnimationFrame(frame);
-        Object.assign(turn.data, { answer: event.answer, trust: event.trust });
+        Object.assign(turn.data, { answer: event.answer, trust: event.trust, citation_check: event.citation_check });
         turn.status = "done";
       } else if (event.type === "error") {
         throw new Error(event.detail);
@@ -652,6 +652,14 @@ function trustBadge(trust = {}) {
   return `<span class="badge ${cls}" title="${escapeHtml(reason)}A heuristic from retrieval similarity and a support check, not a guarantee.">${escapeHtml(text)}</span>`;
 }
 
+/** Warn when the answer cites a page that was not among the retrieved passages. */
+function citationWarning(check) {
+  const bad = check?.not_in_retrieved || [];
+  if (!bad.length) return "";
+  const list = bad.join("; ");
+  return ` <span class="badge badge-low" title="The answer cites ${escapeHtml(list)}, which was not among the passages it was given. Check that claim against the PDF.">${bad.length} unverified citation${bad.length === 1 ? "" : "s"}</span>`;
+}
+
 function renderTurn(turn) {
   const wrapper = $(`[data-turn="${turn.id}"]`);
   if (!wrapper) return;
@@ -677,7 +685,7 @@ function renderTurn(turn) {
     const streaming = turn.status === "streaming";
     const status = streaming
       ? `<span class="badge badge-neutral"><span class="spinner" style="width:10px;height:10px;border-width:1.5px"></span>Writing answer…</span>`
-      : trustBadge(data.trust);
+      : trustBadge(data.trust) + citationWarning(data.citation_check);
     bot = `${rewritten}
       <div class="md${streaming ? " streaming" : ""}">${renderMarkdown(stripSourcesLine(data.answer)) || "<p></p>"}</div>
       <div class="msg-meta">${status}
