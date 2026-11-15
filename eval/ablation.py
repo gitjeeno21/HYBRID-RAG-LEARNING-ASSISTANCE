@@ -94,7 +94,7 @@ def legacy_keyword_hit(retriever, config, raw: dict, question: dict) -> float:
 def score(retriever, config, path: Path, keyword: bool) -> dict:
     questions = [q for q in H.load_questions(path) if q.get("file") and q.get("page")]
     raw = {q["id"]: q for q in json.loads(path.read_text(encoding="utf-8"))}
-    result = H.evaluate(questions, retriever, [config])
+    result = H.evaluate(questions, retriever, [config], measure_latency=False)
     block = result["configs"][config.name]
     hits = {qid: float(row[config.name]["hit"]) for qid, row in result["per_question"].items()}
     out = {

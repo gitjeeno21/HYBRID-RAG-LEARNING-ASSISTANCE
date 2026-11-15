@@ -42,7 +42,7 @@ import hashlib
 import json
 import subprocess
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -90,6 +90,7 @@ class RetrievalConfig:
     candidates_per_method: int = 10  # live hybrid.CANDIDATES_PER_METHOD
     rrf_k: int = 60                  # live hybrid.RRF_K
     rerank_pool: int = 0             # rerank the first N of the fused list
+    reranker: str = RERANKER_MODEL   # cross-encoder used when rerank_pool > 0
 
 
 DEFAULT_CONFIGS = [
@@ -98,6 +99,12 @@ DEFAULT_CONFIGS = [
     RetrievalConfig("hybrid_rrf60", "hybrid"),
     RetrievalConfig("hybrid_rerank_top10", "hybrid_rerank", rerank_pool=10),
     RetrievalConfig("hybrid_rerank_top20", "hybrid_rerank", rerank_pool=20),
+]
+# Not in the default run (1.1 GB download, slow on CPU); select with
+# --configs hybrid_rrf60 hybrid_bge_rerank_top10
+EXTRA_CONFIGS = [
+    RetrievalConfig("hybrid_bge_rerank_top10", "hybrid_rerank", rerank_pool=10,
+                    reranker="BAAI/bge-reranker-base"),
 ]
 BASELINE = "hybrid_rrf60"
 
@@ -227,7 +234,7 @@ class Retriever:
         self.position: dict = {}
         for index, chunk in enumerate(chunks):
             self.position.setdefault(chunk_key(chunk), index)
-        self._cross_encoder = None
+        self._cross_encoders: dict = {}
         self._cache: dict[str, tuple[list[int], list[int]]] = {}
 
     def base(self, query: str) -> tuple[list[int], list[int]]:
@@ -239,11 +246,44 @@ class Retriever:
             self._cache[query] = (dense, lexical)
         return self._cache[query]
 
-    def cross_encoder(self):
-        if self._cross_encoder is None:
+    def cross_encoder(self, model: str = RERANKER_MODEL):
+        if model not in self._cross_encoders:
             from sentence_transformers import CrossEncoder
-            self._cross_encoder = CrossEncoder(RERANKER_MODEL)
-        return self._cross_encoder
+            self._cross_encoders[model] = CrossEncoder(model)
+        return self._cross_encoders[model]
+
+    def timed_run(self, query: str, config: RetrievalConfig) -> dict[str, float]:
+        """Run one config the way the live app does, uncached, and time each stage (ms).
+
+        WHY separate from ranking(): ranking() reuses cached base lists so that
+        scoring many configs is cheap, which makes its timings meaningless.
+        Here every stage runs from scratch with the live candidate depth.
+        """
+        timings: dict[str, float] = {}
+        clock = time.perf_counter
+        if config.method in {"dense", "hybrid", "hybrid_rerank"}:
+            depth = config.top_k if config.method == "dense" else config.candidates_per_method
+            started = clock()
+            dense_docs = self.store.similarity_search(query, k=depth)
+            timings["dense_ms"] = (clock() - started) * 1e3
+            dense = [self.position[chunk_key(d)] for d in dense_docs if chunk_key(d) in self.position]
+        if config.method in {"bm25", "hybrid", "hybrid_rerank"}:
+            depth = config.top_k if config.method == "bm25" else config.candidates_per_method
+            started = clock()
+            lexical = bm25_ranking(self.bm25, query, depth)
+            timings["bm25_ms"] = (clock() - started) * 1e3
+        if config.method in {"hybrid", "hybrid_rerank"}:
+            started = clock()
+            fused = reciprocal_rank_fusion([dense, lexical], k=config.rrf_k)
+            timings["fusion_ms"] = (clock() - started) * 1e3
+        if config.method == "hybrid_rerank":
+            pool = fused[:config.rerank_pool]
+            started = clock()
+            self.cross_encoder(config.reranker).predict([(query, self.chunks[i].page_content) for i in pool],
+                                         show_progress_bar=False)
+            timings["rerank_ms"] = (clock() - started) * 1e3
+        timings["total_ms"] = sum(timings.values())
+        return timings
 
     def ranking(self, query: str, config: RetrievalConfig) -> list[int]:
         """Full ordered list of chunk indices for one config (best first)."""
@@ -258,7 +298,7 @@ class Retriever:
             return fused
         if config.method == "hybrid_rerank":
             pool = fused[:config.rerank_pool]
-            scores = self.cross_encoder().predict(
+            scores = self.cross_encoder(config.reranker).predict(
                 [(query, self.chunks[i].page_content) for i in pool],
                 show_progress_bar=False,
             )
@@ -302,6 +342,45 @@ def near_page_hit(ranking: list[int], chunks: list, question: dict, top_k: int) 
     return False
 
 
+def is_relevant(meta: dict, question: dict) -> bool:
+    """A chunk is relevant when it comes from the gold file and covers a gold page.
+
+    Relevance is page-level, like the hit metric: when a page is split into
+    several chunks, all of them count, even though only one may hold the
+    answer. Precision and nDCG therefore measure "right page", not "right
+    sentence"; eval/context_coverage.py measures the sentence level.
+    """
+    return (source_filename(meta) == question["file"]
+            and any(page in question["page"] for page in chunk_pages(meta)))
+
+
+def ranking_metrics(ranking: list[int], chunks: list, question: dict, top_k: int,
+                    relevant_total: int, hops: list[list[int]],
+                    ranks: dict[int, int | None]) -> dict[str, float]:
+    """Precision@k, Recall@k and nDCG@k for one question (binary relevance).
+
+    precision@k = relevant chunks in the top k / k
+    recall@k    = facts (hops) with at least one gold page in the top k / facts.
+                  A single-fact question has one hop per listed page unless
+                  `hops` groups them, so recall equals hit for most questions
+                  and differs only for multi-hop ones.
+    nDCG@k      = DCG / ideal DCG, with DCG = sum(rel_i / log2(i + 1)); the
+                  ideal ranking puts min(k, relevant chunks in corpus) first.
+    """
+    relevance = [1.0 if is_relevant(chunks[i].metadata, question) else 0.0
+                 for i in ranking[:top_k]]
+    dcg = sum(rel / np.log2(rank + 1) for rank, rel in enumerate(relevance, start=1))
+    ideal = sum(1.0 / np.log2(rank + 1) for rank in range(1, min(top_k, relevant_total) + 1))
+    covered = sum(
+        any(ranks.get(page) is not None and ranks[page] <= top_k for page in hop) for hop in hops
+    )
+    return {
+        "precision": sum(relevance) / top_k,
+        "recall": covered / len(hops) if hops else 0.0,
+        "ndcg": dcg / ideal if ideal else 0.0,
+    }
+
+
 def bootstrap_ci(values: np.ndarray, rng: np.random.Generator) -> list[float]:
     if len(values) == 0:
         return [float("nan"), float("nan")]
@@ -320,16 +399,39 @@ def summarize(rows: list[dict], key: str, rng: np.random.Generator) -> dict:
 
 def git_commit() -> str | None:
     try:
-        return subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT,
+        # --dirty marks results produced by uncommitted code, so a result file
+        # never claims a commit that did not contain the code that made it.
+        return subprocess.run(["git", "describe", "--always", "--dirty"], cwd=ROOT,
                               capture_output=True, text=True, check=True).stdout.strip()
     except (OSError, subprocess.CalledProcessError):
         return None
 
 
+def latency(questions: list[dict], retriever: Retriever, config: RetrievalConfig) -> dict:
+    """Median and 95th-percentile stage timings over the question set (ms).
+
+    One untimed warm-up query first, so model loading is not counted.
+    """
+    if not questions:
+        return {}
+    retriever.timed_run(questions[0]["q"], config)
+    runs = [retriever.timed_run(q["q"], config) for q in questions]
+    return {
+        stage: {"p50": round(float(np.percentile(values, 50)), 1),
+                "p95": round(float(np.percentile(values, 95)), 1)}
+        for stage in runs[0]
+        for values in [[run[stage] for run in runs]]
+    }
+
+
 def evaluate(questions: list[dict], retriever: Retriever,
-             configs: list[RetrievalConfig]) -> dict:
+             configs: list[RetrievalConfig], measure_latency: bool = True) -> dict:
     answerable = [q for q in questions if q.get("file") and q.get("page")]
     rng = np.random.default_rng(SEED)
+    relevant_totals = {
+        q["id"]: sum(is_relevant(chunk.metadata, q) for chunk in retriever.chunks)
+        for q in answerable
+    }
     per_config: dict = {}
     per_question: dict = {q["id"]: {"type": q["type"], "file": q["file"], "page": q["page"]}
                           for q in answerable}
@@ -356,6 +458,8 @@ def evaluate(questions: list[dict], retriever: Retriever,
                 "near_hit": float(near_page_hit(ranking, retriever.chunks, q, config.top_k)),
                 "rr": 1.0 / first if first is not None and first <= MRR_CUTOFF else 0.0,
                 "type": q["type"],
+                **ranking_metrics(ranking, retriever.chunks, q, config.top_k,
+                                  relevant_totals[q["id"]], hops, ranks),
             }
             rows.append(row)
             per_question[q["id"]][config.name] = {
@@ -366,10 +470,15 @@ def evaluate(questions: list[dict], retriever: Retriever,
             "config": asdict(config),
             f"hit@{config.top_k}": summarize(rows, "hit", rng),
             "mrr@10": summarize(rows, "rr", rng),
+            f"precision@{config.top_k}": summarize(rows, "precision", rng),
+            f"recall@{config.top_k}": summarize(rows, "recall", rng),
+            f"ndcg@{config.top_k}": summarize(rows, "ndcg", rng),
             "near_page_hit": summarize(rows, "near_hit", rng),
             "by_type": {},
             "seconds": round(time.perf_counter() - started, 2),
         }
+        if measure_latency:
+            block["latency_ms"] = latency(answerable, retriever, config)
         for qtype in sorted({row["type"] for row in rows}):
             subset = [row for row in rows if row["type"] == qtype]
             block["by_type"][qtype] = {
@@ -387,7 +496,7 @@ def evaluate(questions: list[dict], retriever: Retriever,
         for name, block in per_config.items():
             if name == BASELINE:
                 continue
-            for metric in ("hit", "rr"):
+            for metric in ("hit", "rr", "precision", "recall", "ndcg"):
                 diff = np.array([a[metric] - b[metric] for a, b in zip(block["_rows"], base_rows)])
                 block.setdefault("vs_baseline", {})[metric] = {
                     "delta": round(float(diff.mean()), 4),
@@ -414,28 +523,37 @@ def pct(x: float) -> str:
     return f"{x:.0%}"
 
 
-def print_report(result: dict) -> None:
+def _delta(block: dict, metric: str, as_pct: bool) -> str:
+    delta = block.get("vs_baseline", {}).get(metric)
+    if not delta:
+        return "baseline"
+    fmt = (lambda x: f"{x:+.0%}") if as_pct else (lambda x: f"{x:+.3f}")
+    return (f"{fmt(delta['delta'])} [{fmt(delta['ci95'][0])}, {fmt(delta['ci95'][1])}] "
+            f"+{delta['better_on']}/-{delta['worse_on']}")
+
+
+def format_report(result: dict) -> str:
     configs = result["configs"]
-    print(f"\nScored {result['n_answerable_scored']} answerable questions "
-          f"({result['n_unanswerable_skipped']} unanswerable skipped: no gold page).\n")
-    print("| config | hit@k (count) | 95% CI | MRR@10 | 95% CI | ±1 page hit | Δ hit vs baseline [95% CI] |")
-    print("|---|---|---|---|---|---|---|")
+    out = [f"Scored {result['n_answerable_scored']} answerable questions "
+           f"({result['n_unanswerable_skipped']} unanswerable skipped: no gold page).", ""]
+    out.append("| config | hit@k | 95% CI | MRR@10 | P@k | R@k | nDCG@k | ±1 page hit | "
+               "Δ hit vs baseline [95% CI] | Δ nDCG vs baseline |")
+    out.append("|---|---|---|---|---|---|---|---|---|---|")
     for name, block in configs.items():
         k = block["config"]["top_k"]
         hit = block[f"hit@{k}"]
-        mrr = block["mrr@10"]
         near = block["near_page_hit"]
-        delta = block.get("vs_baseline", {}).get("hit")
-        delta_text = (f"{delta['delta']:+.0%} [{delta['ci95'][0]:+.0%}, {delta['ci95'][1]:+.0%}] "
-                      f"(+{delta['better_on']}/-{delta['worse_on']})") if delta else "baseline"
-        print(f"| {name} | {int(hit['count'])}/{hit['n']} ({pct(hit['mean'])}) | "
-              f"{pct(hit['ci95'][0])}–{pct(hit['ci95'][1])} | {mrr['mean']:.3f} | "
-              f"{mrr['ci95'][0]:.3f}–{mrr['ci95'][1]:.3f} | {int(near['count'])}/{near['n']} | {delta_text} |")
+        out.append(
+            f"| {name} | {int(hit['count'])}/{hit['n']} ({pct(hit['mean'])}) | "
+            f"{pct(hit['ci95'][0])}–{pct(hit['ci95'][1])} | {block['mrr@10']['mean']:.3f} | "
+            f"{block[f'precision@{k}']['mean']:.3f} | {block[f'recall@{k}']['mean']:.3f} | "
+            f"{block[f'ndcg@{k}']['mean']:.3f} | {int(near['count'])}/{near['n']} | "
+            f"{_delta(block, 'hit', True)} | {_delta(block, 'ndcg', False)} |")
 
     types = sorted({t for block in configs.values() for t in block["by_type"]})
-    print("\nHits by question type:\n")
-    print("| config | " + " | ".join(types) + " |")
-    print("|---|" + "---|" * len(types))
+    out += ["", "Hits by question type:", ""]
+    out.append("| config | " + " | ".join(types) + " |")
+    out.append("|---|" + "---|" * len(types))
     for name, block in configs.items():
         cells = []
         for t in types:
@@ -447,7 +565,23 @@ def print_report(result: dict) -> None:
             if "all_pages_hits" in cell:
                 text += f" (all pages {cell['all_pages_hits']}/{cell['n']})"
             cells.append(text)
-        print(f"| {name} | " + " | ".join(cells) + " |")
+        out.append(f"| {name} | " + " | ".join(cells) + " |")
+
+    timed = {name: block["latency_ms"] for name, block in configs.items() if block.get("latency_ms")}
+    if timed:
+        stages = ["dense_ms", "bm25_ms", "fusion_ms", "rerank_ms", "total_ms"]
+        out += ["", "Retrieval latency per query, CPU, ms (median / 95th percentile; "
+                "one warm-up query excluded, LLM time not included):", ""]
+        out.append("| config | " + " | ".join(s.removesuffix("_ms") for s in stages) + " |")
+        out.append("|---|" + "---|" * len(stages))
+        for name, lat in timed.items():
+            cells = [f"{lat[s]['p50']:.1f} / {lat[s]['p95']:.1f}" if s in lat else "–" for s in stages]
+            out.append(f"| {name} | " + " | ".join(cells) + " |")
+    return "\n".join(out)
+
+
+def print_report(result: dict) -> None:
+    print("\n" + format_report(result))
 
 
 def main() -> None:
@@ -461,6 +595,10 @@ def main() -> None:
     parser.add_argument("--min-hit-rate", type=float, default=None,
                         help="exit 1 if the gate config's hit rate is below this (0-1)")
     parser.add_argument("--gate-config", default=BASELINE)
+    parser.add_argument("--top-k", type=int, default=None,
+                        help="score every config at this k (default: 3, the legacy setting; the app uses config.TOP_K)")
+    parser.add_argument("--no-latency", action="store_true", help="skip the timed runs")
+    parser.add_argument("--md", type=Path, default=None, help="also write the report as Markdown")
     args = parser.parse_args()
 
     questions = load_questions(args.questions)
@@ -474,8 +612,11 @@ def main() -> None:
     store, fingerprint = get_store(chunks, files, settings)
     retriever = Retriever(store, chunks)
 
-    configs = [c for c in DEFAULT_CONFIGS if not args.configs or c.name in args.configs]
-    result = evaluate(questions, retriever, configs)
+    configs = ([c for c in DEFAULT_CONFIGS + EXTRA_CONFIGS if c.name in args.configs]
+               if args.configs else list(DEFAULT_CONFIGS))
+    if args.top_k is not None:
+        configs = [replace(c, top_k=args.top_k) for c in configs]
+    result = evaluate(questions, retriever, configs, measure_latency=not args.no_latency)
     payload = {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "git_commit": git_commit(),
@@ -491,6 +632,12 @@ def main() -> None:
     args.out.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print_report(result)
     print(f"\nSaved {args.out}")
+    if args.md:
+        header = (f"Generated by `python eval/run_eval.py` (zero LLM calls) at commit "
+                  f"{payload['git_commit']}. Questions: `{payload['questions_file']}`. "
+                  f"Corpus: {len(names)} PDFs, {len(chunks)} chunks.\n\n")
+        args.md.write_text(header + format_report(result) + "\n", encoding="utf-8")
+        print(f"Saved {args.md}")
 
     if args.min_hit_rate is not None:
         block = result["configs"].get(args.gate_config)

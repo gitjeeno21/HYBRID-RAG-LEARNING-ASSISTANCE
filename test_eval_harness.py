@@ -2,6 +2,7 @@
 
 import importlib.util
 import json
+import math
 import os
 import sys
 import tempfile
@@ -85,16 +86,44 @@ class HarnessTests(unittest.TestCase):
             "three": [3, 4, 2],      # page 5 and page 9 -> both hops covered
         })
         config = run_eval.RetrievalConfig("t", "dense")
-        result = run_eval.evaluate(questions, retriever, [config])
+        result = run_eval.evaluate(questions, retriever, [config], measure_latency=False)
         block = result["configs"]["t"]
         self.assertEqual(result["n_answerable_scored"], 3)
         self.assertEqual(result["n_unanswerable_skipped"], 1)
         self.assertEqual(block["hit@3"]["count"], 2)
         self.assertAlmostEqual(block["mrr@10"]["mean"], round((1 + 0.25 + 1) / 3, 4))
         self.assertEqual(block["by_type"]["multi_hop"]["all_pages_hits"], 1)
+        # Hand-computed. q1: 1 relevant of 3 shown, ideal reached. q2: nothing.
+        # q3: ranks 1-2 relevant out of 3 relevant chunks in the corpus
+        #     (p.1, p.5, p.9), both facts covered.
+        ndcg_q3 = (1 + 1 / math.log2(3)) / (1 + 1 / math.log2(3) + 1 / math.log2(4))
+        self.assertAlmostEqual(block["precision@3"]["mean"], round((1 / 3 + 0 + 2 / 3) / 3, 4))
+        self.assertAlmostEqual(block["recall@3"]["mean"], round((1 + 0 + 1) / 3, 4))
+        self.assertAlmostEqual(block["ndcg@3"]["mean"], round((1 + 0 + ndcg_q3) / 3, 4))
         low, high = block["hit@3"]["ci95"]
         self.assertLessEqual(low, block["hit@3"]["mean"])
         self.assertGreaterEqual(high, block["hit@3"]["mean"])
+
+    def test_recall_counts_facts_not_pages(self):
+        # Fact A is printed on pages 1 and 5; finding either covers it.
+        q = {"file": "a.pdf", "page": [1, 5, 9], "hops": [[1, 5], [9]]}
+        ranks = run_eval.gold_ranks([0, 1], self.chunks, q)
+        metrics = run_eval.ranking_metrics([0, 1], self.chunks, q, 2, 3, q["hops"], ranks)
+        self.assertEqual(metrics["recall"], 0.5)
+        self.assertEqual(metrics["precision"], 0.5)
+
+    def test_report_includes_new_metrics_and_latency(self):
+        block = {"config": {"top_k": 5}, "by_type": {},
+                 **{f"{m}@5": {"count": 1, "n": 2, "mean": 0.5, "ci95": [0.0, 1.0]}
+                    for m in ("hit", "precision", "recall", "ndcg")},
+                 "mrr@10": {"mean": 0.5, "ci95": [0, 1]},
+                 "near_page_hit": {"count": 1, "n": 2},
+                 "latency_ms": {"dense_ms": {"p50": 9.0, "p95": 12.0},
+                                "total_ms": {"p50": 9.0, "p95": 12.0}}}
+        text = run_eval.format_report({"configs": {"dense": block}, "n_answerable_scored": 2,
+                                       "n_unanswerable_skipped": 0})
+        self.assertIn("nDCG@k", text)
+        self.assertIn("9.0 / 12.0", text)
 
     def test_legacy_questions_are_adapted(self):
         legacy = [
