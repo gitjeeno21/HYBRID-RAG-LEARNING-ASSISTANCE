@@ -19,6 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from groq import APIConnectionError, APITimeoutError, AuthenticationError, RateLimitError
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import PyPDFLoader
+from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 from pydantic import BaseModel, Field
 
@@ -42,7 +43,7 @@ from config import (
     source_filename,
 )
 from evaluator import call_llm, call_llm_stream
-from hybrid import build_bm25, hybrid_search_with_scores
+from hybrid import build_bm25, chunk_keys, hybrid_search_with_scores, unique_chunks
 from ingest import best_chunk_config, split_documents
 from library import remove_pdf_from_library, rename_pdf_in_library
 from quiz import (
@@ -219,14 +220,37 @@ def _get_hybrid_resources():
     store = get_vector_store()
     if not list_pdf_names():
         return [], None
+    # The BM25 corpus is re-split from the PDFs (not read back from Chroma)
+    # because Chroma returns chunks in storage order, and BM25/RRF break ties
+    # by position: re-splitting keeps the exact order eval/run_eval.py measured.
     chunks = split_documents(load_documents(), *best_chunk_config())
-    if store._collection.count() != len(chunks):
+    verify_index_matches(store, chunks)
+    return chunks, build_bm25(chunks)
+
+
+def verify_index_matches(store: Chroma, chunks: list) -> None:
+    """Fail loudly unless Chroma holds exactly the chunks BM25 will search.
+
+    WHY compare contents, not counts: equal counts can hide different chunks,
+    e.g. after changing RAG_CROSS_PAGE or the chunk size without re-ingesting.
+    Dense hits whose text is not in the BM25 corpus are then dropped from
+    fusion without any error, and hybrid search quietly becomes BM25-only.
+    """
+    stored = store.get(include=["documents", "metadatas"])
+    indexed = chunk_keys([
+        Document(page_content=text or "", metadata=meta or {})
+        for text, meta in zip(stored["documents"], stored["metadatas"])
+    ])
+    expected = chunk_keys(chunks)
+    if indexed != expected:
+        missing = sum((expected - indexed).values())
+        extra = sum((indexed - expected).values())
         raise RuntimeError(
             "The dense index and BM25 corpus do not match: "
-            f"index={store._collection.count()} chunks, local corpus={len(chunks)} chunks. "
+            f"{missing} chunk(s) missing from the index, {extra} stale chunk(s) in it "
+            f"(index={sum(indexed.values())}, local corpus={len(chunks)}). "
             "Run `python ingest.py` to rebuild the index."
         )
-    return chunks, build_bm25(chunks)
 
 
 def clear_indexes() -> None:
@@ -282,13 +306,6 @@ def retrieve_for_api(
             n_results=n_results,
             metadata_filter={"filename": paper} if paper else None,
         ))
-    results = []
-    seen = set()
-    for document, score in retrieved:
-        key = citation(document.metadata)
-        if key not in seen:
-            seen.add(key)
-            results.append((document, score))
     return [
         {
             "filename": source_filename(document.metadata),
@@ -296,7 +313,7 @@ def retrieve_for_api(
             "text": document.page_content,
             "score": round(score, 4) if score is not None else None,
         }
-        for document, score in results
+        for document, score in unique_chunks(retrieved)
     ]
 
 
@@ -555,7 +572,9 @@ NOT_FOUND_TRUST = {"label": "Low", "reason": "no passages were retrieved"}
 
 
 def _citations(retrieved: list[dict[str, Any]]) -> list[dict[str, str]]:
-    return [{"filename": item["filename"], "citation": item["citation"]} for item in retrieved]
+    """One entry per cited page: several passages can come from the same page."""
+    unique = {item["citation"]: item["filename"] for item in retrieved}
+    return [{"filename": filename, "citation": label} for label, filename in unique.items()]
 
 
 @app.post("/api/chat")
@@ -736,11 +755,15 @@ def compare_papers(request: CompareRequest) -> dict[str, Any]:
 
 
 @app.post("/api/upload")
-async def upload_pdf(file: UploadFile = File(...)) -> dict[str, Any]:
+def upload_pdf(file: UploadFile = File(...)) -> dict[str, Any]:
+    # A plain `def`, not `async def`: parsing and embedding a PDF takes seconds
+    # of CPU, and inside an async endpoint that work ran on the event loop and
+    # froze every other request (including streaming chat) until it finished.
+    # FastAPI runs sync endpoints in its thread pool instead.
     filename = Path(file.filename or "").name
     if not filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=422, detail="Only PDF files are supported")
-    file_bytes = await file.read(MAX_UPLOAD_BYTES + 1)
+    file_bytes = file.file.read(MAX_UPLOAD_BYTES + 1)
     if len(file_bytes) > MAX_UPLOAD_BYTES:
         raise HTTPException(status_code=413, detail="PDFs larger than 50 MB are not supported")
     try:

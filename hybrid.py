@@ -33,6 +33,7 @@ Usage:
 
 import json
 import re
+from collections import Counter
 from datetime import datetime, timezone
 from typing import Protocol
 
@@ -281,6 +282,34 @@ def _document_key(document: Document) -> tuple[str, str, str]:
         page_number(document.metadata),
         document.page_content,
     )
+
+
+def chunk_keys(chunks: list[Document]) -> Counter:
+    """Multiset of chunk identities, for checking two corpora hold the same chunks."""
+    return Counter(_document_key(chunk) for chunk in chunks)
+
+
+def unique_chunks(
+    results: list[tuple[Document, float | None]],
+) -> list[tuple[Document, float | None]]:
+    """Drop repeated chunks while keeping rank order.
+
+    WHY by chunk identity and not by citation: a 1500-character chunk is
+    smaller than most pages (117 of 140 pages in the corpus produce two or
+    more chunks), so two different passages often share one "file, p. X"
+    label. Removing duplicates by label silently discarded the lower-ranked
+    passage -- 33 passages across the 60 held-out queries -- even when it held
+    the answer. Only a truly repeated chunk (possible when several per-paper
+    searches are merged) is removed here.
+    """
+    seen: set[tuple[str, str, str]] = set()
+    unique = []
+    for document, score in results:
+        key = _document_key(document)
+        if key not in seen:
+            seen.add(key)
+            unique.append((document, score))
+    return unique
 
 
 # ---------------------------------------------------------------------------

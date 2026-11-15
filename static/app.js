@@ -772,7 +772,9 @@ $("#clear-chat").addEventListener("click", () => {
 
 $("#export-chat").addEventListener("click", () => {
   const body = state.turns.filter(turn => turn.status === "done").map(turn => {
-    const sources = (turn.data.context || []).map(item => `- ${item.citation}`).join("\n");
+    // Several passages can share a page, so list each cited page once.
+    const sources = [...new Set((turn.data.context || []).map(item => item.citation))]
+      .map(label => `- ${label}`).join("\n");
     return `## Q: ${turn.query}\n\n${turn.data.answer}\n\n**Confidence:** ${turn.data.trust?.label || "n/a"}\n\n**Retrieved sources**\n${sources || "- none"}`;
   }).join("\n\n---\n\n");
   downloadText(`chat-${new Date().toISOString().slice(0, 10)}.md`, `# Chat export\n\n${body}\n`);

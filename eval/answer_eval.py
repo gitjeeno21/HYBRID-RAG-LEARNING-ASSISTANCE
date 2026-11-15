@@ -62,7 +62,7 @@ sys.modules["groq"] = _groq_module  # ...so restore it: this script needs the mo
 
 import config  # noqa: E402
 from citations import check_citations, cited_pages, normalize  # noqa: E402
-from hybrid import hybrid_search_with_scores  # noqa: E402
+from hybrid import hybrid_search_with_scores, unique_chunks  # noqa: E402
 from main import _chat_prompt  # noqa: E402
 from trust import assess, is_refusal  # noqa: E402
 
@@ -141,18 +141,14 @@ class LLM:
 
 
 # ---------------------------------------------------------------------------
-# Retrieval exactly like main.retrieve_for_api (all papers, de-dup by citation)
+# Retrieval exactly like main.retrieve_for_api (all papers, de-dup by chunk)
 # ---------------------------------------------------------------------------
 def retrieve(query: str, store, bm25, chunks, top_k: int) -> list[dict]:
-    results, seen = [], set()
-    for document, score in hybrid_search_with_scores(query, store, bm25, chunks, n_results=top_k):
-        key = config.citation(document.metadata)
-        if key not in seen:
-            seen.add(key)
-            results.append({"filename": config.source_filename(document.metadata),
-                            "citation": key, "text": document.page_content,
-                            "score": round(score, 4) if score is not None else None})
-    return results
+    pairs = unique_chunks(hybrid_search_with_scores(query, store, bm25, chunks, n_results=top_k))
+    return [{"filename": config.source_filename(document.metadata),
+             "citation": config.citation(document.metadata), "text": document.page_content,
+             "score": round(score, 4) if score is not None else None}
+            for document, score in pairs]
 
 
 # ---------------------------------------------------------------------------
