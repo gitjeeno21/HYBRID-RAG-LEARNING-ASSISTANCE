@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import logging
+import secrets
 import os
 import time
 from pathlib import Path
@@ -20,6 +22,7 @@ from pydantic import BaseModel, Field
 
 import auth
 import db
+import quota
 from citations import check_citations
 from compare import (
     expand_compare_query,
@@ -181,6 +184,33 @@ async def require_login(request: Request, call_next):
     return await call_next(request)
 
 
+# ---------------------------------------------------------------------------
+# Request logging and security headers (outermost middleware: defined last)
+# ---------------------------------------------------------------------------
+access_log = logging.getLogger("rag.access")
+if not access_log.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(message)s"))
+    access_log.addHandler(_handler)
+    access_log.setLevel(logging.INFO)
+    access_log.propagate = False
+
+_REQUEST_ID = re.compile(r"^[A-Za-z0-9-]{1,64}$")
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "same-origin",
+    "X-Frame-Options": "DENY",
+    # Scripts and data only from this origin (inline scripts are the two
+    # small ones in index.html); fonts from Google Fonts; no framing.
+    "Content-Security-Policy": (
+        "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src https://fonts.gstatic.com; img-src 'self' data:; "
+        "connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    ),
+}
+
+
 def current_user(request: Request) -> auth.User:
     """The signed-in user (set by require_login for every protected route)."""
     return request.state.user
@@ -195,6 +225,52 @@ def _start_session(response: Response, user: auth.User) -> dict[str, Any]:
     response.set_cookie(auth.CSRF_COOKIE, session.csrf_token, max_age=max_age, httponly=False,
                         samesite="lax", secure=SECURE_COOKIES, path="/")
     return {"user": user.public()}
+
+
+@app.middleware("http")
+async def log_and_secure(request: Request, call_next):
+    """One JSON log line per API request, plus a request id and security headers.
+
+    Logged: method, path, status, duration, user id, request id. Never logged:
+    bodies, query strings, cookies or headers (questions and passwords live there).
+    """
+    supplied = request.headers.get("x-request-id", "")
+    request_id = supplied if _REQUEST_ID.fullmatch(supplied) else secrets.token_hex(8)
+    started = time.perf_counter()
+    status = 500
+    try:
+        response = await call_next(request)
+        status = response.status_code
+    finally:
+        if request.url.path.startswith("/api/") or status >= 500:
+            user = getattr(request.state, "user", None)
+            access_log.info(json.dumps({
+                "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                "request_id": request_id, "method": request.method, "path": request.url.path,
+                "status": status, "ms": round((time.perf_counter() - started) * 1e3, 1),
+                "user_id": user.id if user else None,
+            }))
+    response.headers["X-Request-ID"] = request_id
+    for name, value in SECURITY_HEADERS.items():
+        response.headers.setdefault(name, value)
+    return response
+
+
+@app.get("/healthz", include_in_schema=False)
+def liveness() -> dict[str, str]:
+    """Public liveness probe for containers: reveals nothing about any user."""
+    return {"status": "ok"}
+
+
+@app.exception_handler(quota.QuotaExceeded)
+async def _quota_exceeded(_: Request, exc: quota.QuotaExceeded) -> JSONResponse:
+    return JSONResponse(status_code=429, content={"detail": str(exc)})
+
+
+@app.get("/api/usage")
+def get_usage(http: Request) -> dict[str, Any]:
+    """Today's LLM token use against the daily allowance."""
+    return quota.usage(current_user(http).id)
 
 
 @app.exception_handler(auth.AuthError)
@@ -638,9 +714,12 @@ def _citations(retrieved: list[dict[str, Any]]) -> list[dict[str, str]]:
 @app.post("/api/chat")
 def chat(request: ChatRequest, http: Request) -> dict[str, Any]:
     request_started = time.perf_counter()
+    user_id = current_user(http).id
+    quota.check(user_id)
     ws = workspace_for(http)
     standalone_query, retrieved, trace = _prepare_chat(request, ws)
     if not retrieved:
+        quota.record(user_id, _finish_trace(trace, request_started)["tokens"]["total"])
         return {
             "answer": "Not found in the selected papers.",
             "citations": [], "context": [],
@@ -654,6 +733,8 @@ def chat(request: ChatRequest, http: Request) -> dict[str, Any]:
     trace["timings_ms"]["generation"] = _ms(started)
     trace["tokens"]["generation"] = usage
     trust = _assess(standalone_query, answer, retrieved, trace)
+    finished = _finish_trace(trace, request_started)
+    quota.record(user_id, finished["tokens"]["total"])
     return {
         "answer": answer,
         "citations": _citations(retrieved),
@@ -661,7 +742,7 @@ def chat(request: ChatRequest, http: Request) -> dict[str, Any]:
         "trust": trust,
         "citation_check": check_citations(answer, retrieved, list_pdf_names(ws)),
         "query_used": standalone_query,
-        "trace": _finish_trace(trace, request_started),
+        "trace": finished,
     }
 
 
@@ -683,6 +764,8 @@ def chat_stream(request: ChatRequest, http: Request) -> StreamingResponse:
     ordinary HTTP errors; only generation happens inside the stream.
     """
     request_started = time.perf_counter()
+    user_id = current_user(http).id
+    quota.check(user_id)   # before the stream starts, so it is an ordinary 429
     ws = workspace_for(http)
     standalone_query, retrieved, trace = _prepare_chat(request, ws)
 
@@ -695,8 +778,10 @@ def chat_stream(request: ChatRequest, http: Request) -> StreamingResponse:
             "citations": _citations(retrieved), "context": retrieved,
         })
         if not retrieved:
+            finished = _finish_trace(trace, request_started)
+            quota.record(user_id, finished["tokens"]["total"])
             yield line({"type": "done", "answer": "Not found in the selected papers.",
-                        "trust": NOT_FOUND_TRUST, "trace": _finish_trace(trace, request_started)})
+                        "trust": NOT_FOUND_TRUST, "trace": finished})
             return
         parts: list[str] = []
         usage: dict[str, int] = {}
@@ -710,6 +795,8 @@ def chat_stream(request: ChatRequest, http: Request) -> StreamingResponse:
                 parts.append(piece)
                 yield line({"type": "token", "text": piece})
         except Exception as exc:  # noqa: BLE001 - reported in-stream; headers are already sent
+            trace["tokens"]["generation"] = usage
+            quota.record(user_id, _finish_trace(trace, request_started)["tokens"]["total"])
             yield line({"type": "error", "detail": _provider_error_detail(exc)})
             return
         trace["timings_ms"]["generation"] = _ms(started)
@@ -717,11 +804,13 @@ def chat_stream(request: ChatRequest, http: Request) -> StreamingResponse:
         trace["tokens"]["generation"] = usage
         answer = "".join(parts).strip()
         trust = _assess(standalone_query, answer, retrieved, trace)
+        finished = _finish_trace(trace, request_started)
+        quota.record(user_id, finished["tokens"]["total"])
         yield line({
             "type": "done", "answer": answer,
             "trust": trust,
             "citation_check": check_citations(answer, retrieved, list_pdf_names(ws)),
-            "trace": _finish_trace(trace, request_started),
+            "trace": finished,
         })
 
     return StreamingResponse(events(), media_type="application/x-ndjson")
@@ -812,16 +901,21 @@ def generate_api_quiz(request: QuizGenerateRequest, http: Request) -> dict[str, 
     ws = workspace_for(http)
     if request.pdf not in list_pdf_names(ws):
         raise HTTPException(status_code=404, detail="Selected PDF was not found")
+    quota.check(current_user(http).id)
     evidence = _quiz_evidence(
         ws, request.pdf, request.topic, request.difficulty, request.page_range, request.question_count
     )
     try:
-        quiz = generate_quiz(
-            request.pdf, request.topic.strip() or "main concepts", evidence,
-            difficulty=request.difficulty,
-            question_count=request.question_count,
-            question_type=request.question_type,
-        )
+        with track_usage() as used:
+            try:
+                quiz = generate_quiz(
+                    request.pdf, request.topic.strip() or "main concepts", evidence,
+                    difficulty=request.difficulty,
+                    question_count=request.question_count,
+                    question_type=request.question_type,
+                )
+            finally:
+                quota.record(current_user(http).id, used.get("total_tokens", 0))
     except ValueError as exc:
         raise HTTPException(status_code=502, detail=f"The quiz could not be generated: {exc}") from exc
     return {
@@ -855,8 +949,14 @@ def grade_api_quiz(request: QuizGradeRequest, http: Request) -> dict[str, Any]:
     evidence = _quiz_evidence(
         ws, request.pdf, request.topic, request.difficulty, request.page_range, request.question_count
     )
+    quota.check(current_user(http).id)
     try:
-        return grade_quiz(request.questions, request.answers, build_quiz_context(evidence))
+        with track_usage() as used:
+            try:
+                return grade_quiz(request.questions, request.answers, build_quiz_context(evidence))
+            finally:
+                if used:   # choice-only quizzes are graded without the LLM
+                    quota.record(current_user(http).id, used.get("total_tokens", 0))
     except ValueError as exc:
         raise HTTPException(status_code=502, detail=f"Grading failed, please retry: {exc}") from exc
 
@@ -886,8 +986,13 @@ def compare_papers(request: CompareRequest, http: Request) -> dict[str, Any]:
             "\n\n## Similarities\nNo evidence-supported similarity can be determined from empty evidence."
         )
     else:
+        quota.check(current_user(http).id)
         try:
-            summary = generate_comparison(question, contexts)
+            with track_usage() as used:
+                try:
+                    summary = generate_comparison(question, contexts)
+                finally:
+                    quota.record(current_user(http).id, used.get("total_tokens", 0))
         except RuntimeError as exc:
             if "empty response" in str(exc).lower():
                 raise HTTPException(

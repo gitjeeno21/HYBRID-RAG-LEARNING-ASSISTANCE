@@ -66,6 +66,16 @@ MIGRATIONS: list[str] = [
         created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
     );
     """,
+    # 3: LLM tokens spent per user per UTC day (for the daily allowance)
+    """
+    CREATE TABLE llm_usage (
+        user_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        day      TEXT NOT NULL,             -- YYYY-MM-DD, UTC
+        tokens   INTEGER NOT NULL DEFAULT 0,
+        requests INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (user_id, day)
+    );
+    """,
 ]
 
 

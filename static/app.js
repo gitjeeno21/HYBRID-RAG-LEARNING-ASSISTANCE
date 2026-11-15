@@ -1503,11 +1503,30 @@ $("#auth-form").addEventListener("submit", async event => {
   }
 });
 
+async function loadUsage() {
+  try {
+    const usage = await api("/api/usage");
+    const used = usage.tokens_today.toLocaleString();
+    if (usage.daily_limit) {
+      const share = Math.min(1, usage.tokens_today / usage.daily_limit);
+      $("#account-usage-text").textContent = `${used} of ${usage.daily_limit.toLocaleString()} tokens`;
+      $("#account-usage-bar").style.width = `${(share * 100).toFixed(1)}%`;
+      $("#account-usage-bar").classList.toggle("high", share >= 0.9);
+    } else {
+      $("#account-usage-text").textContent = `${used} tokens (no limit)`;
+      $("#account-usage-bar").style.width = "0";
+    }
+  } catch (_) {
+    $("#account-usage-text").textContent = "Unavailable";
+  }
+}
+
 $("#account-button").addEventListener("click", event => {
   event.stopPropagation();
   const menu = $("#account-menu");
   const open = menu.classList.toggle("hidden") === false;
   $("#account-button").setAttribute("aria-expanded", String(open));
+  if (open) loadUsage();
 });
 document.addEventListener("click", event => {
   if (!event.target.closest(".account")) $("#account-menu").classList.add("hidden");

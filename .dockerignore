@@ -1,0 +1,27 @@
+# Secrets: the key is passed with --env-file at run time, never baked in.
+.env
+.env.*
+
+# Personal and runtime data: users upload into the /data volume instead.
+data/
+removed_pdfs/
+storage/
+app.db*
+chroma_db/
+chroma_db_eval_*/
+quiz_history.json
+chat_feedback.json
+
+# Evaluation caches (the recorded result files in eval/ are kept for the dashboard)
+eval/.index/
+eval/.cache/
+
+# Tooling
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.git/
+.vscode/
+.idea/
+*.docx
