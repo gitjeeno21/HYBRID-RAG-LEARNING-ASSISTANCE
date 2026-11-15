@@ -7,32 +7,29 @@ from pathlib import Path
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
+
+from auth_testing import authed_client
 from groq import RateLimitError
 
+import db
 import main
+import workspace
 
 
 class ApiTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TestClient(main.app)
+        self.client = authed_client(main.app)
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        tmp = Path(self.tmp.name)
-        for name, value in (
-            ("FEEDBACK_PATH", tmp / "feedback.json"),
-            ("QUIZ_HISTORY_PATH", tmp / "history.json"),
-        ):
-            patcher = patch.object(main, name, value)
-            patcher.start()
-            self.addCleanup(patcher.stop)
 
     def test_feedback_accepts_json_body(self) -> None:
         response = self.client.post(
             "/api/chat/feedback", json={"message": "An answer", "feedback": "up", "query": "q"}
         )
         self.assertEqual(response.status_code, 200)
-        saved = json.loads(main.FEEDBACK_PATH.read_text(encoding="utf-8"))
-        self.assertEqual(saved[0]["feedback"], "up")
+        with db.connect() as conn:
+            saved = conn.execute("SELECT feedback, query FROM chat_feedback").fetchall()
+        self.assertEqual([tuple(row) for row in saved], [("up", "q")])
 
     def test_feedback_rejects_unknown_value(self) -> None:
         response = self.client.post("/api/chat/feedback", json={"message": "x", "feedback": "meh"})
@@ -89,10 +86,10 @@ class ApiTests(unittest.TestCase):
 
     def test_pdf_parse_cache_reuses_unchanged_files(self) -> None:
         from langchain_core.documents import Document
-        main._parse_pdf.cache_clear()
+        workspace._parse_pdf.cache_clear()
         pdf = Path(self.tmp.name) / "paper.pdf"
         pdf.write_bytes(b"%PDF-1.4 test")
-        with patch("main.PyPDFLoader") as loader:
+        with patch("workspace.PyPDFLoader") as loader:
             loader.return_value.load.return_value = [Document(page_content="x", metadata={"page": 0})]
             first = main.load_pdf_pages(pdf)
             first[0].metadata["mutated"] = True  # callers must not corrupt the cache
@@ -100,7 +97,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(loader.call_count, 1)
         self.assertEqual(second[0].metadata["filename"], "paper.pdf")
         self.assertNotIn("mutated", second[0].metadata)
-        main._parse_pdf.cache_clear()
+        workspace._parse_pdf.cache_clear()
 
     def test_chat_top_k_is_validated(self) -> None:
         response = self.client.post("/api/chat", json={"query": "hello", "top_k": 99})

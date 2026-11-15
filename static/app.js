@@ -34,10 +34,21 @@ const store = {
   },
 };
 
+function getCookie(name) {
+  const match = document.cookie.split("; ").find(part => part.startsWith(`${name}=`));
+  return match ? decodeURIComponent(match.slice(name.length + 1)) : "";
+}
+
+/* Every write request echoes the session's CSRF cookie in a header. A page on
+   another site cannot read the cookie, so it cannot forge the header. */
+function authHeaders(method, extra = {}) {
+  return method === "GET" ? extra : { ...extra, "X-CSRF-Token": getCookie("rag_csrf") };
+}
+
 async function api(path, { method = "GET", json, body } = {}) {
-  const options = { method };
+  const options = { method, headers: authHeaders(method) };
   if (json !== undefined) {
-    options.headers = { "Content-Type": "application/json" };
+    options.headers["Content-Type"] = "application/json";
     options.body = JSON.stringify(json);
   } else if (body) {
     options.body = body;
@@ -50,6 +61,7 @@ async function api(path, { method = "GET", json, body } = {}) {
   }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
+    if (response.status === 401 && !path.startsWith("/api/auth/")) showAuth("Your session ended. Please sign in again.");
     if (response.status === 503 || response.status === 429) refreshHealth();
     throw new Error(formatApiError(data.detail || data.message || data, `Request failed (${response.status})`));
   }
@@ -562,8 +574,12 @@ const historyBefore = turn => state.turns
   .flatMap(item => [{ role: "user", content: item.query }, { role: "assistant", content: item.data.answer }])
   .slice(-6);
 
+// Chat history is kept per account, so a second person signing in on the
+// same browser never sees the first person's questions.
+const chatKey = () => `chatTurns:${state.user?.id ?? "anon"}`;
+
 function persistChat() {
-  store.session("chatTurns", state.turns.filter(turn => turn.status === "done").slice(-30));
+  store.session(chatKey(), state.turns.filter(turn => turn.status === "done").slice(-30));
   $("#export-chat").disabled = !state.turns.some(turn => turn.status === "done");
   $("#clear-chat").disabled = !state.turns.length;
 }
@@ -626,13 +642,14 @@ async function streamChat(payload, onEvent) {
   let response;
   try {
     response = await fetch("/api/chat/stream", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      method: "POST", headers: authHeaders("POST", { "Content-Type": "application/json" }), body: JSON.stringify(payload),
     });
   } catch (_) {
     throw new Error("Network connection failed. Check that the app server is running.");
   }
   if (!response.ok || !response.body) {
     const data = await response.json().catch(() => ({}));
+    if (response.status === 401) showAuth("Your session ended. Please sign in again.");
     if (response.status === 503 || response.status === 429) refreshHealth();
     throw new Error(formatApiError(data.detail || data, `Request failed (${response.status})`));
   }
@@ -800,7 +817,7 @@ $("#export-chat").addEventListener("click", () => {
 });
 
 function restoreChat() {
-  const saved = store.session("chatTurns");
+  const saved = store.session(chatKey());
   if (!Array.isArray(saved) || !saved.length) return;
   state.turns = saved.filter(turn => turn && turn.status === "done" && turn.data);
   const container = $("#chat-messages");
@@ -1425,13 +1442,91 @@ document.addEventListener("keydown", event => {
 });
 
 /* ==========================================================================
+   Accounts: landing page, sign in / create account, sign out
+   ========================================================================== */
+let authMode = "login";
+let started = false;
+
+function setAuthMode(mode) {
+  authMode = mode;
+  const register = mode === "register";
+  $$("#auth-tabs button").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.authMode === mode)));
+  $$(".register-only").forEach(element => element.classList.toggle("hidden", !register));
+  $("#auth-title").textContent = register ? "Create your account" : "Welcome back";
+  $("#auth-submit").textContent = register ? "Create account" : "Sign in";
+  $("#auth-password").autocomplete = register ? "new-password" : "current-password";
+  $("#auth-error").classList.add("hidden");
+}
+
+function showAuth(message = "") {
+  state.user = null;
+  $("#app-shell").classList.add("hidden");
+  $("#auth-screen").classList.remove("hidden");
+  const error = $("#auth-error");
+  error.textContent = message;
+  error.classList.toggle("hidden", !message);
+  setTimeout(() => $("#auth-email").focus(), 0);
+}
+
+function showApp(user) {
+  state.user = user;
+  $("#auth-screen").classList.add("hidden");
+  $("#app-shell").classList.remove("hidden");
+  const label = user.name || user.email;
+  $("#account-button").textContent = label.trim().slice(0, 1).toUpperCase();
+  $("#account-button").title = user.email;
+  $("#account-name").textContent = user.name || "Signed in";
+  $("#account-email").textContent = user.email;
+  if (!started) { started = true; startApp(); }
+}
+
+$("#auth-tabs").addEventListener("click", event => {
+  const button = event.target.closest("[data-auth-mode]");
+  if (button) setAuthMode(button.dataset.authMode);
+});
+
+$("#auth-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const button = $("#auth-submit");
+  const payload = { email: $("#auth-email").value.trim(), password: $("#auth-password").value };
+  if (authMode === "register") payload.name = $("#auth-name").value.trim();
+  setBusy(button, true, authMode === "register" ? "Creating account…" : "Signing in…");
+  try {
+    const { user } = await api(`/api/auth/${authMode}`, { method: "POST", json: payload });
+    $("#auth-password").value = "";
+    showApp(user);
+  } catch (error) {
+    $("#auth-error").textContent = error.message;
+    $("#auth-error").classList.remove("hidden");
+  } finally {
+    setBusy(button, false);
+  }
+});
+
+$("#account-button").addEventListener("click", event => {
+  event.stopPropagation();
+  const menu = $("#account-menu");
+  const open = menu.classList.toggle("hidden") === false;
+  $("#account-button").setAttribute("aria-expanded", String(open));
+});
+document.addEventListener("click", event => {
+  if (!event.target.closest(".account")) $("#account-menu").classList.add("hidden");
+});
+
+$("#sign-out").addEventListener("click", async () => {
+  try { await api("/api/auth/logout", { method: "POST" }); } catch (_) { /* signing out anyway */ }
+  // Drop everything this account left in the tab, then start clean.
+  try { sessionStorage.clear(); } catch (_) { /* storage blocked */ }
+  location.reload();
+});
+
+/* ==========================================================================
    Init
    ========================================================================== */
-(function init() {
+function startApp() {
   state.settings.topK = Number(store.get("topK")) || null;
   state.settings.showContext = store.get("showContext") === "true";
   $("#setting-context").checked = state.settings.showContext;
-  applyTheme(store.get("theme", "system"));
   updateGenerateLabel();
   restoreChat();
   // A link like /?q=...#inspect opens a mode directly (and runs that inspection).
@@ -1443,4 +1538,14 @@ document.addEventListener("keydown", event => {
     const query = new URLSearchParams(location.search).get("q");
     if (linked === "inspect" && query) runInspection(query);
   });
+}
+
+(async function boot() {
+  applyTheme(store.get("theme", "system"));
+  try {
+    const { user } = await api("/api/auth/me");
+    showApp(user);
+  } catch (_) {
+    showAuth();
+  }
 })();

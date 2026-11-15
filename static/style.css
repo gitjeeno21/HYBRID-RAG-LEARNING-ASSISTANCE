@@ -705,3 +705,32 @@ dialog[open] { animation: pop .3s var(--ease); }
 .table-scroll { max-width: 100%; }
 #eval-metric { flex-wrap: wrap; }
 .data-table td details summary { white-space: nowrap; }
+
+/* ==========================================================================
+   Accounts: landing / sign-in screen and account menu
+   ========================================================================== */
+.auth-screen { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(320px, 420px); gap: 56px; align-items: center; max-width: 1100px; margin: 0 auto; padding: 48px 32px; position: relative; z-index: 1; }
+.auth-hero h1 { font-family: var(--display); font-size: clamp(30px, 4vw, 44px); line-height: 1.12; letter-spacing: -.02em; margin: 34px 0 16px; color: var(--text); }
+.auth-hero > p { font-size: 16px; line-height: 1.65; color: var(--muted); max-width: 540px; margin: 0; }
+.auth-points { list-style: none; padding: 0; margin: 30px 0 0; display: grid; gap: 14px; max-width: 540px; }
+.auth-points li { position: relative; padding-left: 22px; font-size: 14px; line-height: 1.6; color: var(--muted); }
+.auth-points li::before { content: ""; position: absolute; left: 2px; top: 9px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
+.auth-points b { color: var(--text); font-weight: 600; }
+.auth-card h2 { font-family: var(--display); font-size: 22px; margin: 22px 0 18px; color: var(--text); }
+.auth-card form { display: grid; gap: 14px; }
+.auth-tabs { width: 100%; }
+.auth-tabs button { flex: 1; }
+.auth-submit { justify-content: center; margin-top: 4px; }
+
+.account { position: relative; }
+.account-btn { width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border-strong); background: var(--accent-soft); color: var(--accent-text); font-weight: 600; font-size: 14px; cursor: pointer; }
+.account-btn:hover { background: var(--glass-hover); }
+.account .menu { right: 0; top: 44px; min-width: 220px; }
+.account-who { padding: 8px 10px 10px; border-bottom: 1px solid var(--border); margin-bottom: 6px; }
+.account-who .title { font-size: 13px; color: var(--text); font-weight: 600; }
+.account-who .hint { word-break: break-all; }
+
+@media (max-width: 860px) {
+  .auth-screen { grid-template-columns: 1fr; gap: 28px; padding: 28px 16px; }
+  .auth-hero h1 { margin-top: 22px; }
+}

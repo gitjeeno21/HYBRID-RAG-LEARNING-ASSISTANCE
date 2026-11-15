@@ -50,7 +50,36 @@
     </defs>
   </svg>
 
-  <div class="app">
+  <!-- Landing + sign in / create account. Shown until a session exists. -->
+  <div id="auth-screen" class="auth-screen hidden">
+    <section class="auth-hero">
+      <div class="brand"><div class="brand-mark">RAG</div><div><div class="brand-name">Hybrid RAG</div><div class="brand-sub">Study assistant</div></div></div>
+      <h1>Answers from your own papers, with the evidence attached.</h1>
+      <p>Upload research PDFs, ask questions, quiz yourself and compare papers. Every answer is built only from passages retrieved from your library, and every citation is checked.</p>
+      <ul class="auth-points">
+        <li><b>Hybrid retrieval.</b> Keyword (BM25) and semantic search, fused with Reciprocal Rank Fusion and measured on a held-out benchmark.</li>
+        <li><b>Grounded answers.</b> Page citations, checked automatically. It says when your papers do not contain the answer.</li>
+        <li><b>Your library stays yours.</b> Each account has its own private papers, history and search index.</li>
+      </ul>
+    </section>
+    <section class="card card-pad auth-card" aria-labelledby="auth-title">
+      <div id="auth-tabs" class="segmented auth-tabs" role="tablist" aria-label="Account">
+        <button type="button" role="tab" data-auth-mode="login" aria-pressed="true">Sign in</button>
+        <button type="button" role="tab" data-auth-mode="register" aria-pressed="false">Create account</button>
+      </div>
+      <h2 id="auth-title">Welcome back</h2>
+      <form id="auth-form" novalidate>
+        <label class="form-label register-only hidden">Name <span class="hint">(optional)</span><input id="auth-name" class="field" autocomplete="name" maxlength="100"></label>
+        <label class="form-label">Email<input id="auth-email" class="field" type="email" autocomplete="email" required maxlength="254"></label>
+        <label class="form-label">Password<input id="auth-password" class="field" type="password" autocomplete="current-password" required minlength="1" maxlength="256"></label>
+        <p class="hint register-only hidden" style="margin:0">At least 10 characters. A passphrase of a few words works well.</p>
+        <div id="auth-error" class="notice notice-error hidden" role="alert"></div>
+        <button id="auth-submit" class="btn btn-primary auth-submit" type="submit">Sign in</button>
+      </form>
+    </section>
+  </div>
+
+  <div class="app hidden" id="app-shell">
     <aside id="sidebar" class="sidebar" aria-label="Navigation and paper library">
       <div class="brand">
         <div class="brand-mark">RAG</div>
@@ -95,6 +124,13 @@
         <div class="topbar-actions">
           <button id="progress-button" class="btn btn-ghost btn-sm" type="button"><svg class="icon"><use href="#i-chart"/></svg><span>Progress</span></button>
           <button id="settings-button" class="icon-btn" type="button" aria-label="Settings"><svg class="icon"><use href="#i-settings"/></svg></button>
+          <div class="account">
+            <button id="account-button" class="account-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Account">?</button>
+            <div id="account-menu" class="menu hidden" role="menu">
+              <div class="account-who"><div id="account-name" class="title"></div><div id="account-email" class="hint"></div></div>
+              <button id="sign-out" type="button" role="menuitem">Sign out</button>
+            </div>
+          </div>
         </div>
       </header>
 

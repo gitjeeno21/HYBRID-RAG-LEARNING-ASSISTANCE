@@ -6,6 +6,8 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
+from auth_testing import authed_client
+
 from langchain_core.documents import Document
 
 from quiz import (
@@ -21,7 +23,7 @@ from quiz import (
 class QuizGradingApiTests(unittest.TestCase):
     def setUp(self) -> None:
         from main import app
-        self.client = TestClient(app)
+        self.client = authed_client(app)
         # The payloads cite ML222.pdf; make the library contain it so these
         # tests do not depend on which PDFs happen to be in data/.
         pdfs = patch("main.list_pdf_names", return_value=["ML222.pdf"])

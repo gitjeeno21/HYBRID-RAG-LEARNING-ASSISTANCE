@@ -47,3 +47,9 @@ removed_pdfs/
 data/*Resume*.pdf
 eval/.index/
 eval/.cache/
+
+# Multi-user runtime data: accounts database and per-user libraries/index
+app.db
+app.db-wal
+app.db-shm
+storage/

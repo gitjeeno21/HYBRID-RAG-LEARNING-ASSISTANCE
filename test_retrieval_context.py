@@ -5,6 +5,8 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
+
+from auth_testing import authed_client
 from langchain_core.documents import Document
 
 import main
@@ -48,7 +50,7 @@ class RetrieveForApiTests(unittest.TestCase):
         with patch("main.get_hybrid_resources", return_value=([doc("x")], object())), \
                 patch("main.get_vector_store"), \
                 patch("main.hybrid_search_with_scores", return_value=hits):
-            retrieved = main.retrieve_for_api("q", [], 3)
+            retrieved = main.retrieve_for_api(main.Workspace(1), "q", [], 3)
         self.assertEqual(len(retrieved), 3)
         self.assertEqual([item["citation"] for item in retrieved],
                          ["a.pdf, p. 3", "a.pdf, p. 3", "a.pdf, p. 4"])
@@ -79,8 +81,8 @@ class UploadEndpointTests(unittest.TestCase):
     def test_upload_still_indexes_and_reports_chunks(self) -> None:
         add = MagicMock(return_value=7)
         with patch("main.add_pdf_to_library", add), patch("main.get_vector_store"), \
-                patch("main.clear_indexes"), patch("main.get_hybrid_resources"):
-            response = TestClient(main.app).post(
+                patch("main.get_hybrid_resources"):
+            response = authed_client(main.app).post(
                 "/api/upload", files={"file": ("paper.pdf", b"%PDF-1.4 test", "application/pdf")})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["chunks_indexed"], 7)
@@ -88,7 +90,7 @@ class UploadEndpointTests(unittest.TestCase):
 
     def test_oversized_upload_is_rejected(self) -> None:
         with patch("main.MAX_UPLOAD_BYTES", 4):
-            response = TestClient(main.app).post(
+            response = authed_client(main.app).post(
                 "/api/upload", files={"file": ("big.pdf", b"%PDF-1.4", "application/pdf")})
         self.assertEqual(response.status_code, 413)
 

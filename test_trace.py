@@ -5,6 +5,8 @@ import unittest
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
+
+from auth_testing import authed_client
 from langchain_core.documents import Document
 
 import main
@@ -57,7 +59,7 @@ class TraceTests(unittest.TestCase):
                 patch("main.get_vector_store", return_value=FakeStore([(1, 0.5), (0, 0.9)])), \
                 patch("main.list_pdf_names", return_value=["a.pdf", "b.pdf"]), \
                 patch("main.call_llm", side_effect=AssertionError("no LLM allowed")):
-            response = TestClient(main.app).post("/api/retrieval/inspect",
+            response = authed_client(main.app).post("/api/retrieval/inspect",
                                                  json={"query": "BLEU score", "top_k": 2})
         self.assertEqual(response.status_code, 200)
         body = response.json()
@@ -68,7 +70,7 @@ class TraceTests(unittest.TestCase):
 
     def test_inspector_rejects_unknown_paper(self):
         with patch("main.list_pdf_names", return_value=["a.pdf"]):
-            response = TestClient(main.app).post("/api/retrieval/inspect",
+            response = authed_client(main.app).post("/api/retrieval/inspect",
                                                  json={"query": "x", "papers": ["nope.pdf"]})
         self.assertEqual(response.status_code, 404)
 
@@ -84,7 +86,7 @@ class TraceTests(unittest.TestCase):
                 patch("main.retrieve_for_api", return_value=retrieved), \
                 patch("main.assess", return_value={"label": "High", "reason": "ok"}), \
                 patch("main.call_llm_stream", side_effect=fake_stream):
-            response = TestClient(main.app).post("/api/chat/stream", json={"query": "q"})
+            response = authed_client(main.app).post("/api/chat/stream", json={"query": "q"})
         done = [json.loads(line) for line in response.text.splitlines()][-1]
         trace = done["trace"]
         for step in ("rewrite", "retrieval", "generation", "first_token", "support_check", "total"):
@@ -112,7 +114,7 @@ class EvalSummaryTests(unittest.TestCase):
                                             "configs": {"hybrid_rrf60": block}}), encoding="utf-8")
             files = {"test": ("Test", recorded), "dev": ("Dev", Path(tmp) / "missing.json")}
             with patch.dict(main.EVAL_RESULT_FILES, files, clear=True):
-                body = TestClient(main.app).get("/api/eval/summary").json()
+                body = authed_client(main.app).get("/api/eval/summary").json()
         test_set, dev_set = body["sets"]
         self.assertEqual(test_set["git_commit"], "abc1234")
         config = test_set["configs"][0]

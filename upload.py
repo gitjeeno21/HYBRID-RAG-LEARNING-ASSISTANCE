@@ -53,7 +53,8 @@ def add_pdf_to_library(
             # Use the final filename in citations and the eventual source path,
             # not the temporary parser path.
             page.metadata["filename"] = safe_name
-            page.metadata["source"] = str(destination)
+            # The bare name, not the server path: metadata is sent to the browser.
+            page.metadata["source"] = safe_name
 
         chunks: list[Document] = split_documents(
             pages,

@@ -20,6 +20,9 @@ rank_bm25>=0.2.2               # BM25Okapi used by hybrid.py
 langchain-community>=0.4.0     # PyPDFLoader (emits a sunset warning; works)
 pypdf>=6.21.0                  # PDF parsing backend used by PyPDFLoader
 
+# Accounts: Argon2id password hashing (sessions and storage use the stdlib)
+argon2-cffi>=23.1.0
+
 # FastAPI backend
 fastapi>=0.115.0
 uvicorn>=0.34.0

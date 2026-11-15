@@ -53,15 +53,15 @@ notepad .env
 
 Replace the placeholder so the line reads `GROQ_API_KEY=your_real_key_here`, then save and close Notepad.
 
-**6. Add your PDFs (optional).** Put PDF files in the `data\` folder. You can also add them later from inside the app.
+**6. Start the app once and create your account** (see *Running the app* below). Open <http://127.0.0.1:8000>, choose **Create account**, and sign up with your email and a password of at least 10 characters. Accounts live only on this computer, in `app.db`.
 
-**7. Build the search index.**
+**7. Add your PDFs.** Either upload them in the app (**Add PDF**, or drag and drop), or import a whole folder at once. Stop the server first, then:
 
 ```powershell
-python ingest.py
+python manage.py import-pdfs --email you@example.com data\*.pdf
 ```
 
-This reads every PDF in `data\` and builds the local index in `chroma_db\`. The first run also downloads the embedding model.
+Each account has its own private library in `storage\users\<id>\` and its own search index. Nobody else who signs in on this computer can see, search or delete your papers. The first import also downloads the embedding model (about 90 MB).
 
 ---
 
@@ -127,7 +127,9 @@ All off by default; each was measured before being left off (see `eval/RETRIEVAL
 | `python` is not recognized | Reinstall Python with **"Add Python to PATH"** ticked, then open a new PowerShell window. |
 | `No module named ...` | Activate the venv (`.\venv\Scripts\Activate.ps1`) and run `python -m pip install -r requirements.txt` again. |
 | Sidebar says **GROQ_API_KEY missing in .env** | Check that `.env` is in the project folder and contains `GROQ_API_KEY=...` with your real key. Then restart the app. |
-| Sidebar says **Index out of sync** | Stop the app, run `python ingest.py`, then start the app again. This usually happens after PDFs were added to or removed from `data\` by hand. |
+| Sidebar says **Index out of sync** | Stop the app, run `python manage.py reindex --email you@example.com`, then start it again. This happens if PDFs were added to or removed from `storage\users\<id>\pdfs\` by hand. |
+| Forgot your password | There is no email reset (the app runs offline). Create a new account, or have whoever runs the app delete `app.db` to start fresh. |
+| "Too many failed attempts" | Five wrong passwords lock sign-in for that email for 15 minutes. |
 | "AI service is rate limited" | The free Groq tier has limits. Wait a minute and try again. |
 | Port 8000 is already in use | Close the other app using it, or start on another port: `python -m uvicorn main:app --port 8001`, then open <http://127.0.0.1:8001>. |
 | Warning about `HF_TOKEN` in the console | Harmless. You can ignore it. |
