@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 import auth
 import db
 import main
-from auth_testing import PASSWORD, authed_client, fresh_database, signed_in
+from auth_testing import MAIL, PASSWORD, authed_client, fresh_database, signed_in
 
 
 class RegistrationTests(unittest.TestCase):
@@ -15,12 +15,18 @@ class RegistrationTests(unittest.TestCase):
         fresh_database()
         self.client = TestClient(main.app)
 
-    def test_register_signs_in_and_never_stores_the_plain_password(self):
+    def test_register_requires_email_verification_and_never_stores_the_plain_password(self):
         response = self.client.post("/api/auth/register",
                                     json={"email": "Ada@Example.com", "password": PASSWORD, "name": "Ada"})
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["user"]["email"], "ada@example.com")
-        self.assertEqual(self.client.get("/api/auth/me").json()["user"]["name"], "Ada")
+        self.assertEqual(response.json(), {"verification_required": True, "email": "ada@example.com"})
+        self.assertIsNone(self.client.cookies.get(auth.SESSION_COOKIE))     # no session yet
+        self.assertEqual(self.client.get("/api/auth/me").status_code, 401)
+        verified = self.client.post("/api/auth/verify-email",
+                                    json={"email": "ada@example.com", "code": MAIL.last_code("ada@example.com")})
+        self.assertEqual(verified.status_code, 200)
+        me = self.client.get("/api/auth/me").json()["user"]
+        self.assertEqual((me["name"], me["email_verified"]), ("Ada", True))
         with db.connect() as conn:
             stored = conn.execute("SELECT password_hash FROM users").fetchone()[0]
         self.assertTrue(stored.startswith("$argon2id$"))
@@ -40,7 +46,9 @@ class RegistrationTests(unittest.TestCase):
                 self.assertEqual(self.client.post("/api/auth/register", json=payload).status_code, 400)
 
     def test_session_cookie_is_httponly_and_csrf_cookie_is_readable(self):
-        response = self.client.post("/api/auth/register", json={"email": "c@example.com", "password": PASSWORD})
+        self.client.post("/api/auth/register", json={"email": "c@example.com", "password": PASSWORD})
+        response = self.client.post("/api/auth/verify-email",
+                                    json={"email": "c@example.com", "code": MAIL.last_code("c@example.com")})
         cookies = response.headers.get_list("set-cookie")
         session = next(c for c in cookies if c.startswith(auth.SESSION_COOKIE + "="))
         csrf = next(c for c in cookies if c.startswith(auth.CSRF_COOKIE + "="))
@@ -52,7 +60,9 @@ class RegistrationTests(unittest.TestCase):
 class LoginTests(unittest.TestCase):
     def setUp(self):
         fresh_database()
-        auth.create_user("user@example.com", PASSWORD)
+        user = auth.create_user("user@example.com", PASSWORD)
+        with db.connect() as conn:
+            conn.execute("UPDATE users SET email_verified = 1 WHERE id = ?", (user.id,))
 
     def login(self, email="user@example.com", password=PASSWORD):
         return TestClient(main.app).post("/api/auth/login", json={"email": email, "password": password})
@@ -70,6 +80,14 @@ class LoginTests(unittest.TestCase):
         for _ in range(auth.MAX_FAILURES):
             self.login(password="wrong password!!")
         self.assertEqual(self.login().status_code, 429)
+
+    def test_unverified_accounts_are_told_only_after_the_right_password(self):
+        auth.create_user("new@example.com", PASSWORD)
+        wrong = self.login("new@example.com", "wrong password!!")
+        right = self.login("new@example.com")
+        self.assertEqual(wrong.status_code, 401)          # looks like any failed sign-in
+        self.assertEqual(right.status_code, 403)
+        self.assertEqual(right.json()["code"], "email_unverified")
 
     def test_cross_site_login_is_blocked(self):
         response = TestClient(main.app).post(

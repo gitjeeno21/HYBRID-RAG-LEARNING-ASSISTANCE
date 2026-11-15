@@ -63,7 +63,10 @@ async function api(path, { method = "GET", json, body } = {}) {
   if (!response.ok) {
     if (response.status === 401 && !path.startsWith("/api/auth/")) showAuth("Your session ended. Please sign in again.");
     if (response.status === 503 || response.status === 429) refreshHealth();
-    throw new Error(formatApiError(data.detail || data.message || data, `Request failed (${response.status})`));
+    const error = new Error(formatApiError(data.detail || data.message || data, `Request failed (${response.status})`));
+    error.status = response.status;
+    error.code = data.code || "";
+    throw error;
   }
   return data;
 }
@@ -1446,25 +1449,61 @@ document.addEventListener("keydown", event => {
    ========================================================================== */
 let authMode = "login";
 let started = false;
+let pendingEmail = "";       // the address a code was sent to (verify / reset steps)
+let resendTimer = null;
 
-function setAuthMode(mode) {
+const AUTH_COPY = {
+  login: ["Welcome back", "Sign in", ""],
+  register: ["Create your account", "Create account", ""],
+  verify: ["Check your email", "Verify email", "Enter the 6-digit code we sent to"],
+  forgot: ["Reset your password", "Send code", "Enter your account's email and we'll send you a code."],
+  reset: ["Choose a new password", "Change password", "Enter the 6-digit code we sent to"],
+};
+
+function setAuthMode(mode, { info = "", keepError = false } = {}) {
   authMode = mode;
-  const register = mode === "register";
+  const [title, submit, lead] = AUTH_COPY[mode];
   $$("#auth-tabs button").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.authMode === mode)));
-  $$(".register-only").forEach(element => element.classList.toggle("hidden", !register));
-  $("#auth-title").textContent = register ? "Create your account" : "Welcome back";
-  $("#auth-submit").textContent = register ? "Create account" : "Sign in";
-  $("#auth-password").autocomplete = register ? "new-password" : "current-password";
-  $("#auth-error").classList.add("hidden");
+  $$("#auth-screen [data-modes]").forEach(element =>
+    element.classList.toggle("hidden", !element.dataset.modes.split(" ").includes(mode)));
+  $("#auth-title").textContent = title;
+  $("#auth-submit").textContent = submit;
+  $("#auth-password").autocomplete = mode === "register" ? "new-password" : "current-password";
+  const leadText = lead && (mode === "verify" || mode === "reset") ? `${lead} ${pendingEmail}.` : lead;
+  $("#auth-lead").textContent = leadText;
+  $("#auth-lead").classList.toggle("hidden", !leadText);
+  $("#auth-info").textContent = info;
+  $("#auth-info").classList.toggle("hidden", !info);
+  if (!keepError) $("#auth-error").classList.add("hidden");
+  if (mode === "verify" || mode === "reset") { $("#auth-code").value = ""; setTimeout(() => $("#auth-code").focus(), 0); }
+}
+
+function authError(message) {
+  $("#auth-error").textContent = message;
+  $("#auth-error").classList.remove("hidden");
+}
+
+/* "Send a new code" stays disabled for 60 s, matching the server's cooldown. */
+function startResendCooldown(seconds = 60) {
+  const button = $("#auth-resend");
+  clearInterval(resendTimer);
+  let left = seconds;
+  const tick = () => {
+    button.disabled = left > 0;
+    button.textContent = left > 0 ? `Send a new code (${left}s)` : "Send a new code";
+    left -= 1;
+    if (left < 0) clearInterval(resendTimer);
+  };
+  tick();
+  resendTimer = setInterval(tick, 1000);
 }
 
 function showAuth(message = "") {
   state.user = null;
   $("#app-shell").classList.add("hidden");
   $("#auth-screen").classList.remove("hidden");
-  const error = $("#auth-error");
-  error.textContent = message;
-  error.classList.toggle("hidden", !message);
+  setAuthMode(authMode === "register" ? "register" : "login");
+  if (message) authError(message);
   setTimeout(() => $("#auth-email").focus(), 0);
 }
 
@@ -1484,23 +1523,139 @@ $("#auth-tabs").addEventListener("click", event => {
   const button = event.target.closest("[data-auth-mode]");
   if (button) setAuthMode(button.dataset.authMode);
 });
+$$("#auth-screen [data-go]").forEach(button => button.addEventListener("click", () => setAuthMode(button.dataset.go)));
+
+$("#auth-code").addEventListener("input", event => {
+  event.target.value = event.target.value.replace(/\D/g, "").slice(0, 6);
+});
+
+$("#auth-resend").addEventListener("click", async () => {
+  const path = authMode === "reset" ? "/api/auth/password/forgot" : "/api/auth/resend-verification";
+  try {
+    const { detail } = await api(path, { method: "POST", json: { email: pendingEmail } });
+    setAuthMode(authMode, { info: detail });
+    startResendCooldown();
+  } catch (error) { authError(error.message); }
+});
+
+async function submitAuth() {
+  const email = $("#auth-email").value.trim();
+  switch (authMode) {
+    case "login":
+      try {
+        const { user } = await api("/api/auth/login", { method: "POST", json: { email, password: $("#auth-password").value } });
+        $("#auth-password").value = "";
+        showApp(user);
+      } catch (error) {
+        if (error.code !== "email_unverified") throw error;
+        // Right password, unverified email: send a fresh code and go straight to the code step.
+        pendingEmail = email;
+        await api("/api/auth/resend-verification", { method: "POST", json: { email } }).catch(() => {});
+        setAuthMode("verify", { info: "Your email isn't verified yet. We've sent you a code." });
+        startResendCooldown();
+      }
+      return;
+    case "register": {
+      const result = await api("/api/auth/register", { method: "POST", json: {
+        email, password: $("#auth-password").value, name: $("#auth-name").value.trim() } });
+      $("#auth-password").value = "";
+      pendingEmail = result.email;
+      setAuthMode("verify");
+      startResendCooldown();
+      return;
+    }
+    case "verify": {
+      const { user } = await api("/api/auth/verify-email", { method: "POST", json: { email: pendingEmail, code: $("#auth-code").value } });
+      showApp(user);
+      return;
+    }
+    case "forgot": {
+      const { detail } = await api("/api/auth/password/forgot", { method: "POST", json: { email } });
+      pendingEmail = email;
+      setAuthMode("reset", { info: detail });
+      startResendCooldown();
+      return;
+    }
+    case "reset": {
+      const { detail } = await api("/api/auth/password/reset", { method: "POST", json: {
+        email: pendingEmail, code: $("#auth-code").value, new_password: $("#auth-new-password").value } });
+      $("#auth-new-password").value = "";
+      $("#auth-email").value = pendingEmail;
+      setAuthMode("login", { info: detail });
+      return;
+    }
+  }
+}
 
 $("#auth-form").addEventListener("submit", async event => {
   event.preventDefault();
   const button = $("#auth-submit");
-  const payload = { email: $("#auth-email").value.trim(), password: $("#auth-password").value };
-  if (authMode === "register") payload.name = $("#auth-name").value.trim();
-  setBusy(button, true, authMode === "register" ? "Creating account…" : "Signing in…");
+  const label = { login: "Signing in…", register: "Creating account…", verify: "Verifying…",
+                  forgot: "Sending…", reset: "Changing password…" }[authMode];
+  setBusy(button, true, label);
   try {
-    const { user } = await api(`/api/auth/${authMode}`, { method: "POST", json: payload });
-    $("#auth-password").value = "";
-    showApp(user);
+    await submitAuth();
   } catch (error) {
-    $("#auth-error").textContent = error.message;
-    $("#auth-error").classList.remove("hidden");
+    authError(error.message);
   } finally {
     setBusy(button, false);
   }
+});
+
+/* ==========================================================================
+   Account settings
+   ========================================================================== */
+$("#open-account").addEventListener("click", () => {
+  $("#account-menu").classList.add("hidden");
+  $("#settings-email").textContent = state.user.email;
+  $("#settings-verified").classList.toggle("hidden", !state.user.email_verified);
+  $("#settings-name").value = state.user.name || "";
+  $("#password-form").reset();
+  $("#password-error").classList.add("hidden");
+  openDialog("account-dialog");
+});
+
+$("#profile-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  try {
+    const { user } = await api("/api/account/profile", { method: "POST", json: { name: $("#settings-name").value.trim() } });
+    showApp(user);
+    toast("Name saved", "success");
+  } catch (error) { toast(error.message, "error"); }
+});
+
+$("#password-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const error = $("#password-error");
+  const next = $("#new-password").value;
+  if (next !== $("#confirm-password").value) {
+    error.textContent = "The new passwords don't match.";
+    error.classList.remove("hidden");
+    return;
+  }
+  const button = event.target.querySelector("button[type=submit]");
+  setBusy(button, true, "Changing…");
+  try {
+    const { detail } = await api("/api/account/password", { method: "POST", json: {
+      current_password: $("#current-password").value, new_password: next } });
+    event.target.reset();
+    error.classList.add("hidden");
+    $("#account-dialog").close();
+    toast(detail, "success");
+  } catch (failure) {
+    error.textContent = failure.message;
+    error.classList.remove("hidden");
+  } finally {
+    setBusy(button, false);
+  }
+});
+
+$("#sign-out-everywhere").addEventListener("click", async () => {
+  const ok = await confirmDialog({ title: "Sign out of all devices?", message: "Every session ends, including this one. You'll need your password to sign in again.", okLabel: "Sign out everywhere", danger: true });
+  if (!ok) return;
+  try { await api("/api/account/sign-out-everywhere", { method: "POST" }); } catch (_) { /* reload anyway */ }
+  try { sessionStorage.clear(); } catch (_) { /* storage blocked */ }
+  location.reload();
 });
 
 async function loadUsage() {

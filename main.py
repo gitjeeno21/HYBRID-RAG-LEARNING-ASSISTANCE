@@ -76,6 +76,30 @@ class RegisterRequest(BaseModel):
     name: str = Field(default="", max_length=100)
 
 
+class EmailRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=254)
+
+
+class VerifyEmailRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=254)
+    code: str = Field(min_length=1, max_length=12)
+
+
+class ResetPasswordRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=254)
+    code: str = Field(min_length=1, max_length=12)
+    new_password: str = Field(min_length=1, max_length=auth.MAX_PASSWORD_LENGTH)
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=auth.MAX_PASSWORD_LENGTH)
+    new_password: str = Field(min_length=1, max_length=auth.MAX_PASSWORD_LENGTH)
+
+
+class ProfileRequest(BaseModel):
+    name: str = Field(default="", max_length=100)
+
+
 class LoginRequest(BaseModel):
     email: str = Field(min_length=1, max_length=254)
     password: str = Field(min_length=1, max_length=auth.MAX_PASSWORD_LENGTH)
@@ -144,7 +168,11 @@ class CompareRequest(BaseModel):
 # WHY a middleware instead of a dependency on each route: secure by default.
 # A route added later is protected without anyone remembering to protect it;
 # only the endpoints below, which create or end a session, are open.
-OPEN_API_PATHS = {"/api/auth/register", "/api/auth/login", "/api/auth/logout"}
+OPEN_API_PATHS = {
+    "/api/auth/register", "/api/auth/login", "/api/auth/logout",
+    "/api/auth/verify-email", "/api/auth/resend-verification",
+    "/api/auth/password/forgot", "/api/auth/password/reset",
+}
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 # Cookies are sent over plain http on localhost; set APP_SECURE_COOKIES=1 when
 # the app is served over HTTPS so browsers never send them unencrypted.
@@ -275,13 +303,47 @@ def get_usage(http: Request) -> dict[str, Any]:
 
 @app.exception_handler(auth.AuthError)
 async def _auth_error(_: Request, exc: auth.AuthError) -> JSONResponse:
-    return JSONResponse(status_code=exc.status, content={"detail": str(exc)})
+    content = {"detail": str(exc)}
+    if exc.code:
+        content["code"] = exc.code
+    return JSONResponse(status_code=exc.status, content=content)
+
+
+# The same wording whether or not an account exists, so these endpoints
+# cannot be used to find out who has an account.
+CODE_SENT = "If an account needs it, a 6-digit code is on its way. It expires in 10 minutes."
 
 
 @app.post("/api/auth/register")
-def register(payload: RegisterRequest, response: Response) -> dict[str, Any]:
+def register(payload: RegisterRequest) -> dict[str, Any]:
+    """Create an unverified account and email it a code; no session until verified."""
     user = auth.create_user(payload.email, payload.password, payload.name)
+    auth.issue_code(user, "verify")
+    return {"verification_required": True, "email": user.email}
+
+
+@app.post("/api/auth/verify-email")
+def verify_email(payload: VerifyEmailRequest, response: Response) -> dict[str, Any]:
+    user = auth.verify_email(payload.email, payload.code)
     return _start_session(response, user)
+
+
+@app.post("/api/auth/resend-verification")
+def resend_verification(payload: EmailRequest) -> dict[str, str]:
+    auth.send_verification(payload.email)
+    return {"detail": CODE_SENT}
+
+
+@app.post("/api/auth/password/forgot")
+def forgot_password(payload: EmailRequest) -> dict[str, str]:
+    auth.request_password_reset(payload.email)
+    return {"detail": CODE_SENT}
+
+
+@app.post("/api/auth/password/reset")
+def reset_password(payload: ResetPasswordRequest) -> dict[str, Any]:
+    auth.reset_password(payload.email, payload.code, payload.new_password)
+    return {"reset": True, "detail": "Password changed. Sign in with your new password."}
 
 
 @app.post("/api/auth/login")
@@ -302,6 +364,27 @@ def logout(request: Request, response: Response) -> dict[str, bool]:
 @app.get("/api/auth/me")
 def me(request: Request) -> dict[str, Any]:
     return {"user": current_user(request).public()}
+
+
+@app.post("/api/account/password")
+def change_password(payload: ChangePasswordRequest, http: Request) -> dict[str, Any]:
+    """Change password; this browser stays signed in, every other session ends."""
+    auth.change_password(current_user(http), payload.current_password, payload.new_password,
+                         keep_token=http.cookies.get(auth.SESSION_COOKIE))
+    return {"changed": True, "detail": "Password changed. Other devices have been signed out."}
+
+
+@app.post("/api/account/profile")
+def update_profile(payload: ProfileRequest, http: Request) -> dict[str, Any]:
+    return {"user": auth.update_name(current_user(http), payload.name).public()}
+
+
+@app.post("/api/account/sign-out-everywhere")
+def sign_out_everywhere(http: Request, response: Response) -> dict[str, bool]:
+    auth.revoke_all_sessions(current_user(http).id)
+    response.delete_cookie(auth.SESSION_COOKIE, path="/")
+    response.delete_cookie(auth.CSRF_COOKIE, path="/")
+    return {"signed_out": True}
 
 
 # ---------------------------------------------------------------------------

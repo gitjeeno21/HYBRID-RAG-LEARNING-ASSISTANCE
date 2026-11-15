@@ -11,7 +11,7 @@ Evidence-grounded question answering, quizzes and paper comparison over your own
 - **Compare:** two papers answered from *isolated* evidence, so passages from one can never leak into the other's answer.
 - **Inspect:** a retrieval debugger (every candidate's dense rank, cosine, BM25 rank and score, RRF score, and which passages reach the model) plus a dashboard of the recorded benchmark.
 - **Library:** upload, preview, rename and delete PDFs; indexing is immediate and the dense and lexical indexes are verified to match.
-- **Accounts:** email and password sign-in; every user has a **private** library, search index, quiz history and daily AI allowance. Isolation is enforced in the storage layer and tested end to end ([below](#accounts-and-security)).
+- **Accounts:** email and password sign-in with email verification, password reset and change by emailed code, and account settings; every user has a **private** library, search index, quiz history and daily AI allowance. Isolation is enforced in the storage layer and tested end to end ([below](#accounts-and-security)).
 
 Embeddings (`all-MiniLM-L6-v2`), the Chroma index and BM25 run locally on CPU. Only generation calls the hosted LLM (Groq, `openai/gpt-oss-120b`).
 
@@ -90,6 +90,7 @@ Design decisions and the evidence for each: [ARCHITECTURE.md](ARCHITECTURE.md). 
 | Sessions | Random 256-bit token in an `HttpOnly`, `SameSite=Lax` cookie; only its SHA-256 is stored; 7-day expiry; revoked on sign-out |
 | CSRF | Per-session token echoed in `X-CSRF-Token` on every write; cross-site writes to sign-in endpoints rejected by `Origin` |
 | Brute force | 5 failed sign-ins per email (and per client) lock sign-in for 15 minutes; one generic error for wrong password and unknown email, with equal hashing cost |
+| Email verification and reset | New accounts verify their email with a 6-digit code; **Forgot password** resets by emailed code and signs out every session; **change password** needs the current one and signs out other devices. Codes are random, stored hashed, expire in 10 minutes, allow 5 guesses, and are limited to one a minute and five an hour. Email-only endpoints answer identically whether or not an account exists. Mail is sent server-side through EmailJS, so the browser never sees a code |
 | Every route protected | One middleware requires a session for all `/api` routes except sign-in, so a new route cannot be left open by accident (tested by sweeping every route) |
 | Data isolation | Private folder per user; per-user BM25; a `ScopedStore` adds the user's filter to every Chroma search, read, write and delete; fusion only accepts the user's own chunks |
 | Shared API key | Daily LLM token allowance per user (`APP_DAILY_TOKEN_LIMIT`, default 100,000) |
@@ -98,7 +99,7 @@ Design decisions and the evidence for each: [ARCHITECTURE.md](ARCHITECTURE.md). 
 
 `test_isolation.py` uploads real PDFs with secret tokens for two users and attempts every cross-user path (listing, preview, download, delete, search, chat prompt, quiz, compare, progress, identical filenames, path traversal) with real embeddings and a real Chroma index.
 
-**Not provided** (local deployment): password reset by email, email verification, account deletion from the UI, HTTPS (put a reverse proxy in front and set `APP_SECURE_COOKIES=1` before exposing it beyond localhost).
+**Not provided:** account deletion from the UI, two-factor sign-in, HTTPS (put a reverse proxy in front and set `APP_SECURE_COOKIES=1` before exposing it beyond localhost).
 
 ## Evaluation
 
@@ -126,7 +127,7 @@ python eval/run_eval.py --questions eval/dev_questions_multipage.json --top-k 5
 python -m unittest discover -p "test_*.py"
 ```
 
-119 tests, all offline (no API key needed). LLM calls are replaced by fakes. The isolation tests use real PDFs, embeddings and Chroma; the rest use in-memory fakes.
+141 tests, all offline (no API key needed). LLM calls are replaced by fakes. The isolation tests use real PDFs, embeddings and Chroma; the rest use in-memory fakes.
 
 ## Project layout
 

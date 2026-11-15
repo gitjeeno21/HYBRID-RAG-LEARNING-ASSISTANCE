@@ -63,18 +63,27 @@
       </ul>
     </section>
     <section class="card card-pad auth-card" aria-labelledby="auth-title">
-      <div id="auth-tabs" class="segmented auth-tabs" role="tablist" aria-label="Account">
+      <div id="auth-tabs" class="segmented auth-tabs" role="tablist" aria-label="Account" data-modes="login register">
         <button type="button" role="tab" data-auth-mode="login" aria-pressed="true">Sign in</button>
         <button type="button" role="tab" data-auth-mode="register" aria-pressed="false">Create account</button>
       </div>
       <h2 id="auth-title">Welcome back</h2>
+      <p id="auth-lead" class="hint auth-lead hidden"></p>
       <form id="auth-form" novalidate>
-        <label class="form-label register-only hidden">Name <span class="hint">(optional)</span><input id="auth-name" class="field" autocomplete="name" maxlength="100"></label>
-        <label class="form-label">Email<input id="auth-email" class="field" type="email" autocomplete="email" required maxlength="254"></label>
-        <label class="form-label">Password<input id="auth-password" class="field" type="password" autocomplete="current-password" required minlength="1" maxlength="256"></label>
-        <p class="hint register-only hidden" style="margin:0">At least 10 characters. A passphrase of a few words works well.</p>
+        <label class="form-label" data-modes="register">Name <span class="hint">(optional)</span><input id="auth-name" class="field" autocomplete="name" maxlength="100"></label>
+        <label class="form-label" data-modes="login register forgot">Email<input id="auth-email" class="field" type="email" autocomplete="email" maxlength="254"></label>
+        <label class="form-label" data-modes="login register">Password<input id="auth-password" class="field" type="password" autocomplete="current-password" maxlength="256"></label>
+        <label class="form-label" data-modes="verify reset">6-digit code<input id="auth-code" class="field code-field" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="000000"></label>
+        <label class="form-label" data-modes="reset">New password<input id="auth-new-password" class="field" type="password" autocomplete="new-password" maxlength="256"></label>
+        <p class="hint" style="margin:0" data-modes="register reset">At least 10 characters. A passphrase of a few words works well.</p>
+        <div id="auth-info" class="notice notice-info hidden" role="status"></div>
         <div id="auth-error" class="notice notice-error hidden" role="alert"></div>
         <button id="auth-submit" class="btn btn-primary auth-submit" type="submit">Sign in</button>
+        <div class="auth-links">
+          <button type="button" class="link-btn" data-modes="login" data-go="forgot">Forgot password?</button>
+          <button type="button" id="auth-resend" class="link-btn" data-modes="verify reset">Send a new code</button>
+          <button type="button" class="link-btn" data-modes="verify forgot reset" data-go="login">Back to sign in</button>
+        </div>
       </form>
     </section>
   </div>
@@ -129,6 +138,7 @@
             <div id="account-menu" class="menu hidden" role="menu">
               <div class="account-who"><div id="account-name" class="title"></div><div id="account-email" class="hint"></div></div>
               <div class="account-usage"><div class="hint">AI use today</div><div id="account-usage-text" class="usage-text">…</div><div class="usage-track"><span id="account-usage-bar"></span></div></div>
+              <button id="open-account" type="button" role="menuitem">Account settings</button>
               <button id="sign-out" type="button" role="menuitem">Sign out</button>
             </div>
           </div>
@@ -285,6 +295,36 @@
       </div>
     </div>
     <div class="dialog-foot"><button class="btn btn-primary" data-close type="button">Done</button></div>
+  </dialog>
+
+  <dialog id="account-dialog" aria-labelledby="account-title">
+    <div class="dialog-head"><h2 id="account-title">Account settings</h2><button class="icon-btn" data-close aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button></div>
+    <div class="dialog-body account-settings">
+      <section>
+        <h3>Profile</h3>
+        <div class="row account-email-row"><span id="settings-email"></span><span id="settings-verified" class="badge badge-high">Verified</span></div>
+        <form id="profile-form" class="row" style="align-items:flex-end">
+          <label class="form-label" style="flex:1">Name<input id="settings-name" class="field" maxlength="100" autocomplete="name"></label>
+          <button class="btn" type="submit">Save</button>
+        </form>
+      </section>
+      <section>
+        <h3>Change password</h3>
+        <form id="password-form" class="stack-tight">
+          <label class="form-label">Current password<input id="current-password" class="field" type="password" autocomplete="current-password" maxlength="256" required></label>
+          <label class="form-label">New password<input id="new-password" class="field" type="password" autocomplete="new-password" maxlength="256" required></label>
+          <label class="form-label">Confirm new password<input id="confirm-password" class="field" type="password" autocomplete="new-password" maxlength="256" required></label>
+          <p class="hint" style="margin:0">At least 10 characters. Other devices are signed out when you change it.</p>
+          <div id="password-error" class="notice notice-error hidden" role="alert"></div>
+          <button class="btn btn-primary" type="submit">Change password</button>
+        </form>
+      </section>
+      <section>
+        <h3>Sessions</h3>
+        <p class="hint" style="margin:0 0 10px">Lost a device, or signed in on a shared computer? End every session, including this one.</p>
+        <button id="sign-out-everywhere" class="btn" type="button">Sign out of all devices</button>
+      </section>
+    </div>
   </dialog>
 
   <dialog id="progress-dialog" aria-labelledby="progress-title">

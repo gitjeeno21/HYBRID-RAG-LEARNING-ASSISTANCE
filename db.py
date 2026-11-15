@@ -76,6 +76,23 @@ MIGRATIONS: list[str] = [
         PRIMARY KEY (user_id, day)
     );
     """,
+    # 4: email verification and one-time codes (verify email, reset password).
+    # Accounts that existed before verification was introduced are trusted.
+    """
+    ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0;
+    UPDATE users SET email_verified = 1;
+    CREATE TABLE email_codes (
+        id          INTEGER PRIMARY KEY,
+        user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        purpose     TEXT NOT NULL CHECK (purpose IN ('verify', 'reset')),
+        code_hash   TEXT NOT NULL,           -- the code itself is never stored
+        attempts    INTEGER NOT NULL DEFAULT 0,
+        used        INTEGER NOT NULL DEFAULT 0, -- consumed or superseded (kept to count sends)
+        created_at  TEXT NOT NULL,
+        expires_at  TEXT NOT NULL
+    );
+    CREATE INDEX email_codes_user ON email_codes(user_id, purpose);
+    """,
 ]
 
 
