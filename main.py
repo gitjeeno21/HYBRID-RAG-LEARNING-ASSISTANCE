@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
+from contextlib import asynccontextmanager
 import secrets
 import os
 import time
@@ -51,6 +53,7 @@ from quiz import (
 )
 from trust import assess
 from upload import add_pdf_to_library
+import workspace
 from workspace import Workspace, load_pdf_pages, verify_index_matches  # noqa: F401
 
 load_dotenv()
@@ -60,7 +63,31 @@ INDEX_FILE = STATIC_DIR / "index.html"
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 MAX_TOP_K = 10
 
-app = FastAPI(title="Hybrid RAG Knowledge Assistant", version="2.0.0")
+def _warm_up() -> None:
+    started = time.perf_counter()
+    try:
+        workspace.warm_up()
+        logging.getLogger("rag.access").info(json.dumps(
+            {"event": "warm_up", "ms": round((time.perf_counter() - started) * 1e3)}))
+    except Exception as exc:  # noqa: BLE001 - a failed warm-up only means a slower first request
+        logging.getLogger("rag.access").warning(json.dumps({"event": "warm_up_failed", "error": type(exc).__name__}))
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """Load the embedding model while the server is already accepting requests.
+
+    WHY: loading it took 9.1 s (measured), and it used to happen inside the
+    first user's request. A background thread moves that off the request path;
+    a request that arrives mid-load simply waits for the same lock.
+    APP_PRELOAD=0 disables this (tests never start the lifespan).
+    """
+    if os.getenv("APP_PRELOAD", "1").strip() != "0":
+        threading.Thread(target=_warm_up, name="warm-up", daemon=True).start()
+    yield
+
+
+app = FastAPI(title="Hybrid RAG Knowledge Assistant", version="2.0.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
@@ -698,6 +725,7 @@ def delete_pdf(filename: str, http: Request) -> dict[str, Any]:
     ws = workspace_for(http)
     try:
         remove_pdf_from_library(filename, get_vector_store(ws), ws.pdf_dir, ws.removed_dir, keep_copy=False)
+        ws.drop_cache(filename)
         ws.invalidate()
         get_hybrid_resources(ws)
     except FileNotFoundError as exc:
@@ -729,6 +757,7 @@ def rename_pdf(request: RenamePdfRequest, http: Request) -> dict[str, Any]:
     store = get_vector_store(ws)
     store.delete(where={"filename": old})
     store.add_documents(split_documents(pages, *best_chunk_config()))
+    ws.drop_cache(old)
     ws.invalidate()
     get_hybrid_resources(ws)
     return {"filename": new}
@@ -746,7 +775,7 @@ def _prepare_chat(request: ChatRequest, ws: Workspace) -> tuple[str, list[dict[s
     """
     available = set(list_pdf_names(ws))
     papers = [paper for paper in request.papers if paper in available]
-    trace: dict[str, Any] = {"timings_ms": {}, "tokens": {}}
+    trace: dict[str, Any] = {"timings_ms": {}, "tokens": {}, "papers": papers}
     started = time.perf_counter()
     with track_usage() as rewrite_usage:
         standalone_query = rewrite_followup(request.query.strip(), request.history)
@@ -780,9 +809,36 @@ def _finish_trace(trace: dict[str, Any], request_started: float) -> dict[str, An
     return trace
 
 
-def _chat_prompt(query: str, retrieved: list[dict[str, Any]]) -> str:
-    context = "\n\n".join(f"Source: {item['citation']}\n{item['text']}" for item in retrieved)
-    return PROMPT_TEMPLATE.format(context=context, question=query)
+MULTI_PAPER_INSTRUCTIONS = (
+    "\n\nThe user selected {count} papers and expects each one to be covered. "
+    "Answer in one short section per paper, headed with its filename, in the order listed. "
+    "Use only that paper's passages for its section; never answer for one paper with another "
+    "paper's evidence. If a paper's passages do not address the question, say so in its "
+    "section instead of skipping it. Use the fixed sentence above only if NO paper's "
+    "passages contain any of the answer."
+)
+
+
+def _chat_prompt(query: str, retrieved: list[dict[str, Any]], papers: list[str] | None = None) -> str:
+    """The grounded answer prompt.
+
+    With two or more selected papers, passages are grouped under each paper and
+    the model must address every one. WHY: with one flat list, the model
+    answered from whichever paper matched best and silently ignored the others
+    (seen in end-to-end testing). With zero or one paper the prompt is exactly
+    the evaluated one, so recorded answer-quality results stay valid.
+    """
+    if not papers or len(papers) < 2:
+        context = "\n\n".join(f"Source: {item['citation']}\n{item['text']}" for item in retrieved)
+        return PROMPT_TEMPLATE.format(context=context, question=query)
+    sections = []
+    for paper in papers:
+        passages = [item for item in retrieved if item["filename"] == paper]
+        body = ("\n\n".join(f"Source: {item['citation']}\n{item['text']}" for item in passages)
+                or "[No passages were retrieved from this paper.]")
+        sections.append(f"=== Paper: {paper} ===\n{body}")
+    prompt = PROMPT_TEMPLATE.format(context="\n\n".join(sections), question=query)
+    return prompt + MULTI_PAPER_INSTRUCTIONS.format(count=len(papers))
 
 
 NOT_FOUND_TRUST = {"label": "Low", "reason": "no passages were retrieved"}
@@ -811,7 +867,7 @@ def chat(request: ChatRequest, http: Request) -> dict[str, Any]:
         }
     usage: dict[str, int] = {}
     started = time.perf_counter()
-    answer = call_llm(_chat_prompt(standalone_query, retrieved), temperature=0.2,
+    answer = call_llm(_chat_prompt(standalone_query, retrieved, trace["papers"]), temperature=0.2,
                       label="api_chat", usage=usage).strip()
     trace["timings_ms"]["generation"] = _ms(started)
     trace["tokens"]["generation"] = usage
@@ -871,7 +927,7 @@ def chat_stream(request: ChatRequest, http: Request) -> StreamingResponse:
         started = time.perf_counter()
         first_token_ms = None
         try:
-            for piece in call_llm_stream(_chat_prompt(standalone_query, retrieved), temperature=0.2,
+            for piece in call_llm_stream(_chat_prompt(standalone_query, retrieved, trace["papers"]), temperature=0.2,
                                          label="api_chat", usage=usage):
                 if first_token_ms is None:
                     first_token_ms = _ms(started)

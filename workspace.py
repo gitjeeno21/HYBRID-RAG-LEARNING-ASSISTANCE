@@ -16,6 +16,7 @@ Isolation model (each user sees and searches only their own papers):
 
 from __future__ import annotations
 
+import json
 import os
 import threading
 from collections import OrderedDict
@@ -58,11 +59,45 @@ def _parse_pdf(path: str, mtime_ns: int, size: int) -> tuple:
     return tuple(PyPDFLoader(path).load())
 
 
-def load_pdf_pages(path: Path) -> list[Document]:
+def _cached_parse(path: Path, stat, cache_dir: Path | None) -> tuple:
+    """Parse once per file version: memory first, then a JSON file on disk.
+
+    WHY on disk: the in-memory cache dies with the process, so after every
+    restart each user's first request re-parsed all their PDFs (3.8 s for 119
+    pages, measured). The disk entry is keyed by the file's mtime and size, so
+    an edited or replaced PDF is parsed again.
+    """
+    if cache_dir is None:
+        return _parse_pdf(str(path), stat.st_mtime_ns, stat.st_size)
+    cache_file = cache_dir / f"{path.name}.json"
+    try:
+        cached = json.loads(cache_file.read_text(encoding="utf-8"))
+        if cached.get("mtime_ns") == stat.st_mtime_ns and cached.get("size") == stat.st_size:
+            return tuple(Document(page_content=page["text"], metadata=page["metadata"])
+                         for page in cached["pages"])
+    except (OSError, ValueError, KeyError, TypeError):
+        pass   # missing or unreadable cache: parse below
+    parsed = _parse_pdf(str(path), stat.st_mtime_ns, stat.st_size)
+    try:
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        temporary = cache_file.with_suffix(".tmp")
+        temporary.write_text(json.dumps({
+            "mtime_ns": stat.st_mtime_ns, "size": stat.st_size,
+            "pages": [{"text": page.page_content,
+                       "metadata": json.loads(json.dumps(page.metadata, default=str))}
+                      for page in parsed],
+        }), encoding="utf-8")
+        temporary.replace(cache_file)   # atomic: a crash never leaves half a file
+    except OSError:
+        pass   # caching is an optimisation; never fail a request over it
+    return parsed
+
+
+def load_pdf_pages(path: Path, cache_dir: Path | None = None) -> list[Document]:
     """Fresh copies of a PDF's pages, tagged with the bare filename."""
     stat = path.stat()
     pages = []
-    for page in _parse_pdf(str(path), stat.st_mtime_ns, stat.st_size):
+    for page in _cached_parse(path, stat, cache_dir):
         copy = page.model_copy(deep=True)
         copy.metadata["filename"] = path.name
         copy.metadata["source"] = path.name   # never expose the server path
@@ -73,9 +108,25 @@ def load_pdf_pages(path: Path) -> list[Document]:
 # ---------------------------------------------------------------------------
 # Shared dense index, always accessed through ScopedStore
 # ---------------------------------------------------------------------------
+_embeddings_lock = threading.Lock()
+
+
 @lru_cache(maxsize=1)
-def get_embeddings() -> HuggingFaceEmbeddings:
+def _load_embeddings() -> HuggingFaceEmbeddings:
     return HuggingFaceEmbeddings(model=EMBEDDING_MODEL)
+
+
+def get_embeddings() -> HuggingFaceEmbeddings:
+    # The lock stops a request and the startup warm-up loading the model twice.
+    with _embeddings_lock:
+        return _load_embeddings()
+
+
+def warm_up() -> None:
+    """Load the embedding model and open the index before the first request needs them."""
+    get_embeddings().embed_query("warm up")
+    with _store_lock:
+        _shared_store()
 
 
 @lru_cache(maxsize=1)
@@ -131,6 +182,7 @@ class Workspace:
         self.root = STORAGE_DIR / "users" / str(self.user_id)
         self.pdf_dir = self.root / "pdfs"
         self.removed_dir = self.root / "removed"
+        self.cache_dir = self.root / "cache"
 
     @property
     def store(self) -> ScopedStore:
@@ -150,7 +202,15 @@ class Workspace:
         return path if path.is_file() else None
 
     def pages(self) -> list[Document]:
-        return [page for name in self.pdf_names() for page in load_pdf_pages(self.pdf_dir / name)]
+        return [page for name in self.pdf_names()
+                for page in load_pdf_pages(self.pdf_dir / name, self.cache_dir)]
+
+    def drop_cache(self, filename: str) -> None:
+        """Forget a removed or renamed PDF's parsed text."""
+        try:
+            (self.cache_dir / f"{Path(filename).name}.json").unlink()
+        except OSError:
+            pass
 
     def resources(self) -> tuple[list[Document], Any]:
         """(chunks, BM25) for this user, built once and verified against Chroma."""

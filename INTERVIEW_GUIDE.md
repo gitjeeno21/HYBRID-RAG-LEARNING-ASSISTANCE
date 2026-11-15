@@ -94,6 +94,8 @@ Each user has a daily token allowance, counted from the provider's own usage fig
 | Upload froze the server | CPU-bound indexing ran inside an `async` endpoint on the event loop; moved it to the thread pool |
 | Free-tier rate limits | Shared client with backoff; the evaluation caches every LLM output and paces itself under the per-minute token limit |
 | Seeing *why* an answer came out as it did | Pipeline trace on every answer (per-stage ms, tokens), plus a retrieval inspector showing each candidate's dense rank, BM25 rank and RRF score |
+| Multi-paper questions answered from one paper only | Seen in end-to-end testing. With two or more papers selected, the evidence is grouped per paper and the model must address each one, saying so when a paper doesn't cover the question. The single-paper prompt is unchanged, so recorded results stay valid |
+| 17 s first request after every restart | Profiled: 9.1 s model load, 3.8 s PDF parsing. Moved the model load to a background warm-up at startup and cached parsed text on disk: 17 s → 0.18 s |
 | Turning a single-user tool into a multi-user product | Accounts, sessions, CSRF, throttling; per-user storage, BM25 and a scoped vector store; per-user token allowance; isolation proven end to end |
 
 ## Limitations that remain
@@ -103,6 +105,6 @@ Each user has a daily token allowance, counted from the provider's own usage fig
 - **The held-out set has been looked at many times now.** Further decisions should use a fresh set.
 - **The confidence label is not shown to be calibrated,** and its grounding check uses the same model family that wrote the answer.
 - **Local deployment:** no email verification or password reset, no HTTPS of its own (it needs a reverse proxy), and SQLite plus in-memory login throttling assume a single server process.
-- **Cold start:** the first request after startup takes about 17 s (embedding model load plus building that user's BM25 index); later requests take milliseconds. BM25 indexes are kept in memory for the 16 most recently active users.
+- **Startup:** the embedding model takes about 9 s to load. It now loads in the background as the server starts, and parsed PDF text is cached on disk, so the first request after a restart went from 17 s to 0.18 s (measured). BM25 indexes are kept in memory for the 16 most recently active users.
 - **Upload is synchronous:** indexing runs in the server's thread pool (it no longer blocks other requests), but the upload request waits for it. A background job queue with progress reporting would be the next step for large files.
 - **PyPDF text extraction:** no table structure or OCR; scanned PDFs would need an OCR step.

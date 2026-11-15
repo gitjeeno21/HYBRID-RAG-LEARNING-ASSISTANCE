@@ -6,7 +6,7 @@ Evidence-grounded question answering, quizzes and paper comparison over your own
 
 ## What it does
 
-- **Chat:** answers from hybrid retrieval (BM25 + dense embeddings, fused with Reciprocal Rank Fusion), with clickable page citations, the retrieved passages, a citation check, a confidence label, and a **pipeline trace** (time and tokens per step). Answers stream in. Follow-up questions ("how does *it* compare…") are rewritten into standalone searches.
+- **Chat:** search all papers or pick several; with two or more selected, the answer covers each paper separately, saying when one doesn't address the question. Answers come from hybrid retrieval (BM25 + dense embeddings, fused with Reciprocal Rank Fusion), with clickable page citations, the retrieved passages, a citation check, a confidence label, and a **pipeline trace** (time and tokens per step). Answers stream in. Follow-up questions ("how does *it* compare…") are rewritten into standalone searches.
 - **Quiz:** questions generated from one paper, each citing a retrieved passage. Multiple-choice and true/false answers are graded against the answer key; free-text answers are graded by the LLM against the same passages.
 - **Compare:** two papers answered from *isolated* evidence, so passages from one can never leak into the other's answer.
 - **Inspect:** a retrieval debugger (every candidate's dense rank, cosine, BM25 rank and score, RRF score, and which passages reach the model) plus a dashboard of the recorded benchmark.
@@ -127,7 +127,7 @@ python eval/run_eval.py --questions eval/dev_questions_multipage.json --top-k 5
 python -m unittest discover -p "test_*.py"
 ```
 
-141 tests, all offline (no API key needed). LLM calls are replaced by fakes. The isolation tests use real PDFs, embeddings and Chroma; the rest use in-memory fakes.
+151 tests, all offline (no API key needed). LLM calls are replaced by fakes. The isolation tests use real PDFs, embeddings and Chroma; the rest use in-memory fakes.
 
 ## Project layout
 
