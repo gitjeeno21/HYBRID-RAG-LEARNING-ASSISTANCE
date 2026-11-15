@@ -342,6 +342,36 @@ def main() -> int:
     return 2 if exhausted else 0
 
 
+def _calibration_lines(labelled: list[dict], unanswerable: list[dict]) -> list[str]:
+    """Correctness by confidence label, with a verdict worded from the data."""
+    lines = ["## Calibration of the confidence label", "",
+             "Answerable questions only. A well-calibrated label is correct more often at High than at Medium, "
+             "and at Medium than at Low.", "",
+             "| Label | Answers | Correct | Correct or partial |", "|---|---|---|---|"]
+    for label in ("High", "Medium", "Low", "n/a"):
+        subset = [r for r in labelled if r["trust"]["label"] == label]
+        correct = sum(r["correctness"]["grade"] == "CORRECT" for r in subset)
+        partial = sum(r["correctness"]["grade"] in {"CORRECT", "PARTIAL"} for r in subset)
+        lines.append(f"| {label} | {len(subset)} | {rate(correct, len(subset))} | {rate(partial, len(subset))} |")
+    answered_labels = [r for r in labelled if r["trust"]["label"] in {"High", "Medium", "Low"}]
+    accuracy = {label: [r["correctness"]["grade"] == "CORRECT" for r in answered_labels
+                        if r["trust"]["label"] == label] for label in ("High", "Medium", "Low")}
+    used = {label: sum(v) / len(v) for label, v in accuracy.items() if v}
+    wrong = sum(r["correctness"]["grade"] != "CORRECT" for r in answered_labels)
+    if len(used) < 3 or len(set(round(v, 2) for v in used.values())) == 1:
+        reason = ("With no wrong answers among the labelled ones, there is nothing for the label to separate"
+                  if wrong == 0 else
+                  f"{wrong} labelled answer(s) were not correct, and the labels do not rank them below the correct ones")
+        lines += ["", "**Verdict: the label is not shown to be calibrated on this set.** "
+                  f"Labels used: {', '.join(f'{k} {len(accuracy[k])}' for k in used)}; correctness by label: "
+                  + ", ".join(f"{k} {v:.0%}" for k, v in used.items())
+                  + f". {reason}; it must not be presented as an accuracy estimate."]
+    unans_labels = Counter(r["trust"]["label"] for r in unanswerable if "trust" in r and not r["refused"])
+    if unans_labels:
+        lines += ["", f"Labels on unanswerable questions the system wrongly answered: {dict(unans_labels)}."]
+    return lines
+
+
 _HOPS: dict[str, list[list[int]]] = {}
 
 
@@ -422,27 +452,13 @@ def report(rows: list[dict], top_k: int, llm: LLM, exhausted: str | None, suffix
               f"- Unparsed judge replies: {sum(not r['faithfulness']['parsed'] for r in faith)}", ""]
 
     labelled = [r for r in judged if "trust" in r]
-    lines += ["## Calibration of the confidence label", "",
-              "Answerable questions only. A well-calibrated label is correct more often at High than at Medium, and at Medium than at Low.", "",
-              "| Label | Answers | Correct | Correct or partial |", "|---|---|---|---|"]
-    for label in ("High", "Medium", "Low", "n/a"):
-        subset = [r for r in labelled if r["trust"]["label"] == label]
-        correct = sum(r["correctness"]["grade"] == "CORRECT" for r in subset)
-        partial = sum(r["correctness"]["grade"] in {"CORRECT", "PARTIAL"} for r in subset)
-        lines.append(f"| {label} | {len(subset)} | {rate(correct, len(subset))} | {rate(partial, len(subset))} |")
-    answered_labels = [r for r in labelled if r["trust"]["label"] in {"High", "Medium", "Low"}]
-    accuracy = {label: [r["correctness"]["grade"] == "CORRECT" for r in answered_labels
-                        if r["trust"]["label"] == label] for label in ("High", "Medium", "Low")}
-    used = {label: sum(v) / len(v) for label, v in accuracy.items() if v}
-    if len(used) < 3 or len(set(round(v, 2) for v in used.values())) == 1:
-        lines += ["", "**Verdict: the label is not shown to be calibrated on this set.** "
-                  f"Labels used: {', '.join(f'{k} {len(accuracy[k])}' for k in used)}; correctness by label: "
-                  + ", ".join(f"{k} {v:.0%}" for k, v in used.items())
-                  + ". With no wrong answers among the answered questions, there is nothing for the label "
-                  "to separate; it must not be presented as an accuracy estimate."]
-    unans_labels = Counter(r["trust"]["label"] for r in unanswerable if "trust" in r and not r["refused"])
-    if unans_labels:
-        lines += ["", f"Labels on unanswerable questions the system wrongly answered: {dict(unans_labels)}."]
+    if not labelled:
+        # Say so plainly instead of printing an empty table with a verdict.
+        lines += ["## Calibration of the confidence label", "",
+                  "**Not measured in this run:** the trust stage has not been run for these answers "
+                  "(`python eval/answer_eval.py --tag <tag> --stages trust`).", ""]
+    else:
+        lines += _calibration_lines(labelled, unanswerable)
     unsupported = [(r["id"], s) for r in faith for s in r["faithfulness"]["unsupported"]]
     if unsupported:
         lines += ["", "## Sentences the judge found unsupported", "",

@@ -21,7 +21,7 @@ Quotes are matched as literal text after whitespace/case folding, so these count
 
 ## What this changes in Phase 4
 
-[ANSWER_QUALITY_k5.md](ANSWER_QUALITY_k5.md) classified v2_01, v2_50 and v2_53 as **generation failures** ("every fact was in the passages") because a chunk from the gold *page* was retrieved. The gold *chunk* had been dropped before the prompt was built, so those three were actually caused by this defect, not by the model. Phase 4's answer-level numbers (correctness, false refusals) predate the fix and need a re-run before they are quoted again.
+[ANSWER_QUALITY_k5.md](ANSWER_QUALITY_k5.md) classified v2_01, v2_50 and v2_53 as **generation failures** ("every fact was in the passages") because a chunk from the gold *page* was retrieved. The gold *chunk* had been dropped before the prompt was built, so those three were actually caused by this defect, not by the model. The re-run after the fix ([ANSWER_QUALITY_k5_stage4.md](ANSWER_QUALITY_k5_stage4.md)) confirms it: all three became correct, and no previously correct answer was lost (correct 38/47 → 41/47).
 
 Spot check (one live chat, not a re-measurement): v2_01 was refused in Phase 4. After the fix it is answered correctly, "9.5 TFLOPS", citing source_doc.pdf p. 8, and the citation check passes.
 
