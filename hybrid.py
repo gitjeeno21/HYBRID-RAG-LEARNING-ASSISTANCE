@@ -33,6 +33,7 @@ Usage:
 
 import json
 import re
+import time
 from collections import Counter
 from datetime import datetime, timezone
 from typing import Protocol
@@ -77,7 +78,7 @@ def _cross_encoder():
 
 
 def rerank_indices(query: str, chunks: list[Document], fused: list[int],
-                   pool: int = RERANK_POOL) -> list[int]:
+                   pool: int = RERANK_POOL, return_scores: bool = False):
     """Re-order the first `pool` fused results by cross-encoder score.
 
     Mirrors eval/run_eval.py's "hybrid_rerank" method exactly, so what the
@@ -86,12 +87,15 @@ def rerank_indices(query: str, chunks: list[Document], fused: list[int],
     """
     head = fused[:pool]
     if not head:
-        return fused
+        return (fused, {}) if return_scores else fused
     scores = _cross_encoder().predict(
         [(query, chunks[index].page_content) for index in head], show_progress_bar=False
     )
     order = sorted(range(len(head)), key=lambda j: (-float(scores[j]), j))
-    return [head[j] for j in order] + fused[pool:]
+    reordered = [head[j] for j in order] + fused[pool:]
+    if return_scores:
+        return reordered, {head[j]: float(scores[j]) for j in range(len(head))}
+    return reordered
 
 
 class VectorSearchStore(Protocol):
@@ -104,12 +108,12 @@ class VectorSearchStore(Protocol):
         filter: dict[str, str] | None = None,
     ) -> list[Document]: ...
 
-    def similarity_search_with_relevance_scores(
+    def similarity_search_with_score(
         self,
         query: str,
         k: int,
         filter: dict[str, str] | None = None,
-    ) -> list[tuple[Document, float]]: ...
+    ) -> list[tuple[Document, float]]: ...  # (document, distance)
 
 
 # ---------------------------------------------------------------------------
@@ -190,12 +194,8 @@ def hybrid_search(
     The optional metadata filter is applied to both retrieval methods so
     paper-specific queries cannot mix evidence across PDFs.
     """
-    return [
-        document
-        for document, _ in _hybrid_search(
-            query, store, bm25, chunks, n_results, metadata_filter, False
-        )
-    ]
+    return [document for document, _ in _hybrid_search(
+        query, store, bm25, chunks, n_results, metadata_filter)]
 
 
 def hybrid_search_with_scores(
@@ -205,11 +205,26 @@ def hybrid_search_with_scores(
     chunks: list[Document],
     n_results: int = TOP_K,
     metadata_filter: dict[str, str] | None = None,
+    trace: dict | None = None,
 ) -> list[tuple[Document, float | None]]:
-    """Return fused chunks and dense similarity scores where available."""
-    return _hybrid_search(
-        query, store, bm25, chunks, n_results, metadata_filter, True
-    )
+    """Return fused chunks with their dense cosine similarity (None if dense missed them).
+
+    Pass a dict as `trace` to receive every stage of the ranking (see _hybrid_search).
+    """
+    return _hybrid_search(query, store, bm25, chunks, n_results, metadata_filter, trace)
+
+
+def cosine_from_distance(distance: float) -> float:
+    """Convert Chroma's default distance to cosine similarity.
+
+    Chroma's default space is SQUARED L2, and all-MiniLM-L6-v2 vectors are unit
+    length, so distance = 2 - 2 cos, i.e. cos = 1 - distance / 2 (checked
+    against directly computed cosines). WHY not LangChain's relevance score:
+    it maps this distance to 1 - distance / sqrt(2) = sqrt(2) cos - 0.414,
+    which is not a cosine and goes negative; trust.py's cut-offs were set on
+    that scale while being documented as cosine.
+    """
+    return 1.0 - float(distance) / 2.0
 
 
 def _hybrid_search(
@@ -219,9 +234,20 @@ def _hybrid_search(
     chunks: list[Document],
     n_results: int,
     metadata_filter: dict[str, str] | None,
-    include_dense_scores: bool,
+    trace: dict | None = None,
 ) -> list[tuple[Document, float | None]]:
-    """Share fusion logic while preserving dense scores for the chat trust meter."""
+    """The one live hybrid pipeline: BM25 + dense -> RRF -> optional rerank.
+
+    When `trace` is a dict it is filled with what each stage did, for the
+    retrieval inspector: per-stage timings in ms, the candidates each retriever
+    returned with rank and score, and the fused order with RRF (and rerank)
+    scores. Tracing only records values computed anyway, so it cannot change
+    the result.
+    """
+    clock = time.perf_counter
+    timings: dict[str, float] = {}
+
+    started = clock()
     if metadata_filter:
         # Rebuild BM25 over just the selected paper so its lexical ranking and
         # dense ranking both operate on an isolated candidate corpus.
@@ -233,46 +259,79 @@ def _hybrid_search(
         ]
         if not eligible:
             return []
-        filtered_chunks = [chunk for _, chunk in eligible]
-        filtered_bm25 = build_bm25(filtered_chunks)
-        lexical_local = bm25_ranking(
-            filtered_bm25, query, CANDIDATES_PER_METHOD
-        )
-        lexical_idx = [eligible[index][0] for index in lexical_local]
+        scoring_bm25 = build_bm25([chunk for _, chunk in eligible])
+        to_global = [index for index, _ in eligible]
     else:
-        lexical_idx = bm25_ranking(bm25, query, CANDIDATES_PER_METHOD)
+        scoring_bm25, to_global = bm25, None
+    bm25_scores = scoring_bm25.get_scores(tokenize(query))
+    local = sorted(range(len(bm25_scores)), key=lambda i: (-bm25_scores[i], i))[:CANDIDATES_PER_METHOD]
+    lexical_idx = [to_global[i] for i in local] if to_global else local
+    lexical_score = {index: float(bm25_scores[i]) for index, i in zip(lexical_idx, local)}
+    timings["bm25_ms"] = (clock() - started) * 1e3
 
+    started = clock()
     search_filter = {"filter": metadata_filter} if metadata_filter else {}
-    if include_dense_scores:
-        dense_results = store.similarity_search_with_relevance_scores(
-            query, k=CANDIDATES_PER_METHOD, **search_filter
-        )
-        dense_docs = [document for document, _ in dense_results]
-        dense_scores = {
-            _document_key(document): float(score)
-            for document, score in dense_results
-        }
-    else:
-        dense_docs = store.similarity_search(
-            query, k=CANDIDATES_PER_METHOD, **search_filter
-        )
-        dense_scores = {}
-
+    dense_results = store.similarity_search_with_score(
+        query, k=CANDIDATES_PER_METHOD, **search_filter
+    )
+    timings["dense_ms"] = (clock() - started) * 1e3
+    dense_scores = {
+        _document_key(document): cosine_from_distance(distance)
+        for document, distance in dense_results
+    }
     # Include source and page in the identity so duplicate text from separate
     # documents cannot be assigned to the wrong BM25 position.
     position = {_document_key(chunk): index for index, chunk in enumerate(chunks)}
     dense_idx = [
         position[_document_key(document)]
-        for document in dense_docs
+        for document, _ in dense_results
         if _document_key(document) in position
     ]
+
+    started = clock()
     fused = reciprocal_rank_fusion([dense_idx, lexical_idx])
+    timings["fusion_ms"] = (clock() - started) * 1e3
+    rerank_scores: dict[int, float] = {}
     if RERANK_ENABLED:
-        fused = rerank_indices(query, chunks, fused)
+        started = clock()
+        fused, rerank_scores = rerank_indices(query, chunks, fused, return_scores=True)
+        timings["rerank_ms"] = (clock() - started) * 1e3
+
+    if trace is not None:
+        dense_rank = {index: rank for rank, index in enumerate(dense_idx, start=1)}
+        lexical_rank = {index: rank for rank, index in enumerate(lexical_idx, start=1)}
+
+        def describe(index: int) -> dict:
+            key = _document_key(chunks[index])
+            return {
+                "citation": f"{key[0]}, p. {key[1]}",
+                "dense_rank": dense_rank.get(index),
+                "dense_cosine": _round(dense_scores.get(key)),
+                "bm25_rank": lexical_rank.get(index),
+                "bm25_score": _round(lexical_score.get(index)),
+                "rrf_score": _round(sum(1.0 / (RRF_K + ranks[index])
+                                        for ranks in (dense_rank, lexical_rank) if index in ranks)),
+                "rerank_score": _round(rerank_scores.get(index)),
+                "selected": index in fused[:n_results],
+                "preview": chunks[index].page_content[:240],
+            }
+
+        trace.update({
+            "settings": {"candidates_per_method": CANDIDATES_PER_METHOD, "rrf_k": RRF_K,
+                         "rerank": RERANK_ENABLED, "top_k": n_results,
+                         "filter": metadata_filter or None},
+            "timings_ms": {name: round(value, 2) for name, value in timings.items()},
+            "candidates": [describe(index) for index in fused],
+        })
+
     return [
         (chunks[index], dense_scores.get(_document_key(chunks[index])))
         for index in fused[:n_results]
     ]
+
+
+def _round(value: float | None) -> float | None:
+    return round(value, 4) if value is not None else None
 
 
 def _document_key(document: Document) -> tuple[str, str, str]:

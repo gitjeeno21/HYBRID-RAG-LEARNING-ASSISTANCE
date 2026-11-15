@@ -53,13 +53,14 @@ class FakeVectorStore:
             ]
         return documents[:k]
 
-    def similarity_search_with_relevance_scores(
+    def similarity_search_with_score(
         self,
         question: str,
         k: int,
         filter: dict | None = None,
     ) -> list[tuple[Document, float]]:
-        return [(document, 0.8) for document in self.similarity_search(question, k, filter)]
+        # Squared-L2 distance 0.4 on unit vectors = cosine 0.8.
+        return [(document, 0.4) for document in self.similarity_search(question, k, filter)]
 
 
 class CompareModeTests(unittest.TestCase):

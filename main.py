@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import threading
+import time
 from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
@@ -38,11 +39,12 @@ from config import (
     PDF_DIR,
     PROMPT_TEMPLATE,
     REMOVED_PDF_DIR,
+    RERANK_ENABLED,
     TOP_K,
     citation,
     source_filename,
 )
-from evaluator import call_llm, call_llm_stream
+from llm import call_llm, call_llm_stream, track_usage
 from hybrid import build_bm25, chunk_keys, hybrid_search_with_scores, unique_chunks
 from ingest import best_chunk_config, split_documents
 from library import remove_pdf_from_library, rename_pdf_in_library
@@ -126,6 +128,12 @@ class QuizGradeRequest(BaseModel):
     # passages that the questions cite.
     difficulty: str = "Medium"
     question_count: int = 5
+
+
+class InspectRequest(BaseModel):
+    query: str = Field(min_length=1, max_length=2000)
+    papers: list[str] = Field(default_factory=list)
+    top_k: int | None = Field(default=None, ge=1, le=MAX_TOP_K)
 
 
 class CompareRequest(BaseModel):
@@ -289,8 +297,14 @@ def retrieve_for_api(
     query: str,
     papers: list[str] | None = None,
     n_results: int = TOP_K,
+    trace: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
-    """Hybrid retrieval over all papers, or n_results per selected paper."""
+    """Hybrid retrieval over all papers, or n_results per selected paper.
+
+    `score` is the dense cosine similarity (None when only BM25 found the
+    chunk). Pass a list as `trace` to receive one stage-by-stage record per
+    search (one per selected paper), as shown by the retrieval inspector.
+    """
     chunks, bm25 = get_hybrid_resources()
     if not chunks:
         return []
@@ -298,6 +312,7 @@ def retrieve_for_api(
     # _hybrid_search rebuilds BM25 over the filtered subset itself, so the
     # global index is passed through unchanged for per-paper searches.
     for paper in (papers or [None]):
+        search_trace: dict[str, Any] | None = {} if trace is not None else None
         retrieved.extend(hybrid_search_with_scores(
             query,
             get_vector_store(),
@@ -305,7 +320,10 @@ def retrieve_for_api(
             chunks,
             n_results=n_results,
             metadata_filter={"filename": paper} if paper else None,
+            trace=search_trace,
         ))
+        if trace is not None:
+            trace.append({"paper": paper, **(search_trace or {})})
     return [
         {
             "filename": source_filename(document.metadata),
@@ -555,12 +573,50 @@ def rename_pdf(request: RenamePdfRequest) -> dict[str, Any]:
     return {"filename": new}
 
 
-def _prepare_chat(request: ChatRequest) -> tuple[str, list[dict[str, Any]]]:
-    """Shared by /api/chat and /api/chat/stream: rewrite, then retrieve."""
+def _ms(started: float) -> float:
+    return round((time.perf_counter() - started) * 1e3, 1)
+
+
+def _prepare_chat(request: ChatRequest) -> tuple[str, list[dict[str, Any]], dict[str, Any]]:
+    """Shared by /api/chat and /api/chat/stream: rewrite, then retrieve.
+
+    Also returns the start of the pipeline trace: how long each step took, the
+    tokens the follow-up rewrite used, and what every retrieval stage did.
+    """
     available = set(list_pdf_names())
     papers = [paper for paper in request.papers if paper in available]
-    standalone_query = rewrite_followup(request.query.strip(), request.history)
-    return standalone_query, retrieve_for_api(standalone_query, papers, request.top_k or TOP_K)
+    trace: dict[str, Any] = {"timings_ms": {}, "tokens": {}}
+    started = time.perf_counter()
+    with track_usage() as rewrite_usage:
+        standalone_query = rewrite_followup(request.query.strip(), request.history)
+    trace["timings_ms"]["rewrite"] = _ms(started)
+    if rewrite_usage:
+        trace["tokens"]["rewrite"] = rewrite_usage
+    started = time.perf_counter()
+    searches: list[dict[str, Any]] = []
+    retrieved = retrieve_for_api(standalone_query, papers, request.top_k or TOP_K, trace=searches)
+    trace["timings_ms"]["retrieval"] = _ms(started)
+    trace["retrieval"] = searches
+    return standalone_query, retrieved, trace
+
+
+def _assess(query: str, answer: str, retrieved: list[dict[str, Any]], trace: dict[str, Any]) -> dict:
+    """Run the trust check, recording its time and tokens in the trace."""
+    usage: dict[str, int] = {}
+    started = time.perf_counter()
+    result = assess(query, answer, retrieved,
+                    ask=lambda prompt: call_llm(prompt, temperature=0.0, label="trust", usage=usage))
+    trace["timings_ms"]["support_check"] = _ms(started)
+    if usage:
+        trace["tokens"]["support_check"] = usage
+    return result
+
+
+def _finish_trace(trace: dict[str, Any], request_started: float) -> dict[str, Any]:
+    trace["timings_ms"]["total"] = _ms(request_started)
+    trace["tokens"]["total"] = sum(part.get("total_tokens", 0) for part in trace["tokens"].values()
+                                   if isinstance(part, dict))
+    return trace
 
 
 def _chat_prompt(query: str, retrieved: list[dict[str, Any]]) -> str:
@@ -579,21 +635,30 @@ def _citations(retrieved: list[dict[str, Any]]) -> list[dict[str, str]]:
 
 @app.post("/api/chat")
 def chat(request: ChatRequest) -> dict[str, Any]:
-    standalone_query, retrieved = _prepare_chat(request)
+    request_started = time.perf_counter()
+    standalone_query, retrieved, trace = _prepare_chat(request)
     if not retrieved:
         return {
             "answer": "Not found in the selected papers.",
             "citations": [], "context": [],
             "trust": NOT_FOUND_TRUST, "query_used": standalone_query,
+            "trace": _finish_trace(trace, request_started),
         }
-    answer = call_llm(_chat_prompt(standalone_query, retrieved), temperature=0.2, label="api_chat").strip()
+    usage: dict[str, int] = {}
+    started = time.perf_counter()
+    answer = call_llm(_chat_prompt(standalone_query, retrieved), temperature=0.2,
+                      label="api_chat", usage=usage).strip()
+    trace["timings_ms"]["generation"] = _ms(started)
+    trace["tokens"]["generation"] = usage
+    trust = _assess(standalone_query, answer, retrieved, trace)
     return {
         "answer": answer,
         "citations": _citations(retrieved),
         "context": retrieved,
-        "trust": assess(standalone_query, answer, retrieved),
+        "trust": trust,
         "citation_check": check_citations(answer, retrieved, list_pdf_names()),
         "query_used": standalone_query,
+        "trace": _finish_trace(trace, request_started),
     }
 
 
@@ -614,7 +679,8 @@ def chat_stream(request: ChatRequest) -> StreamingResponse:
     Retrieval runs before the response starts, so its failures still become
     ordinary HTTP errors; only generation happens inside the stream.
     """
-    standalone_query, retrieved = _prepare_chat(request)
+    request_started = time.perf_counter()
+    standalone_query, retrieved, trace = _prepare_chat(request)
 
     def events():
         def line(payload: dict[str, Any]) -> str:
@@ -625,24 +691,102 @@ def chat_stream(request: ChatRequest) -> StreamingResponse:
             "citations": _citations(retrieved), "context": retrieved,
         })
         if not retrieved:
-            yield line({"type": "done", "answer": "Not found in the selected papers.", "trust": NOT_FOUND_TRUST})
+            yield line({"type": "done", "answer": "Not found in the selected papers.",
+                        "trust": NOT_FOUND_TRUST, "trace": _finish_trace(trace, request_started)})
             return
         parts: list[str] = []
+        usage: dict[str, int] = {}
+        started = time.perf_counter()
+        first_token_ms = None
         try:
-            for piece in call_llm_stream(_chat_prompt(standalone_query, retrieved), temperature=0.2, label="api_chat"):
+            for piece in call_llm_stream(_chat_prompt(standalone_query, retrieved), temperature=0.2,
+                                         label="api_chat", usage=usage):
+                if first_token_ms is None:
+                    first_token_ms = _ms(started)
                 parts.append(piece)
                 yield line({"type": "token", "text": piece})
         except Exception as exc:  # noqa: BLE001 - reported in-stream; headers are already sent
             yield line({"type": "error", "detail": _provider_error_detail(exc)})
             return
+        trace["timings_ms"]["generation"] = _ms(started)
+        trace["timings_ms"]["first_token"] = first_token_ms
+        trace["tokens"]["generation"] = usage
         answer = "".join(parts).strip()
+        trust = _assess(standalone_query, answer, retrieved, trace)
         yield line({
             "type": "done", "answer": answer,
-            "trust": assess(standalone_query, answer, retrieved),
+            "trust": trust,
             "citation_check": check_citations(answer, retrieved, list_pdf_names()),
+            "trace": _finish_trace(trace, request_started),
         })
 
     return StreamingResponse(events(), media_type="application/x-ndjson")
+
+
+@app.post("/api/retrieval/inspect")
+def inspect_retrieval(request: InspectRequest) -> dict[str, Any]:
+    """Run only retrieval and return every stage, for the retrieval inspector.
+
+    No LLM call and no follow-up rewrite: the query is searched exactly as typed,
+    so what you see is what the live pipeline ranks for that string.
+    """
+    available = set(list_pdf_names())
+    unknown = [paper for paper in request.papers if paper not in available]
+    if unknown:
+        raise HTTPException(status_code=404, detail=f"PDF not found: {unknown[0]}")
+    searches: list[dict[str, Any]] = []
+    started = time.perf_counter()
+    retrieved = retrieve_for_api(request.query.strip(), request.papers,
+                                 request.top_k or TOP_K, trace=searches)
+    return {"query": request.query.strip(), "retrieval_ms": _ms(started),
+            "searches": searches, "selected": retrieved}
+
+
+EVAL_RESULT_FILES = {
+    "test": ("Held-out test (v2)", BASE_DIR / "eval" / "comparison_test_k5.json"),
+    "dev": ("Dev (legacy, multi-page labels)", BASE_DIR / "eval" / "comparison_dev_k5.json"),
+}
+EVAL_METRICS = ("hit", "mrr", "ndcg", "precision", "recall")
+
+
+@app.get("/api/eval/summary")
+def eval_summary() -> dict[str, Any]:
+    """Recorded retrieval benchmark results for the evaluation dashboard.
+
+    Serves what eval/run_eval.py last MEASURED (with commit and timestamp); it
+    never computes or estimates numbers itself. Sets that have not been run
+    are reported as missing rather than filled in.
+    """
+    sets = []
+    for key, (label, path) in EVAL_RESULT_FILES.items():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            sets.append({"key": key, "label": label, "available": False})
+            continue
+        configs = []
+        for name, block in data.get("configs", {}).items():
+            k = block["config"]["top_k"]
+            source = {"hit": f"hit@{k}", "mrr": "mrr@10", "ndcg": f"ndcg@{k}",
+                      "precision": f"precision@{k}", "recall": f"recall@{k}"}
+            configs.append({
+                "name": name,
+                "method": block["config"]["method"],
+                "top_k": k,
+                "metrics": {metric: {"mean": block[field]["mean"], "ci95": block[field]["ci95"],
+                                     "count": block[field].get("count"), "n": block[field].get("n")}
+                            for metric, field in source.items() if field in block},
+                "vs_baseline": block.get("vs_baseline", {}),
+                "latency_ms": block.get("latency_ms", {}),
+            })
+        sets.append({
+            "key": key, "label": label, "available": True,
+            "generated_at": data.get("generated_at"), "git_commit": data.get("git_commit"),
+            "questions": data.get("n_answerable_scored"), "corpus": data.get("corpus", {}),
+            "configs": configs,
+        })
+    live = "hybrid_rerank_top10" if RERANK_ENABLED else "hybrid_rrf60"
+    return {"live_config": live, "sets": sets}
 
 
 def _quiz_evidence(pdf: str, topic: str, difficulty: str, page_range: str | None, question_count: int):

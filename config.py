@@ -69,7 +69,11 @@ RETRIEVAL_CANDIDATES = int(os.getenv("RAG_CANDIDATES", "10"))
 # Re-score the first RERANK_POOL fused results with a cross-encoder.
 RERANK_ENABLED = _env_flag("RAG_RERANK", False)
 RERANK_POOL = int(os.getenv("RAG_RERANK_POOL", "10"))
-RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+# Measured at k=5 (eval/RETRIEVAL_COMPARISON.md): MiniLM gains on held-out but
+# loses on dev; BGE-reranker-base does not lose on dev but gains one held-out
+# question at ~3 s/query on CPU. Neither is on by default.
+# RAG_RERANKER_MODEL=BAAI/bge-reranker-base selects the larger model.
+RERANKER_MODEL = os.getenv("RAG_RERANKER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
 # Split each PDF as one text so chunks can cross page breaks (cited by the
 # page they start on). Changing this requires re-running `python ingest.py`.
 CROSS_PAGE_CHUNKS = _env_flag("RAG_CROSS_PAGE", False)
@@ -79,11 +83,20 @@ CROSS_PAGE_CHUNKS = _env_flag("RAG_CROSS_PAGE", False)
 # otherwise the two answer paths would drift and results would not compare.
 NO_ANSWER_TEXT = "I don't know based on the provided documents."
 
+# WHY partial answers are allowed (Stage 4): the previous wording ("if the
+# context does not contain the answer, reply with exactly this sentence and
+# nothing else") made refusal all-or-nothing. In Phase 4, multi-hop questions
+# whose passages held one of two facts were refused outright (v2_21, v2_22),
+# a 19% false-refusal rate overall. The fixed sentence is still required when
+# the context holds NONE of the answer, so refusal detection is unchanged.
 PROMPT_TEMPLATE = (
     "Answer the question using ONLY the context below. Do not use outside "
     "knowledge.\n"
-    "If the context does not contain the answer, reply with exactly this "
-    f'sentence and nothing else: "{NO_ANSWER_TEXT}"\n\n'
+    "If the context contains none of the answer, reply with exactly this "
+    f'sentence and nothing else: "{NO_ANSWER_TEXT}"\n'
+    "If the context answers only part of the question, answer that part and "
+    "then say plainly which part the documents do not cover. Never fill a gap "
+    "with outside knowledge.\n\n"
     "Context:\n{context}\n\n"
     "Question: {question}\n\n"
     "Answer in at most 120 words and cite the pages you used with the "

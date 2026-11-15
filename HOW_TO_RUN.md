@@ -103,7 +103,20 @@ Uvicorn running on http://127.0.0.1:8000
 - **Quiz:** choose a paper, a difficulty and a question type, then click **Generate**. Answer every question and click **Grade answers**.
 - **Compare:** pick two papers and a topic (or click a suggestion) to see how they differ.
 - **Add a PDF:** click **Add PDF** in the sidebar, or drag a PDF anywhere onto the window. It's indexed straight away, so you don't need to run `ingest.py` again.
-- **Shortcuts:** `1` / `2` / `3` switch between Chat, Quiz and Compare, and `/` jumps to the chat box.
+- **Inspect:** type any question to see how retrieval ranked every candidate passage (no AI call), and view the recorded retrieval benchmark. Under each chat answer, the search icon opens that question in the inspector, and **Pipeline trace** shows how long each step took and how many tokens it used.
+- **Shortcuts:** `1` / `2` / `3` / `4` switch between Chat, Quiz, Compare and Inspect, and `/` jumps to the chat box.
+
+## Optional: retrieval switches
+
+All off by default; each was measured before being left off (see `eval/RETRIEVAL_COMPARISON.md`). Set in PowerShell before starting the server, e.g. `$env:RAG_RERANK = "1"`.
+
+| Variable | Effect |
+| --- | --- |
+| `RAG_TOP_K` | Passages sent to the model per search (default 5) |
+| `RAG_RERANK=1` | Rerank the fused top 10 with a cross-encoder (~0.5 s per query on CPU) |
+| `RAG_RERANKER_MODEL` | Cross-encoder to use, e.g. `BAAI/bge-reranker-base` (~3 s per query on CPU, 1.1 GB download) |
+| `RAG_CANDIDATES` | Candidates each retriever contributes before fusion (default 10) |
+| `RAG_CROSS_PAGE=1` | Let chunks cross page breaks (requires `python ingest.py`) |
 
 ---
 

@@ -45,6 +45,7 @@
       <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></symbol>
       <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></symbol>
       <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
       <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z"/></symbol>
     </defs>
   </svg>
@@ -63,6 +64,7 @@
         <button class="nav-item active" data-mode="chat"><svg class="icon"><use href="#i-chat"/></svg>Chat<kbd>1</kbd></button>
         <button class="nav-item" data-mode="quiz"><svg class="icon"><use href="#i-quiz"/></svg>Quiz<kbd>2</kbd></button>
         <button class="nav-item" data-mode="compare"><svg class="icon"><use href="#i-compare"/></svg>Compare<kbd>3</kbd></button>
+        <button class="nav-item" data-mode="inspect"><svg class="icon"><use href="#i-search"/></svg>Inspect<kbd>4</kbd></button>
       </nav>
 
       <section class="library" aria-labelledby="library-label">
@@ -175,6 +177,43 @@
             </div>
           </div>
           <div id="compare-result"></div>
+        </section>
+
+        <!-- INSPECT: retrieval debugger + evaluation dashboard -->
+        <section id="inspect-panel" class="hidden stack" aria-label="Inspect">
+          <div class="card card-pad">
+            <div class="row"><strong>Retrieval inspector</strong><span class="spacer"></span><span class="badge badge-neutral">No AI call</span></div>
+            <p class="hint" style="margin:6px 0 14px">Runs only the live retrieval pipeline and shows every candidate: where BM25 and dense search ranked it, its fused RRF score, and which passages the model would receive.</p>
+            <form id="inspect-form" class="inspect-form">
+              <label class="form-label inspect-query">Query<input id="inspect-query" class="field" placeholder="e.g. What BLEU score did the Transformer reach?" autocomplete="off"></label>
+              <label class="form-label">Search in<select id="inspect-scope" class="field"></select></label>
+              <label class="form-label">Top-k<input id="inspect-top-k" class="field" type="number" min="1" max="10"></label>
+              <button id="inspect-button" class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-search"/></svg><span>Inspect</span></button>
+            </form>
+          </div>
+          <div id="inspect-result"></div>
+
+          <div class="card card-pad viz-root">
+            <div class="row" style="align-items:flex-start">
+              <div>
+                <strong>Retrieval benchmark</strong>
+                <p id="eval-caption" class="hint" style="margin:4px 0 0">Loading recorded results…</p>
+              </div>
+              <span class="spacer"></span>
+              <div id="eval-metric" class="segmented" role="group" aria-label="Metric">
+                <button type="button" data-metric="hit" aria-pressed="true">Hit@k</button>
+                <button type="button" data-metric="ndcg" aria-pressed="false">nDCG@k</button>
+                <button type="button" data-metric="mrr" aria-pressed="false">MRR@10</button>
+                <button type="button" data-metric="precision" aria-pressed="false">P@k</button>
+                <button type="button" data-metric="recall" aria-pressed="false">R@k</button>
+              </div>
+            </div>
+            <div id="eval-charts" class="eval-charts"></div>
+            <details class="eval-table-wrap">
+              <summary>Table view: every metric, 95% confidence interval and latency</summary>
+              <div id="eval-table"></div>
+            </details>
+          </div>
         </section>
       </div>
 

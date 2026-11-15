@@ -460,6 +460,10 @@ function fillPaperSelects() {
     second.value = names.find(name => name !== $("#compare-pdf-one").value);
   }
   $("#generate-quiz").disabled = !names.length;
+  const scope = $("#inspect-scope");
+  const previousScope = scope.value;
+  scope.innerHTML = '<option value="">All papers</option>' + options;
+  if (names.includes(previousScope)) scope.value = previousScope;
   updateCompareControls();
 }
 
@@ -470,6 +474,7 @@ const MODE_COPY = {
   chat: ["Chat", "Ask questions answered only from your papers, with citations."],
   quiz: ["Quiz", "Test yourself with questions generated and graded from one paper."],
   compare: ["Compare", "Compare two papers side by side, using separate evidence for each."],
+  inspect: ["Inspect", "See how retrieval ranks passages, and how each retrieval method measured on the benchmark."],
 };
 
 function setMode(mode) {
@@ -484,6 +489,13 @@ function setMode(mode) {
   store.set("mode", mode);
   closeSidebar();
   if (mode === "quiz") loadQuizHistory();
+  if (mode === "inspect") {
+    loadEvalSummary();
+    // Show the server's default top-k rather than an empty box.
+    if (!$("#inspect-top-k").placeholder) {
+      api("/api/settings").then(settings => { $("#inspect-top-k").placeholder = String(settings.top_k); }).catch(() => {});
+    }
+  }
 }
 $$("[data-mode]").forEach(button => button.addEventListener("click", () => setMode(button.dataset.mode)));
 
@@ -590,7 +602,7 @@ async function sendChat(query, existingTurn = null) {
         });
       } else if (event.type === "done") {
         cancelAnimationFrame(frame);
-        Object.assign(turn.data, { answer: event.answer, trust: event.trust, citation_check: event.citation_check });
+        Object.assign(turn.data, { answer: event.answer, trust: event.trust, citation_check: event.citation_check, trace: event.trace });
         turn.status = "done";
       } else if (event.type === "error") {
         throw new Error(event.detail);
@@ -691,9 +703,11 @@ function renderTurn(turn) {
       <div class="msg-meta">${status}
         ${turn.papers?.length ? `<span class="badge badge-neutral">Scope: ${turn.papers.map(paperTitle).map(escapeHtml).join(", ")}</span>` : ""}</div>
       ${sources ? `<div class="sources">${sources}</div>` : ""}
+      ${streaming ? "" : traceBlock(data.trace)}
       <div class="msg-actions${streaming ? " hidden" : ""}">
         <button type="button" class="icon-btn" data-act="copy" title="Copy answer" aria-label="Copy answer">${icon("copy")}</button>
         <button type="button" class="icon-btn" data-act="regenerate" title="Regenerate" aria-label="Regenerate answer">${icon("refresh")}</button>
+        <button type="button" class="icon-btn" data-act="inspect" title="Inspect retrieval for this question" aria-label="Inspect retrieval">${icon("search")}</button>
         <button type="button" class="icon-btn ${turn.feedback === "up" ? "on" : ""}" data-act="up" title="Helpful" aria-label="Helpful" aria-pressed="${turn.feedback === "up"}">${icon("up")}</button>
         <button type="button" class="icon-btn ${turn.feedback === "down" ? "on" : ""}" data-act="down" title="Not helpful" aria-label="Not helpful" aria-pressed="${turn.feedback === "down"}">${icon("down")}</button>
       </div>`;
@@ -722,6 +736,11 @@ $("#chat-messages").addEventListener("click", async event => {
   const act = event.target.closest("[data-act]")?.dataset.act;
   if (!act || !turn) return;
   if (act === "retry" || act === "regenerate") return sendChat(turn.query, turn);
+  if (act === "inspect") {
+    // Inspect the query retrieval actually used (after any follow-up rewrite).
+    const paper = turn.papers?.length === 1 ? turn.papers[0] : "";
+    return runInspection(turn.data.query_used || turn.query, paper);
+  }
   if (act === "copy") {
     try { await navigator.clipboard.writeText(turn.data.answer); toast("Answer copied", "success"); }
     catch (_) { toast("Clipboard is not available in this browser.", "warn"); }
@@ -1202,6 +1221,198 @@ $("#progress-button").addEventListener("click", async () => {
   }
 });
 
+
+/* ==========================================================================
+   Pipeline trace (under each chat answer)
+   ========================================================================== */
+const ms = value => (value == null ? "–" : value >= 1000 ? `${(value / 1000).toFixed(1)} s` : `${Math.round(value)} ms`);
+
+function traceBlock(trace) {
+  if (!trace?.timings_ms) return "";
+  const t = trace.timings_ms;
+  const steps = [["Rewrite", t.rewrite], ["Retrieval", t.retrieval], ["First token", t.first_token],
+    ["Generation", t.generation], ["Support check", t.support_check]].filter(([, value]) => value != null);
+  const stages = (trace.retrieval || []).flatMap(search => Object.entries(search.timings_ms || {})
+    .map(([name, value]) => `${search.paper ? `${escapeHtml(paperTitle(search.paper))} · ` : ""}${name.replace("_ms", "")} ${value.toFixed(1)} ms`));
+  const tokens = Object.entries(trace.tokens || {}).filter(([name]) => name !== "total")
+    .map(([name, usage]) => `${name.replace("_", " ")} ${usage.total_tokens ?? "?"}`);
+  return `<details class="trace">
+    <summary>${icon("chart")}Pipeline trace · ${ms(t.total)}${trace.tokens?.total ? ` · ${trace.tokens.total.toLocaleString()} tokens` : ""}</summary>
+    <div class="trace-body">
+      <div class="trace-steps">${steps.map(([name, value]) => `<span><b>${name}</b>${ms(value)}</span>`).join("")}</div>
+      ${stages.length ? `<div class="hint">Retrieval stages: ${stages.join(" · ")}</div>` : ""}
+      ${tokens.length ? `<div class="hint">Tokens: ${tokens.join(" · ")}</div>` : ""}
+    </div>
+  </details>`;
+}
+
+/* ==========================================================================
+   Inspect: retrieval inspector
+   ========================================================================== */
+const fmt = (value, digits = 3) => (value == null ? "–" : Number(value).toFixed(digits));
+
+async function runInspection(query, paper = "") {
+  setMode("inspect");
+  $("#inspect-query").value = query;
+  $("#inspect-scope").value = paper;
+  return inspect();
+}
+
+async function inspect() {
+  const query = $("#inspect-query").value.trim();
+  if (!query) { $("#inspect-query").focus(); return; }
+  const button = $("#inspect-button");
+  const paper = $("#inspect-scope").value;
+  const topK = Number($("#inspect-top-k").value) || state.settings.topK || null;
+  setBusy(button, true, "Inspecting…");
+  try {
+    const data = await api("/api/retrieval/inspect", { method: "POST", json: { query, papers: paper ? [paper] : [], top_k: topK } });
+    renderInspection(data);
+  } catch (error) {
+    $("#inspect-result").innerHTML = `<div class="notice notice-error">${escapeHtml(error.message)}</div>`;
+  } finally {
+    setBusy(button, false);
+  }
+}
+
+function renderInspection(data) {
+  const searches = data.searches.map(search => {
+    const settings = search.settings || {};
+    const timings = Object.entries(search.timings_ms || {})
+      .map(([name, value]) => `<span class="badge badge-neutral">${name.replace("_ms", "")} ${value.toFixed(1)} ms</span>`).join("");
+    const rows = (search.candidates || []).map((c, index) => `
+      <tr class="${c.selected ? "selected" : ""}">
+        <td class="num">${index + 1}</td>
+        <td><details><summary>${escapeHtml(c.citation)}</summary><div class="passage">${escapeHtml(c.preview)}…</div></details></td>
+        <td class="num">${c.dense_rank ?? "–"}</td><td class="num">${fmt(c.dense_cosine)}</td>
+        <td class="num">${c.bm25_rank ?? "–"}</td><td class="num">${fmt(c.bm25_score, 2)}</td>
+        <td class="num">${fmt(c.rrf_score, 4)}</td>
+        ${settings.rerank ? `<td class="num">${fmt(c.rerank_score, 2)}</td>` : ""}
+        <td>${c.selected ? '<span class="badge badge-accent">sent</span>' : ""}</td>
+      </tr>`).join("");
+    const both = (search.candidates || []).filter(c => c.dense_rank && c.bm25_rank).length;
+    return `<div class="card card-pad">
+      <div class="row"><strong>${search.paper ? escapeHtml(paperTitle(search.paper)) : "All papers"}</strong><span class="spacer"></span>${timings}</div>
+      <p class="hint" style="margin:6px 0 12px">${search.candidates.length} candidates from ${settings.candidates_per_method} dense + ${settings.candidates_per_method} BM25 results (${both} found by both), fused with RRF (k = ${settings.rrf_k})${settings.rerank ? ", then reranked by a cross-encoder" : ""}. The top ${settings.top_k} are sent to the model.</p>
+      <div class="table-scroll"><table class="data-table">
+        <thead><tr><th class="num">Final</th><th>Passage</th><th class="num">Dense rank</th><th class="num">Cosine</th><th class="num">BM25 rank</th><th class="num">BM25 score</th><th class="num">RRF</th>${settings.rerank ? '<th class="num">Rerank</th>' : ""}<th></th></tr></thead>
+        <tbody>${rows}</tbody></table></div>
+    </div>`;
+  }).join("");
+  $("#inspect-result").innerHTML = searches || '<div class="notice notice-warn">No passages were retrieved.</div>';
+}
+
+$("#inspect-form").addEventListener("submit", event => { event.preventDefault(); inspect(); });
+
+/* ==========================================================================
+   Inspect: evaluation dashboard (recorded results only)
+   ========================================================================== */
+const METRIC_LABELS = { hit: "Hit@k", ndcg: "nDCG@k", mrr: "MRR@10", precision: "Precision@k", recall: "Recall@k" };
+const CONFIG_LABELS = {
+  dense: "Dense only", bm25: "BM25 only", hybrid_rrf60: "Hybrid (RRF)",
+  hybrid_rerank_top10: "Hybrid + rerank (top 10)", hybrid_rerank_top20: "Hybrid + rerank (top 20)",
+};
+let evalData = null;
+let evalMetric = "hit";
+
+async function loadEvalSummary(force = false) {
+  if (evalData && !force) return;
+  try {
+    evalData = await api("/api/eval/summary");
+    renderEval();
+  } catch (error) {
+    $("#eval-caption").textContent = error.message;
+  }
+}
+
+function renderEval() {
+  const sets = evalData.sets.filter(set => set.available);
+  if (!sets.length) {
+    $("#eval-caption").textContent = "No recorded results yet. Run: python eval/run_eval.py --top-k 5 --md …";
+    return;
+  }
+  const first = sets[0];
+  const k = first.configs[0]?.top_k;
+  $("#eval-caption").textContent = `Measured by eval/run_eval.py at commit ${first.git_commit || "?"} (${relativeDate(first.generated_at)}), k = ${k}. Bars: mean; whiskers: 95% bootstrap CI. Highlighted: the configuration the app runs.`;
+  $("#eval-charts").innerHTML = sets.map(set => chartFor(set)).join("");
+  $("#eval-table").innerHTML = sets.map(set => tableFor(set)).join("");
+}
+
+function chartFor(set) {
+  const live = evalData.live_config;
+  const rows = set.configs.filter(c => c.metrics[evalMetric]);
+  const bars = rows.map(c => {
+    const m = c.metrics[evalMetric];
+    const [low, high] = m.ci95;
+    const isLive = c.name === live;
+    const label = CONFIG_LABELS[c.name] || c.name;
+    const count = evalMetric === "hit" && m.n ? ` (${Math.round(m.count)}/${m.n})` : "";
+    const delta = c.vs_baseline?.[evalMetric === "mrr" ? "rr" : evalMetric];
+    const tip = `${label}: ${fmt(m.mean)}${count}. 95% CI ${fmt(low)}–${fmt(high)}.` +
+      (delta ? ` vs live: ${delta.delta >= 0 ? "+" : ""}${fmt(delta.delta)} (better on ${delta.better_on}, worse on ${delta.worse_on}).` : "");
+    return `<div class="bar-row${isLive ? " live" : ""}" tabindex="0" data-tip="${escapeHtml(tip)}" aria-label="${escapeHtml(tip)}">
+      <span class="bar-name">${escapeHtml(label)}${isLive ? ' <span class="badge badge-accent">live</span>' : ""}</span>
+      <span class="bar-track">
+        <span class="bar" style="width:${(m.mean * 100).toFixed(1)}%"></span>
+        <span class="whisker" style="left:${(low * 100).toFixed(1)}%;width:${((high - low) * 100).toFixed(1)}%"></span>
+      </span>
+      <span class="bar-value">${fmt(m.mean)}${count}</span>
+    </div>`;
+  }).join("");
+  return `<figure class="eval-chart">
+    <figcaption><b>${escapeHtml(set.label)}</b><span class="hint">${METRIC_LABELS[evalMetric]} · ${set.questions} questions</span></figcaption>
+    <div class="bars" role="list">${bars}</div>
+    <div class="bar-axis"><span>0</span><span>0.5</span><span>1</span></div>
+  </figure>`;
+}
+
+function tableFor(set) {
+  const metrics = Object.keys(METRIC_LABELS);
+  const rows = set.configs.map(c => `<tr>
+    <td>${escapeHtml(CONFIG_LABELS[c.name] || c.name)}</td>
+    ${metrics.map(metric => {
+      const m = c.metrics[metric];
+      return `<td class="num">${m ? `${fmt(m.mean)} <span class="hint">[${fmt(m.ci95[0], 2)}–${fmt(m.ci95[1], 2)}]</span>` : "–"}</td>`;
+    }).join("")}
+    <td class="num">${c.latency_ms?.total_ms ? `${c.latency_ms.total_ms.p50.toFixed(1)} / ${c.latency_ms.total_ms.p95.toFixed(1)}` : "–"}</td>
+  </tr>`).join("");
+  return `<h4>${escapeHtml(set.label)} · ${set.questions} questions · ${set.corpus?.chunks ?? "?"} chunks</h4>
+    <div class="table-scroll"><table class="data-table">
+      <thead><tr><th>Configuration</th>${metrics.map(metric => `<th class="num">${METRIC_LABELS[metric]}</th>`).join("")}<th class="num">Latency ms (p50 / p95)</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+}
+
+$("#eval-metric").addEventListener("click", event => {
+  const button = event.target.closest("[data-metric]");
+  if (!button || !evalData) return;
+  evalMetric = button.dataset.metric;
+  $$("#eval-metric button").forEach(item => item.setAttribute("aria-pressed", String(item === button)));
+  renderEval();
+});
+
+/* Hover / focus tooltip for the benchmark bars. */
+const evalTip = Object.assign(document.createElement("div"), { className: "viz-tip", role: "tooltip" });
+document.body.append(evalTip);
+function showTip(row, x, y) {
+  evalTip.textContent = row.dataset.tip;
+  evalTip.classList.add("show");
+  const box = evalTip.getBoundingClientRect();
+  evalTip.style.left = `${Math.min(window.innerWidth - box.width - 12, Math.max(12, x - box.width / 2))}px`;
+  evalTip.style.top = `${Math.max(12, y - box.height - 14)}px`;
+}
+$("#eval-charts").addEventListener("pointermove", event => {
+  const row = event.target.closest(".bar-row");
+  if (row) showTip(row, event.clientX, event.clientY); else evalTip.classList.remove("show");
+});
+$("#eval-charts").addEventListener("pointerleave", () => evalTip.classList.remove("show"));
+$("#eval-charts").addEventListener("focusin", event => {
+  const row = event.target.closest(".bar-row");
+  if (!row) return;
+  const rect = row.getBoundingClientRect();
+  showTip(row, rect.left + rect.width / 2, rect.top);
+});
+$("#eval-charts").addEventListener("focusout", () => evalTip.classList.remove("show"));
+
 /* ==========================================================================
    Keyboard shortcuts
    ========================================================================== */
@@ -1209,7 +1420,7 @@ document.addEventListener("keydown", event => {
   const typing = event.target.closest("input, textarea, select, [contenteditable]");
   if (event.key === "Escape") { closeMenus(); closeSidebar(); return; }
   if (typing || event.metaKey || event.ctrlKey || event.altKey || document.querySelector("dialog[open]")) return;
-  if (["1", "2", "3"].includes(event.key)) setMode(["chat", "quiz", "compare"][Number(event.key) - 1]);
+  if (["1", "2", "3", "4"].includes(event.key)) setMode(["chat", "quiz", "compare", "inspect"][Number(event.key) - 1]);
   if (event.key === "/") { event.preventDefault(); setMode("chat"); chatInput.focus(); }
 });
 
@@ -1223,8 +1434,13 @@ document.addEventListener("keydown", event => {
   applyTheme(store.get("theme", "system"));
   updateGenerateLabel();
   restoreChat();
-  const mode = store.get("mode", "chat");
+  // A link like /?q=...#inspect opens a mode directly (and runs that inspection).
+  const linked = location.hash.slice(1);
+  const mode = MODE_COPY[linked] ? linked : store.get("mode", "chat");
   setMode(MODE_COPY[mode] ? mode : "chat");
   refreshHealth();
-  loadLibrary();
+  loadLibrary().then(() => {
+    const query = new URLSearchParams(location.search).get("q");
+    if (linked === "inspect" && query) runInspection(query);
+  });
 })();

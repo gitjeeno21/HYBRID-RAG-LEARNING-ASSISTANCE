@@ -641,3 +641,67 @@ dialog[open] { animation: pop .3s var(--ease); }
   .content { max-width: none; padding: 0; }
   * { animation: none !important; }
 }
+
+/* ==========================================================================
+   Inspect mode: pipeline trace, retrieval inspector, benchmark dashboard
+   ========================================================================== */
+/* Chart colours validated with the dataviz palette checker (emphasis form:
+   one hue for the live configuration, gray for the others). The light-theme
+   gray sits below 3:1 contrast, so every bar also prints its value and the
+   table view carries all numbers. */
+.viz-root { --viz-emphasis: #b8892e; --viz-context: #6b6760; --viz-grid: rgba(255, 255, 255, .08); --viz-whisker: var(--text); }
+:root[data-theme="light"] .viz-root { --viz-emphasis: #a8781f; --viz-context: #b3aca1; --viz-grid: rgba(40, 30, 15, .1); }
+
+.trace { margin-top: 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); }
+.trace summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 8px 14px; font-size: 12px; color: var(--faint); }
+.trace summary::-webkit-details-marker { display: none; }
+.trace-body { padding: 4px 14px 12px; display: grid; gap: 6px; }
+.trace-steps { display: flex; flex-wrap: wrap; gap: 6px 16px; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+.trace-steps b { font-family: var(--font); font-weight: 500; color: var(--faint); margin-right: 6px; }
+
+.inspect-form { display: grid; grid-template-columns: minmax(0, 1fr) 200px 84px auto; gap: 12px; align-items: end; }
+.table-scroll { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.data-table th { text-align: left; font-weight: 600; color: var(--faint); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; padding: 6px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.data-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); color: var(--muted); vertical-align: top; }
+.data-table .num { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.data-table tr.selected td { color: var(--text); background: var(--accent-soft); }
+.data-table details summary { cursor: pointer; color: var(--text); }
+.data-table .passage { margin-top: 6px; font-size: 12px; line-height: 1.55; white-space: pre-wrap; color: var(--muted); max-width: 520px; }
+
+.eval-charts { display: grid; grid-template-columns: 1fr; gap: 28px; margin-top: 18px; }
+.eval-chart { margin: 0; }
+.eval-chart figcaption { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; margin-bottom: 12px; font-size: 13px; color: var(--text); }
+.bars { display: grid; gap: 10px; }
+.bar-row { display: grid; grid-template-columns: 150px minmax(0, 1fr) 108px; align-items: center; gap: 10px; border-radius: 6px; outline-offset: 3px; cursor: default; }
+.bar-name { font-size: 12px; color: var(--muted); line-height: 1.3; }
+.bar-row.live .bar-name { color: var(--text); }
+/* Track = hit target (taller than the bar); gridlines at 0, 0.5 and 1. */
+.bar-track { position: relative; height: 22px; background: linear-gradient(to right, var(--viz-grid) 1px, transparent 1px) 0 0 / 50% 100% repeat-x; border-right: 1px solid var(--viz-grid); }
+.bar { position: absolute; left: 0; top: 4px; height: 14px; background: var(--viz-context); border-radius: 0 4px 4px 0; }
+.bar-row.live .bar { background: var(--viz-emphasis); }
+.whisker { position: absolute; top: 10px; height: 2px; background: var(--viz-whisker); opacity: .55; border-radius: 1px; }
+.whisker::before, .whisker::after { content: ""; position: absolute; top: -4px; width: 2px; height: 10px; background: inherit; border-radius: 1px; }
+.whisker::before { left: 0; }
+.whisker::after { right: 0; }
+.bar-value { white-space: nowrap; font-family: var(--mono); font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.bar-row.live .bar-value { color: var(--text); }
+.bar-row:hover .bar-name, .bar-row:focus-visible .bar-name { color: var(--text); }
+.bar-axis { display: flex; justify-content: space-between; margin: 6px 118px 0 160px; font-family: var(--mono); font-size: 10.5px; color: var(--faint); }
+.eval-table-wrap { margin-top: 18px; }
+.eval-table-wrap summary { cursor: pointer; font-size: 12.5px; color: var(--muted); }
+.eval-table-wrap h4 { margin: 16px 0 6px; font-size: 13px; font-weight: 600; color: var(--text); }
+.viz-tip { position: fixed; z-index: 60; max-width: 320px; padding: 8px 12px; border-radius: 10px; font-size: 12px; line-height: 1.45; color: var(--text); background: var(--surface-solid); border: 1px solid var(--border-strong); box-shadow: var(--shadow); pointer-events: none; opacity: 0; transition: opacity .12s; }
+.viz-tip.show { opacity: 1; }
+
+@media (max-width: 640px) {
+  .inspect-form { grid-template-columns: 1fr 1fr; }
+  .inspect-form .inspect-query { grid-column: 1 / -1; }
+  .bar-row { grid-template-columns: 96px minmax(0, 1fr) 96px; }
+  .bar-axis { margin: 6px 106px 0 106px; }
+}
+/* Let wide tables scroll inside their card instead of widening the page. */
+#inspect-panel > *, #inspect-panel .card { min-width: 0; }
+.table-scroll { max-width: 100%; }
+#eval-metric { flex-wrap: wrap; }
+.data-table td details summary { white-space: nowrap; }

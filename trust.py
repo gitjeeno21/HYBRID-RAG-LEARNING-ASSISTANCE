@@ -80,8 +80,14 @@ QUESTIONS_PATH = BASE_DIR / "eval_questions.json"
 # held-out measurement, and the 0.23 / 0.28 margin is thin enough that a new
 # off-topic question could easily land above 0.40. Treat 0.40 as a reasonable
 # default to re-tune on your own corpus, not as a validated boundary.
-STRONG_TOP_SCORE = 0.40   # best chunk must be at least this similar ...
-STRONG_MEAN_SCORE = 0.50  # ... or the average over all retrieved chunks is
+#
+# SCALE CORRECTION (Stage 4): the 0.40 / 0.50 cut-offs above were chosen on
+# LangChain's "relevance" score, which is NOT cosine but sqrt(2)*cos - 0.414
+# (see hybrid.cosine_from_distance). The app now passes true cosine, so the
+# same boundaries are restated on the cosine scale: 0.40 -> 0.576 and
+# 0.50 -> 0.646. Behaviour is unchanged; only the units are now honest.
+STRONG_TOP_SCORE = 0.576   # best chunk must be at least this similar (cosine) ...
+STRONG_MEAN_SCORE = 0.646  # ... or the average over all retrieved chunks is
 # Strong retrieval means: top >= 0.40 OR mean >= 0.50. Using "or" rather than
 # "and" keeps the label from collapsing to Medium when one chunk carries the
 # whole answer and the other two are filler, which is common with top_k = 3.
@@ -165,7 +171,7 @@ def parse_verdict(reply: str) -> str | None:
 def _default_ask(prompt: str) -> str:
     """Send one prompt to Groq through evaluator.py's retrying helper.
 
-    WHY reuse evaluator.call_llm instead of a second copy: it already handles
+    WHY reuse llm.call_llm instead of a second copy: it already handles
     Groq's free-tier 429s with the MAX_ATTEMPTS / BASE_SLEEP backoff this
     project standardised on, and duplicating it would let the two retry
     policies drift. WHY the import sits inside the function: evaluator.py
@@ -173,7 +179,7 @@ def _default_ask(prompt: str) -> str:
     it lazily keeps `import trust` (and therefore the Streamlit app's start-up)
     free of that side effect until the first check actually runs.
     """
-    from evaluator import call_llm
+    from llm import call_llm
 
     return call_llm(prompt, temperature=0.0, label="trust")
 
