@@ -44,7 +44,7 @@ Answers, held-out set, the app's own model and prompt, judged by a second model 
 
 The three newly correct answers are exactly the questions whose answer chunk an old de-duplication bug used to drop. With 47 questions the confidence intervals overlap (81% [68–90] vs 87% [75–94]), so the paired 3-better / 0-worse count is the stronger evidence.
 
-A chat answer takes about 1.8 s end to end (measured: retrieval 29 ms, first token 1.2 s, support check 0.5 s) and about 5,300 tokens, half of them for the grounding check. On Groq's free tier (about 8k tokens per minute for this model), a second question within the same minute waits for the rate limit.
+A chat answer takes about 1.8 s end to end (measured: retrieval 29 ms, first token 1.2 s, support check 0.5 s) and about 5,300 tokens, half of them for the grounding check. The answer is marked done as soon as it finishes streaming; the confidence label follows in a separate event, so a slow or rate-limited check never holds the answer back. On Groq's free tier (about 8k tokens per minute for this model), a second question within the same minute waits for the rate limit.
 
 ## Quick start (Windows / PowerShell)
 
@@ -56,7 +56,6 @@ python -m venv venv
 .\venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 Copy-Item .env.example .env      # then set GROQ_API_KEY=... (free key: https://console.groq.com/keys)
-python ingest.py                 # build the index from data/*.pdf
 .\run_api.bat                    # or: python -m uvicorn main:app --port 8000
 ```
 
@@ -97,7 +96,7 @@ Design decisions and the evidence for each: [ARCHITECTURE.md](ARCHITECTURE.md). 
 | Data isolation | Private folder per user; per-user BM25; a `ScopedStore` adds the user's filter to every Chroma search, read, write and delete; fusion only accepts the user's own chunks |
 | Leaving | **Delete account** (password required) erases the user's PDFs, parsed-text cache, vectors, sessions, history, feedback, usage and codes; the search index and files go first and the account row last, so a failure part-way can be retried. Tested end to end, including that other users' data survives |
 | Shared API key | Daily LLM token allowance per user (`APP_DAILY_TOKEN_LIMIT`, default 100,000) |
-| Browser hardening | Content-Security-Policy, `nosniff`, frame denial, same-origin referrer |
+| Browser hardening | Content-Security-Policy with `script-src 'self'` (no inline scripts or handlers, enforced by a test), `nosniff`, frame denial, same-origin referrer |
 | Observability | One JSON log line per API request (status, latency, user id, request id); bodies, query strings and cookies are never logged |
 
 `test_isolation.py` uploads real PDFs with secret tokens for two users and attempts every cross-user path (listing, preview, download, delete, search, chat prompt, quiz, compare, progress, identical filenames, path traversal) with real embeddings and a real Chroma index.
@@ -113,6 +112,7 @@ All retrieval experiments make **zero LLM calls** (the harness blocks the client
 | `eval/run_eval.py` | Hit@k, MRR@10, Precision@k, Recall@k, nDCG@k, per-stage latency; bootstrap CIs and paired deltas vs the live config |
 | `eval/ablation.py` | Each retrieval change against the adoption rule (no loss on dev, gain on held-out) |
 | `eval/context_coverage.py` | Whether the gold evidence actually reaches the prompt |
+| `eval/small_to_big.py` | Parent-child retrieval ablation: helps dense alone, rejected for hybrid ([SMALL_TO_BIG.md](eval/SMALL_TO_BIG.md)) |
 | `eval/abstention_signals.py` | Whether any retrieval score can tell answerable from unanswerable questions |
 | `eval/answer_eval.py` | Correctness, faithfulness, citations, refusals, label calibration (LLM judge; cached and quota-paced) |
 | `eval/validate_questions.py` | Every gold evidence quote appears verbatim on its labelled page |
@@ -132,7 +132,7 @@ python eval/run_eval.py --questions eval/dev_questions_multipage.json --top-k 5
 python -m unittest discover -p "test_*.py"
 ```
 
-155 tests, all offline (no API key needed). LLM calls are replaced by fakes. The isolation tests use real PDFs, embeddings and Chroma; the rest use in-memory fakes.
+156 tests, all offline (no API key needed). LLM calls are replaced by fakes. The isolation tests use real PDFs, embeddings and Chroma; the rest use in-memory fakes.
 
 ## Project layout
 
@@ -145,7 +145,8 @@ python -m unittest discover -p "test_*.py"
 | `hybrid.py` | The live retrieval pipeline: BM25, dense, RRF, optional rerank, stage trace |
 | `llm.py` | Groq client: lazy, retrying, streaming, token accounting |
 | `config.py` | Paths, models, chunking, top-k, `RAG_*` switches, the answer prompt |
-| `ingest.py`, `upload.py`, `library.py` | Index build, safe upload, rename and delete |
+| `ingest.py`, `upload.py`, `library.py` | Shared chunking; safe upload, rename and delete |
+| `mailer.py` | Verification and reset codes by email (EmailJS, server-side) |
 | `citations.py`, `trust.py` | Citation validation; confidence label |
 | `quiz.py`, `compare.py` | Grounded quiz and two-paper comparison |
 | `static/` | Vanilla JS frontend, no build step |

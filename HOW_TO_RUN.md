@@ -153,7 +153,7 @@ All off by default; each was measured before being left off (see `eval/RETRIEVAL
 | `RAG_RERANK=1` | Rerank the fused top 10 with a cross-encoder (~0.5 s per query on CPU) |
 | `RAG_RERANKER_MODEL` | Cross-encoder to use, e.g. `BAAI/bge-reranker-base` (~3 s per query on CPU, 1.1 GB download) |
 | `RAG_CANDIDATES` | Candidates each retriever contributes before fusion (default 10) |
-| `RAG_CROSS_PAGE=1` | Let chunks cross page breaks (requires `python ingest.py`) |
+| `RAG_CROSS_PAGE=1` | Let chunks cross page breaks (then rebuild every library: stop the server, `python manage.py reindex --all`) |
 
 ---
 

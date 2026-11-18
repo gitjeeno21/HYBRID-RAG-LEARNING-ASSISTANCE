@@ -69,7 +69,9 @@ Quiz and Compare reuse the same hybrid retrieval with a per-paper metadata filte
 | `quota.py` | Daily LLM token allowance per user |
 | `manage.py` | Admin commands: `users`, `import-pdfs`, `reindex` |
 | `config.py` | Single source of truth: paths, models, chunking, top-k, retrieval switches (`RAG_*` env vars), the answer prompt, citation formatting |
-| `ingest.py` | Load PDFs, split, embed, rebuild `chroma_db/` from scratch |
+| `ingest.py` | Shared chunking (`split_documents`, `best_chunk_config`); run directly it rebuilds the single-user `chroma_db/` used by the legacy CLI demos |
+| `mailer.py` | Server-side email (EmailJS REST) for verification and reset codes; console mode for development |
+| `legacy/`, `eval/` | Superseded experiments (kept reproducible); the current zero-LLM benchmark, ablations and answer evaluation |
 | `upload.py`, `library.py` | Add / rename / remove a PDF with rollback, so a failed upload leaves no partial index entries |
 | `hybrid.py` | The one live retrieval pipeline: BM25, dense (true cosine), RRF, optional rerank, optional stage-by-stage trace; `unique_chunks` |
 | `llm.py` | The one Groq client: lazy creation, retry/backoff for 429 and transient errors, streaming, token-usage accounting |
