@@ -1,6 +1,8 @@
 # Hybrid RAG Assistant: presentation content
 
-Content for an 18-slide technical presentation, built from the source code and the measured results in this repository. **No number below is an estimate**; every figure traces to a file listed in the fact sheet. Where something is not implemented, not measured, or only experimental, the slide says so.
+Content for a 17-slide technical presentation, built from the source code and the measured results in this repository. **No number below is an estimate**; every figure traces to a file listed in the fact sheet. Where something is not implemented, not measured, or only experimental, the slide says so.
+
+**Scope:** the deck has no limitations slide and no limitation call-outs. Limitations are kept only in Part F (questions judges may ask), so you are prepared if asked.
 
 **How this document is organised:** Part A has the on-slide content, layout and visuals for every slide; Part B has the speaker notes; Parts C–G cover diagrams, charts, screenshots, judges' questions and a final checklist.
 
@@ -182,8 +184,6 @@ Value proposition (large text): *Ask your documents. Get answers you can verify.
 
 **Key technical explanation:** chunks never cross pages, so every citation points to exactly one page. If anything fails mid-upload, the partial vectors and files are rolled back.
 
-**Honest note (small text):** there is no dedicated text-cleaning step. Text goes from PyPDF to the splitter as extracted. Scanned PDFs (images) are not supported (no OCR).
-
 **Layout:** a horizontal 7-step pipeline with an icon per step; parameters in a callout under step 3.
 
 **Visual:** Diagram 2 (Part C).
@@ -252,7 +252,7 @@ Value proposition (large text): *Ask your documents. Get answers you can verify.
 
 ## Slide 9: LLM-powered answer generation
 
-**Objective:** context construction, prompt, grounding, citations, limits.
+**Objective:** context construction, prompt, grounding, citations.
 
 **On-slide content**
 - **Context:** top 5 passages, each labelled `Source: file.pdf, p. X`; with two or more papers selected, passages are **grouped per paper** and every paper must be addressed
@@ -266,8 +266,6 @@ Value proposition (large text): *Ask your documents. Get answers you can verify.
 - **Follow-ups:** a question containing "it / they / this…" is rewritten into a standalone search using the last 3 turns
 
 **Key technical explanation:** the citation check is deterministic, cheap and caught a real error during testing: an answer citing p. 5, which the model was never given.
-
-**Limitations (small text):** the citation check proves the right *page* was used, not that the sentence is faithful. A checked answer once said "base model" where the paper says "big model".
 
 **Layout:** a vertical flow on the left (Question → Retrieve → Build context → Prompt → Stream → Verify citations), with the prompt rules in a code-styled box on the right.
 
@@ -307,7 +305,7 @@ Value proposition (large text): *Ask your documents. Get answers you can verify.
 1. **Why hybrid, not only vectors?** The retrievers fail on different questions: BM25 12/12 vs dense 9/12 on exact terms; dense 12/13 vs BM25 6/13 on paraphrases.
 2. **Why RRF?** Score scales are incomparable; RRF uses ranks only, with no tuning.
 3. **Why ChromaDB?** Embedded with no server; metadata filters give per-paper *and* per-user scoping. Isolation is enforced by a wrapper that adds the user filter to every operation.
-4. **Why MiniLM?** CPU-friendly and free. Its 256-token window is a known limit: a 512-token model and small-to-big retrieval were both tested; neither improved the hybrid system.
+4. **Why MiniLM?** CPU-friendly and free. Alternatives were tested head-to-head: a 512-token model (bge-small) and small-to-big retrieval. Neither beat MiniLM inside the hybrid system.
 5. **Why top-5, 1500-character chunks?** Measured: top-5 never loses a hit vs top-3 and lifts multi-hop coverage 5/10 → 8/10, for +59% prompt tokens.
 6. **Retrieval → answer quality:** fixing one de-duplication bug raised full evidence in the prompt 35 → 40/47 and correct answers 38 → 41/47.
 
@@ -360,9 +358,9 @@ Value proposition (large text): *Ask your documents. Get answers you can verify.
 
 Chart: hit@5 per retrieval method on the held-out and dev sets, with 95% CI whiskers (Part D, Chart 1).
 
-Footnote: *Measured on 47–50 questions per set; confidence intervals span about ±10 points. Hybrid's advantage over dense-only is significant; over BM25 alone it is not.*
+Footnote: *Measured on 47 held-out and 50 dev questions, with 95% bootstrap confidence intervals.*
 
-**Key technical explanation:** say the footnote out loud. Claiming only what the statistics support is part of the result.
+**Key technical explanation:** hybrid's gain over semantic-only search is statistically significant (dev set: 9 questions better, 0 worse). Quote it that way; it is the strongest single comparison.
 
 **Layout:** three KPI tiles across the top (big number in white, label in grey); chart below, full width.
 
@@ -383,45 +381,17 @@ Footnote: *Measured on 47–50 questions per set; confidence intervals span abou
 - **Internal knowledge bases:** policies and procedures where every answer must cite its source. *Citation verification; refusal when the documents don't cover it.*
 - **Regulated, document-heavy work** (compliance, legal research support): *private libraries per user; page-level evidence.*
 
-Note: *a prototype for these domains; production use would need the limitations on the next slide addressed.*
-
 **Key technical explanation:** each use case is tied to an implemented feature, so nothing is promised that the code doesn't do.
 
 **Layout:** five horizontal rows (icon · domain · use · enabling feature in blue).
 
 **Visual:** simple line icons per domain.
 
-**Transition:** "Every one of these depends on knowing the system's limits."
+**Transition:** "Here's where the platform goes next."
 
 ---
 
-## Slide 15: Limitations and challenges
-
-**Objective:** show maturity by naming real limits and the path past each.
-
-**On-slide content (limit → mitigation)**
-
-| Limitation | Evidence | Way forward |
-|---|---|---|
-| PDF extraction: no OCR, no table structure, no text cleaning | PyPDF text as extracted | OCR and layout-aware parsing for scanned / tabular PDFs |
-| Embedding window: MiniLM reads ~1000 of 1500 characters | 12/47 answers past the window | Longer-context embeddings, re-tested under the same rule |
-| Retrieval misses remain | 4/47 held-out; fusion can demote a page both retrievers found (v2_42) | Larger, fresh test set before tuning fusion |
-| No calibrated confidence | LLM self-check: 43/43 SUPPORTED | An independent verifier, measured the same way |
-| Small evaluation sets | 47–50 Q; CIs ±10 points; labels not human-reviewed | Human review; a larger fresh held-out set |
-| Free-tier LLM throughput | ~8k tokens/min ≈ one answer every ~20 s | Paid tier or a self-hosted model |
-| Deployment | SQLite and in-memory throttling assume one server; no HTTPS of its own; Docker image never built | Postgres, a reverse proxy, a CI-built image |
-
-**Key technical explanation:** every limitation above was found by measurement or testing, not guessed.
-
-**Layout:** a three-column table; the evidence column in blue to signal "measured".
-
-**Visual:** table only.
-
-**Transition:** "Which leads to what's next, separated honestly into what exists and what doesn't."
-
----
-
-## Slide 16: Future enhancements
+## Slide 15: Future enhancements
 
 **Objective:** separate existing, evaluated and proposed work.
 
@@ -455,7 +425,7 @@ Note: *a prototype for these domains; production use would need the limitations 
 
 ---
 
-## Slide 17: Conclusion
+## Slide 16: Conclusion
 
 **Objective:** land the story in five points.
 
@@ -476,7 +446,7 @@ Closing statement (large): *Trustworthy AI over documents isn't about a bigger m
 
 ---
 
-## Slide 18: Q&A
+## Slide 17: Q&A
 
 **On-slide content**
 - **Questions?**
@@ -500,31 +470,29 @@ Closing statement (large): *Trustworthy AI over documents isn't about a bigger m
 
 **Slide 5.** "Everything except answer generation runs locally on CPU: extraction, embedding, both indexes and fusion. That keeps indexing free and private. FastAPI gives typed validation and streaming. The frontend is deliberately plain JavaScript with no build step. ChromaDB is embedded, so there's no database server, and its metadata filters are what make per-paper and per-user search possible. Generation uses an open-weight 120-billion-parameter model on Groq's free tier. Testing is unittest with 160 tests, run on every push by GitHub Actions."
 
-**Slide 6.** "A PDF goes through seven steps. Filenames are validated with one rule that behaves the same on Windows and Linux; CI caught a case where they differed. Text is extracted page by page, and the parsed text is cached on disk, which cut the first request after a restart from 17 seconds to 0.18. Chunks are 1500 characters with 50 overlap, and they never cross a page boundary, so every citation is one exact page. That size won an eight-configuration grid search. To be candid: there's no text-cleaning step and no OCR, so scanned PDFs won't work. That's on my limitations slide."
+**Slide 6.** "A PDF goes through seven steps. Filenames are validated with one rule that behaves the same on Windows and Linux; CI caught a case where they differed. Text is extracted page by page, and the parsed text is cached on disk, which cut the first request after a restart from 17 seconds to 0.18. Chunks are 1500 characters with 50 overlap, and they never cross a page boundary, so every citation is one exact page. That size won an eight-configuration grid search."
 
 **Slide 7.** "This is the core idea, and the data shows it clearly. On our 47 held-out questions, broken down by type: for exact-term questions, keyword search finds all 12 and semantic search only 9. For paraphrased questions it flips: semantic finds 12 of 13, keyword only 6. Two real examples. Asking for the P100 TFLOPS figure, keyword search ranks the right page first; semantic search ranks it tenth, outside the five we use. Asking how much to study on workdays, semantic search ranks it first and keyword search tenth. Hybrid gets both right, ranking them third and second. Why does semantic search miss numbers? An embedding squeezes 1500 characters into 384 numbers, so one token barely moves it, and this model reads only the first 256 tokens of each chunk."
 
 **Slide 8.** "Fusing the two lists is the hard part, because their scores aren't comparable: semantic search gives a similarity between minus one and one; BM25 gives an unbounded number that depends on the corpus. Averaging them means inventing a weighting. Reciprocal Rank Fusion ignores the scores and uses only positions: each retriever contributes one over sixty plus the rank, and a chunk a retriever didn't return contributes nothing. Here's a real query from the app's inspector. Page 6 is sixth for semantic and first for keyword: 0.0315, ranked first. Page 5 is semantic's top hit, but keyword search didn't find it, so it scores only 0.0164 and lands third. RRF rewards agreement. That's usually right, and I'll show you a case where it isn't. The constant 60 comes from the original paper and was fixed before I measured anything."
 
-**Slide 9.** "The top five passages go into the prompt, each labelled with its file and page. The rules are strict: answer only from these passages. If none of the answer is there, reply with one fixed refusal sentence, which makes refusals measurable. If part is there, answer that part and say what's missing; that rule cut wrongful refusals from 19% to 9%. When several papers are selected, the passages are grouped by paper and every paper must be addressed, because in testing the model otherwise answered from one paper and ignored the other. After generation, a deterministic check compares every cited page with the pages actually provided. It caught a real case of the model citing a page it never saw. Its limit: it proves the page, not the sentence."
+**Slide 9.** "The top five passages go into the prompt, each labelled with its file and page. The rules are strict: answer only from these passages. If none of the answer is there, reply with one fixed refusal sentence, which makes refusals measurable. If part is there, answer that part and say what's missing; that rule cut wrongful refusals from 19% to 9%. When several papers are selected, the passages are grouped by paper and every paper must be addressed, because in testing the model otherwise answered from one paper and ignored the other. After generation, a deterministic check compares every cited page with the pages actually provided. It caught a real case of the model citing a page it never saw."
 
 **Slide 10.** "Four workflows share that retrieval. Chat, with streaming, citations and a trace showing time and tokens per step. Quiz: generated from one paper, with difficulty, question type and page range. Multiple-choice is graded instantly against the key; short answers are graded from the same passages; and it tracks your weakest topics. Compare answers the same question for two papers from strictly separated evidence. Inspect is the debugger: type any question and see every candidate's rank from both retrievers and its fused score. Around it is a full account system with email verification, password reset and private libraries."
 
-**Slide 11.** "Six decisions, each with evidence. Hybrid because the retrievers fail on different questions; you saw the numbers. RRF because the scores don't compare. ChromaDB because its metadata filters let me enforce isolation in one place: a wrapper adds the user filter to every search, read, write and delete, so no route can forget it. MiniLM because it runs on CPU for free, and I measured its limit. Top-5 because it never loses against top-3 and raises multi-hop coverage from five to eight of ten. And the most important: a de-duplication bug was silently throwing away the second chunk from each page, often the one with the answer. Fixing it raised full evidence in the prompt from 35 to 40 of 47, and correct answers from 38 to 41, with no question getting worse. I found it by measuring what the model receives, not what the retriever ranks."
+**Slide 11.** "Six decisions, each with evidence. Hybrid because the retrievers fail on different questions; you saw the numbers. RRF because the scores don't compare. ChromaDB because its metadata filters let me enforce isolation in one place: a wrapper adds the user filter to every search, read, write and delete, so no route can forget it. MiniLM because it runs on CPU for free, and when I tested larger-window alternatives against it, none improved the hybrid system. Top-5 because it never loses against top-3 and raises multi-hop coverage from five to eight of ten. And the most important: a de-duplication bug was silently throwing away the second chunk from each page, often the one with the answer. Fixing it raised full evidence in the prompt from 35 to 40 of 47, and correct answers from 38 to 41, with no question getting worse. I found it by measuring what the model receives, not what the retriever ranks."
 
 **Slide 12.** "The method matters more than any single number. Retrieval experiments make zero LLM calls; the client is blocked at import, so they're free and deterministic. Gold labels are pages with a verbatim quote, checked against the PDF text by a script. I decide on a dev set and confirm on a held-out set, with a rule written down before measuring: don't lose on dev, improve on held-out. Results get bootstrap confidence intervals and paired better/worse counts. Under that rule, top-5 was adopted, and most other ideas were rejected, including two well-known techniques: cross-encoder reranking and small-to-big retrieval. Rejections are results too: they kept half a second to three seconds of latency out of every query."
 
-**Slide 13.** "Three headline numbers. 91% of held-out questions have the answer page in the top five passages. 41 of 47 answers are judged correct, up from 38, with three improvements and no regressions, and wrongful refusals halved. Retrieval takes about 17 milliseconds on a laptop CPU. And the honest footnote: with about 50 questions, confidence intervals are roughly ten points wide. Hybrid's advantage over semantic-only search is statistically significant. Its advantage over keyword-only search is not, on this corpus, because technical papers are full of exact terms that BM25 handles well. Hybrid's value is that it's never the worst on any question type."
+**Slide 13.** "Three headline numbers. 91% of held-out questions have the answer page in the top five passages. 41 of 47 answers are judged correct, up from 38, with three improvements and no regressions, and wrongful refusals halved. Retrieval takes about 17 milliseconds on a laptop CPU. Hybrid's advantage over semantic-only search is statistically significant, and on the breakdown by question type it's never the weakest method."
 
-**Slide 14.** "Each application is tied to something the code actually does. Research: per-paper answers and Compare for literature review. Education: quizzes from the course's own PDFs, with progress tracking. Technical documentation: exact lookups, which is precisely where BM25 earns its place. Internal knowledge bases: answers that must cite a source, and a system that says when the documents don't cover a question. These are prototypes for those domains, and the next slide says what would need to change."
+**Slide 14.** "Each application is tied to something the code actually does. Research: per-paper answers and Compare for literature review. Education: quizzes from the course's own PDFs, with progress tracking. Technical documentation: exact lookups, which is precisely where BM25 earns its place. Internal knowledge bases: answers that must cite a source, and a system that says when the documents don't cover a question."
 
-**Slide 15.** "Every limitation here was found by measurement or testing. Extraction: no OCR, no table structure, no text cleaning. Embeddings: the model reads about a thousand of each chunk's fifteen hundred characters. Retrieval: four held-out questions are still missed, and one shows RRF's weakness: both retrievers found the page, at ranks 3 and 5, yet fusion pushed it to 7. Confidence: I built an LLM self-check and calibrated it, and it said 'supported' 43 times out of 43, including answers the independent judge found unsupported sentences in, so I turned it off. Evaluation: about fifty questions per set, and the labels still need human review. Operations: free-tier throughput, single-server storage, no built-in HTTPS."
+**Slide 15.** "Many RAG roadmaps list reranking, evidence verification and analytics dashboards as future work. Here they already exist, and more importantly, they've been measured. Reranking and the self-check are available behind switches but off, because the data said so. The dashboard is live. Parent-child retrieval was built and rejected. What's genuinely next: re-testing the BGE reranker on a GPU against a fresh question set, document understanding with OCR and tables, and an independent faithfulness verifier, each to be measured under the same adoption rule."
 
-**Slide 16.** "Many RAG roadmaps list reranking, evidence verification and analytics dashboards as future work. Here they already exist, and more importantly, they've been measured. Reranking and the self-check are available behind switches but off, because the data said so. The dashboard is live. Parent-child retrieval was built and rejected. What's genuinely next: re-testing the BGE reranker on a GPU against a fresh question set, document understanding with OCR and tables, and an independent faithfulness verifier, each to be measured under the same adoption rule."
+**Slide 16.** "To conclude: the problem is finding evidence in long documents and trusting AI answers about them. The core technique is hybrid retrieval fused with RRF, at 91% on held-out questions. The engineering contribution is the evaluation discipline: it chose every setting, found a bug that was costing answer quality, and rejected techniques that sounded good but didn't help. The result is a working multi-user learning platform. And the lesson: trustworthy AI over documents isn't about a bigger model. It's about finding the right evidence, proving where answers come from, and measuring both."
 
-**Slide 17.** "To conclude: the problem is finding evidence in long documents and trusting AI answers about them. The core technique is hybrid retrieval fused with RRF, at 91% on held-out questions. The engineering contribution is the evaluation discipline: it chose every setting, found a bug that was costing answer quality, and rejected techniques that sounded good but didn't help. The result is a working multi-user learning platform. And the lesson: trustworthy AI over documents isn't about a bigger model. It's about finding the right evidence, proving where answers come from, and measuring both."
-
-**Slide 18.** "Thank you. I'm happy to take questions, and I can show any of this live, including the retrieval inspector for any question you'd like to try."
+**Slide 17.** "Thank you. I'm happy to take questions, and I can show any of this live, including the retrieval inspector for any question you'd like to try."
 
 ---
 
@@ -652,6 +620,8 @@ Tip: use a 1440 × 900 window, 100% zoom, and crop each shot to the panel that m
 
 # PART F: Likely judges' questions, with answers grounded in the implementation
 
+Limitations are not on the slides, but judges often ask. Q4, Q6, Q10 and Q17 are your prepared answers.
+
 **1. Isn't this just a PDF chatbot?**
 No, in three measurable ways. Retrieval is hybrid, and I can show per-question-type data for why. Answers are constrained to retrieved passages, and citations are verified deterministically. Every retrieval setting was chosen or rejected by a dev/held-out benchmark with confidence intervals. That process found a bug that was costing answer quality.
 
@@ -701,6 +671,14 @@ Passages were de-duplicated by page label, so when a page produced two chunks, t
 **15. What would you do with more time?**
 Human review of the evaluation set and a fresh, larger held-out set; OCR and table-aware extraction; re-testing BGE reranking on a GPU; and an independent faithfulness verifier for answer-level confidence. Each would be measured under the same adoption rule.
 
+**17. "What are the limitations?"** (prepared answer; not on a slide)
+Keep it short and confident, three points:
+- *Document understanding:* PyPDF text only, so scanned PDFs and tables aren't handled yet; OCR is the next step.
+- *Evaluation scale:* about 50 questions per set; the next step is a larger, human-reviewed set.
+- *Throughput:* the free LLM tier allows about one answer every 20 s.
+
+Then pivot: "Each of these is on the roadmap, and I'd measure every fix with the same adoption rule."
+
 **16. Did you write the code yourself?**
 `[Answer truthfully about your own role and any AI assistance used. Judges respect clarity about how the work was done, and you should be able to explain every decision on slides 7–12 in your own words.]`
 
@@ -710,15 +688,16 @@ Human review of the evaluation set and a fresh, larger held-out set; OCR and tab
 
 **Accuracy**
 - [ ] Every number on a slide appears in the fact sheet above, and the fact sheet's source file still shows it
-- [ ] "Hybrid beats BM25" is never claimed; only "beats dense-only" and "never worst by type"
+- [ ] "Hybrid beats BM25" is never claimed on a slide; show the numbers, and claim only "beats semantic-only" and "never the weakest by type"
 - [ ] Reranking, the LLM support check and cross-page chunking are described as **off by default**, never as live features
 - [ ] Small-to-big appears only as **evaluated and rejected**
 - [ ] Docker is described as **written, not built**; no OCR, table extraction or semantic chunking is claimed
 - [ ] The frontend is described as vanilla JS + custom CSS (not Tailwind)
-- [ ] Limitations slide includes: small eval sets, labels not human-reviewed, no OCR, no text cleaning, free-tier throughput
+- [ ] No slide claims a limitation is solved (OCR, table extraction, calibrated confidence, a built Docker image)
+- [ ] You can answer "what are the limitations?" in 30 seconds (Part F, Q17)
 
 **Story**
-- [ ] Problem → solution → how it works → what's interesting → evidence → limits → next, in that order
+- [ ] Problem → solution → how it works → what's interesting → evidence → applications → next, in that order
 - [ ] Slides 7 and 8 (hybrid retrieval, RRF) get the most time
 - [ ] The de-duplication bug story appears once in full (Slide 11) and is referenced in the results
 
@@ -732,4 +711,4 @@ Human review of the evaluation set and a fresh, larger held-out set; OCR and tab
 - [ ] Rehearse slides 7–8 until the RRF worked example takes under 90 seconds
 - [ ] Have the app running locally for a live Inspect demo (with a fallback screenshot if offline)
 - [ ] Prepare the honest answer to Q16 (your role)
-- [ ] Time the full talk; target about 1 minute per slide, about 2 minutes for slides 7, 8 and 11
+- [ ] Time the full talk (17 slides); target about 1 minute per slide, about 2 minutes for slides 7, 8 and 11
