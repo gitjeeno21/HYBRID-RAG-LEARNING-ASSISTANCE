@@ -32,6 +32,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from config import BASE_DIR, COLLECTION_NAME, EMBEDDING_MODEL
 from hybrid import build_bm25, chunk_keys
 from ingest import best_chunk_config, split_documents
+from library import is_safe_pdf_name
 
 STORAGE_DIR = Path(os.getenv("APP_STORAGE_DIR", str(BASE_DIR / "storage")))
 CACHED_WORKSPACES = 16           # BM25 indexes kept in memory (least recently used dropped)
@@ -196,7 +197,7 @@ class Workspace:
 
     def pdf_path(self, filename: str) -> Path | None:
         """The path of one of this user's PDFs, or None (also for unsafe names)."""
-        if not filename or Path(filename).name != filename or not filename.lower().endswith(".pdf"):
+        if not is_safe_pdf_name(filename):
             return None
         path = self.pdf_dir / filename
         return path if path.is_file() else None

@@ -45,7 +45,7 @@ from config import (
 from llm import call_llm, call_llm_stream, track_usage
 from hybrid import hybrid_search_with_scores, unique_chunks
 from ingest import best_chunk_config, split_documents
-from library import remove_pdf_from_library, rename_pdf_in_library
+from library import is_safe_pdf_name, remove_pdf_from_library, rename_pdf_in_library
 from quiz import (
     build_quiz_context,
     generate_quiz,
@@ -742,7 +742,7 @@ def open_pdf(filename: str, http: Request) -> FileResponse:
 
 @app.delete("/api/library/{filename:path}")
 def delete_pdf(filename: str, http: Request) -> dict[str, Any]:
-    if Path(filename).name != filename:
+    if not is_safe_pdf_name(filename):
         raise HTTPException(status_code=422, detail="Invalid filename")
     ws = workspace_for(http)
     try:
@@ -760,12 +760,11 @@ def delete_pdf(filename: str, http: Request) -> dict[str, Any]:
 @app.post("/api/library/rename")
 def rename_pdf(request: RenamePdfRequest, http: Request) -> dict[str, Any]:
     ws = workspace_for(http)
-    old = Path(request.filename).name
-    new = Path(request.new_filename).name
-    if old != request.filename or new != request.new_filename:
-        raise HTTPException(status_code=422, detail="Use a simple PDF filename")
+    old, new = request.filename, request.new_filename
     if not new.lower().endswith(".pdf"):
         new += ".pdf"
+    if not (is_safe_pdf_name(old) and is_safe_pdf_name(new)):
+        raise HTTPException(status_code=422, detail="Use a simple PDF filename")
     if ws.pdf_path(old) is None:
         raise HTTPException(status_code=404, detail="PDF not found")
     if (ws.pdf_dir / new).exists():

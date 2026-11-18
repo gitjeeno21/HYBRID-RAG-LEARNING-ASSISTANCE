@@ -134,7 +134,7 @@ python eval/run_eval.py --questions eval/dev_questions_multipage.json --top-k 5
 python -m unittest discover -p "test_*.py"
 ```
 
-157 tests, all offline (no API key needed). LLM calls are replaced by fakes. The isolation tests use real PDFs, embeddings and Chroma; the rest use in-memory fakes.
+160 tests, all offline (no API key needed). LLM calls are replaced by fakes. The isolation tests use real PDFs, embeddings and Chroma; the rest use in-memory fakes.
 
 ## Project layout
 
