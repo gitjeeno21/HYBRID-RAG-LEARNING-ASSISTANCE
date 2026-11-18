@@ -1,6 +1,6 @@
 # Hybrid RAG Assistant
 
-[![CI](https://github.com/gitjeeno21/Hybrid-RAG-for-Evidence-Grounded-Knowledge-Discovery-Learning/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
+[![CI](https://github.com/gitjeeno21/HYBRID-RAG-LEARNING-ASSISTANCE/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
 
 Evidence-grounded question answering, quizzes and paper comparison over your own PDFs. Every answer comes only from retrieved passages, cites its pages, and has those citations checked automatically. Retrieval quality is measured, not assumed: every retrieval setting in this repo was chosen, or rejected, by a reproducible zero-LLM benchmark with confidence intervals.
 
