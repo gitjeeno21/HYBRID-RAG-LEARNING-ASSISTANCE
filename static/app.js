@@ -1612,6 +1612,8 @@ $("#open-account").addEventListener("click", () => {
   $("#settings-name").value = state.user.name || "";
   $("#password-form").reset();
   $("#password-error").classList.add("hidden");
+  $("#delete-account-form").reset();
+  $("#delete-error").classList.add("hidden");
   openDialog("account-dialog");
 });
 
@@ -1647,6 +1649,21 @@ $("#password-form").addEventListener("submit", async event => {
     error.classList.remove("hidden");
   } finally {
     setBusy(button, false);
+  }
+});
+
+$("#delete-account-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const error = $("#delete-error");
+  const ok = await confirmDialog({ title: "Delete your account?", message: "Your account, every PDF in your library and all your history will be permanently deleted. This cannot be undone.", okLabel: "Delete everything", danger: true });
+  if (!ok) return;
+  try {
+    await api("/api/account/delete", { method: "POST", json: { password: $("#delete-password").value } });
+    try { sessionStorage.clear(); } catch (_) { /* storage blocked */ }
+    location.reload();
+  } catch (failure) {
+    error.textContent = failure.message;
+    error.classList.remove("hidden");
   }
 });
 

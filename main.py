@@ -123,6 +123,10 @@ class ChangePasswordRequest(BaseModel):
     new_password: str = Field(min_length=1, max_length=auth.MAX_PASSWORD_LENGTH)
 
 
+class DeleteAccountRequest(BaseModel):
+    password: str = Field(min_length=1, max_length=auth.MAX_PASSWORD_LENGTH)
+
+
 class ProfileRequest(BaseModel):
     name: str = Field(default="", max_length=100)
 
@@ -404,6 +408,23 @@ def change_password(payload: ChangePasswordRequest, http: Request) -> dict[str, 
 @app.post("/api/account/profile")
 def update_profile(payload: ProfileRequest, http: Request) -> dict[str, Any]:
     return {"user": auth.update_name(current_user(http), payload.name).public()}
+
+
+@app.post("/api/account/delete")
+def delete_account(payload: DeleteAccountRequest, http: Request, response: Response) -> dict[str, bool]:
+    """Permanently delete the account and all of its data (password required).
+
+    Order matters: the search index and files go first, the account row last,
+    so a failure part-way leaves an account the user can sign in to and
+    delete again rather than orphaned data nobody can reach.
+    """
+    user = current_user(http)
+    auth.confirm_password(user, payload.password)
+    workspace_for(http).erase()
+    auth.delete_user_row(user.id)
+    response.delete_cookie(auth.SESSION_COOKIE, path="/")
+    response.delete_cookie(auth.CSRF_COOKIE, path="/")
+    return {"deleted": True}
 
 
 @app.post("/api/account/sign-out-everywhere")

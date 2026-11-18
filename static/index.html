@@ -324,6 +324,15 @@
         <p class="hint" style="margin:0 0 10px">Lost a device, or signed in on a shared computer? End every session, including this one.</p>
         <button id="sign-out-everywhere" class="btn" type="button">Sign out of all devices</button>
       </section>
+      <section class="danger-zone">
+        <h3>Delete account</h3>
+        <p class="hint" style="margin:0 0 10px">Permanently deletes your account, every PDF in your library, its search index, and your quiz history and feedback. This cannot be undone.</p>
+        <form id="delete-account-form" class="row" style="align-items:flex-end">
+          <label class="form-label" style="flex:1">Password<input id="delete-password" class="field" type="password" autocomplete="current-password" maxlength="256" required></label>
+          <button class="btn btn-danger" type="submit">Delete account</button>
+        </form>
+        <div id="delete-error" class="notice notice-error hidden" role="alert" style="margin-top:10px"></div>
+      </section>
     </div>
   </dialog>
 

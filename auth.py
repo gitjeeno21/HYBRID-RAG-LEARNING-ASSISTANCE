@@ -207,6 +207,27 @@ def change_password(user: User, current_password: str, new_password: str,
     revoke_all_sessions(user.id, except_token=keep_token)
 
 
+def confirm_password(user: User, password: str) -> None:
+    """Re-check a signed-in user's password before a sensitive action (throttled)."""
+    key = f"confirm:{user.id}"
+    if _throttle.blocked(key):
+        raise AuthError("Too many failed attempts. Wait a few minutes and try again.", status=429)
+    with db.connect() as conn:
+        stored = conn.execute("SELECT password_hash FROM users WHERE id = ?", (user.id,)).fetchone()[0]
+    try:
+        _hasher.verify(stored, password[:MAX_PASSWORD_LENGTH])
+    except (VerifyMismatchError, VerificationError, InvalidHashError):
+        _throttle.fail(key)
+        raise AuthError("That password is incorrect.", status=401) from None
+    _throttle.reset(key)
+
+
+def delete_user_row(user_id: int) -> None:
+    """Remove the account row; sessions, history, feedback, usage and codes cascade."""
+    with db.connect() as conn:
+        conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+
+
 def update_name(user: User, name: str) -> User:
     name = (name or "").strip()
     if len(name) > 100:

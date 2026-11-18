@@ -205,6 +205,19 @@ class Workspace:
         return [page for name in self.pdf_names()
                 for page in load_pdf_pages(self.pdf_dir / name, self.cache_dir)]
 
+    def erase(self) -> None:
+        """Delete everything this user stored: vectors, then files, then caches.
+
+        Vectors go first: if a later step fails, a retry still finds the
+        account and finishes the job, and no searchable copy is left behind.
+        """
+        self.store.delete()
+        if self.root.exists():
+            import shutil
+
+            shutil.rmtree(self.root)
+        self.invalidate()
+
     def drop_cache(self, filename: str) -> None:
         """Forget a removed or renamed PDF's parsed text."""
         try:

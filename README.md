@@ -95,13 +95,14 @@ Design decisions and the evidence for each: [ARCHITECTURE.md](ARCHITECTURE.md). 
 | Email verification and reset | New accounts verify their email with a 6-digit code; **Forgot password** resets by emailed code and signs out every session; **change password** needs the current one and signs out other devices. Codes are random, stored hashed, expire in 10 minutes, allow 5 guesses, and are limited to one a minute and five an hour. Email-only endpoints answer identically whether or not an account exists. Mail is sent server-side through EmailJS, so the browser never sees a code |
 | Every route protected | One middleware requires a session for all `/api` routes except sign-in, so a new route cannot be left open by accident (tested by sweeping every route) |
 | Data isolation | Private folder per user; per-user BM25; a `ScopedStore` adds the user's filter to every Chroma search, read, write and delete; fusion only accepts the user's own chunks |
+| Leaving | **Delete account** (password required) erases the user's PDFs, parsed-text cache, vectors, sessions, history, feedback, usage and codes; the search index and files go first and the account row last, so a failure part-way can be retried. Tested end to end, including that other users' data survives |
 | Shared API key | Daily LLM token allowance per user (`APP_DAILY_TOKEN_LIMIT`, default 100,000) |
 | Browser hardening | Content-Security-Policy, `nosniff`, frame denial, same-origin referrer |
 | Observability | One JSON log line per API request (status, latency, user id, request id); bodies, query strings and cookies are never logged |
 
 `test_isolation.py` uploads real PDFs with secret tokens for two users and attempts every cross-user path (listing, preview, download, delete, search, chat prompt, quiz, compare, progress, identical filenames, path traversal) with real embeddings and a real Chroma index.
 
-**Not provided:** account deletion from the UI, two-factor sign-in, HTTPS (put a reverse proxy in front and set `APP_SECURE_COOKIES=1` before exposing it beyond localhost).
+**Not provided:** two-factor sign-in, HTTPS (put a reverse proxy in front and set `APP_SECURE_COOKIES=1` before exposing it beyond localhost).
 
 ## Evaluation
 
@@ -131,7 +132,7 @@ python eval/run_eval.py --questions eval/dev_questions_multipage.json --top-k 5
 python -m unittest discover -p "test_*.py"
 ```
 
-151 tests, all offline (no API key needed). LLM calls are replaced by fakes. The isolation tests use real PDFs, embeddings and Chroma; the rest use in-memory fakes.
+155 tests, all offline (no API key needed). LLM calls are replaced by fakes. The isolation tests use real PDFs, embeddings and Chroma; the rest use in-memory fakes.
 
 ## Project layout
 
