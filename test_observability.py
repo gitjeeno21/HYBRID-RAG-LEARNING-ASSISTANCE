@@ -21,6 +21,16 @@ class ObservabilityTests(unittest.TestCase):
             self.assertIn(header, response.headers)
         self.assertRegex(response.headers["X-Request-ID"], r"^[0-9a-f]{16}$")
 
+    def test_scripts_may_only_come_from_this_origin_never_inline(self):
+        import re
+
+        csp = TestClient(main.app).get("/").headers["Content-Security-Policy"]
+        script_src = re.search(r"script-src ([^;]+)", csp).group(1)
+        self.assertEqual(script_src.strip(), "'self'")
+        page = (main.STATIC_DIR / "index.html").read_text(encoding="utf-8")
+        self.assertNotRegex(page, r"<script(?![^>]*\bsrc=)[^>]*>")     # no inline <script> blocks
+        self.assertNotRegex(page, r"\son[a-z]+\s*=")                   # no inline event handlers
+
     def test_a_well_formed_request_id_is_echoed_and_a_malformed_one_replaced(self):
         client = TestClient(main.app)
         self.assertEqual(client.get("/healthz", headers={"X-Request-ID": "abc-123"}).headers["X-Request-ID"], "abc-123")

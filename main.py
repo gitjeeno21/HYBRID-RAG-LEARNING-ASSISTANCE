@@ -259,10 +259,10 @@ SECURITY_HEADERS = {
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "same-origin",
     "X-Frame-Options": "DENY",
-    # Scripts and data only from this origin (inline scripts are the two
-    # small ones in index.html); fonts from Google Fonts; no framing.
+    # Scripts only from this origin and never inline, so an injected
+    # <script> or inline handler cannot run; fonts from Google Fonts; no framing.
     "Content-Security-Policy": (
-        "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+        "default-src 'self'; script-src 'self'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src https://fonts.gstatic.com; img-src 'self' data:; "
         "connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"

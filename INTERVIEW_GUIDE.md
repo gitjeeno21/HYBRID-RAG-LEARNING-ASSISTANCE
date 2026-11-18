@@ -37,7 +37,7 @@ My adoption rule says: don't lose on dev, and improve the held-out set. Neither 
 ## How does chunking affect retrieval?
 
 - **Size:** an 8-configuration grid picked 1500 characters with 50 overlap. 1000-character chunks lost on the held-out set (2 better, 5 worse) and on multi-hop coverage ([ABLATION.md](eval/ABLATION.md)).
-- **Embedding window:** MiniLM sees only 256 tokens, about 1000 characters, so the end of a 1500-character chunk is invisible to dense search. In 12 of 47 questions the answer sat past that point. BM25 covers it, which is part of why hybrid works. A 512-token model (bge-small) helped dense search but not the final hybrid ranking, so it was rejected.
+- **Embedding window:** MiniLM sees only 256 tokens, about 1000 characters, so the end of a 1500-character chunk is invisible to dense search. In 12 of 47 questions the answer sat past that point. BM25 covers it, which is part of why hybrid works. A 512-token model (bge-small) helped dense search but not the final hybrid ranking, so it was rejected. I then tested the textbook fix, **small-to-big retrieval**: search 400-character children that fit the window, return their 1500-character parent ([SMALL_TO_BIG.md](eval/SMALL_TO_BIG.md)). It confirmed the diagnosis, lifting dense-only dev hit@5 from 33/50 to 38/50, but it did not improve hybrid (dev tied; held-out 43 → 42/47). BM25 already covered the text dense search couldn't see, and the shifted dense ranking reduced the agreement RRF rewards. So I didn't ship it. That's a good example of a well-motivated technique that is correct in isolation and still the wrong choice for the system as a whole.
 - **Page boundaries:** chunks never cross pages, so citations stay exact. Cross-page chunking was tested; its apparent gain came from a scoring bias (a chunk spanning pages 4–5 got credit for both), and keyword scoring showed 0 better, 3 worse.
 - **The bug that mattered most was downstream of chunking.** Pages hold two or more chunks, and the app de-duplicated passages *by page label*, silently dropping the second chunk. That is often the one with the answer. Fixing it raised "full gold evidence reaches the prompt" from 35/47 to 40/47 ([CONTEXT_COVERAGE.md](eval/CONTEXT_COVERAGE.md)). Lesson: measure what the *model receives*, not just what the retriever ranks.
 
@@ -97,6 +97,10 @@ Each user has a daily token allowance, counted from the provider's own usage fig
 | Multi-paper questions answered from one paper only | Seen in end-to-end testing. With two or more papers selected, the evidence is grouped per paper and the model must address each one, saying so when a paper doesn't cover the question. The single-paper prompt is unchanged, so recorded results stay valid |
 | 17 s first request after every restart | Profiled: 9.1 s model load, 3.8 s PDF parsing. Moved the model load to a background warm-up at startup and cached parsed text on disk: 17 s → 0.18 s |
 | Turning a single-user tool into a multi-user product | Accounts, sessions, CSRF, throttling; per-user storage, BM25 and a scoped vector store; per-user token allowance; isolation proven end to end |
+
+## How do you stop regressions?
+
+Every push runs the full test suite and a **retrieval regression gate** in CI ([ci.yml](.github/workflows/ci.yml)): live hybrid retrieval must keep hit@5 ≥ 89% on the 29 held-out questions whose PDFs are in the repository (28/29 measured). It needs no API key and makes no LLM calls, so it's cheap enough to run on every change. A refactor that quietly breaks fusion or de-duplication fails the build instead of shipping.
 
 ## Limitations that remain
 

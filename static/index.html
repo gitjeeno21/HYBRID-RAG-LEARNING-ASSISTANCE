@@ -6,14 +6,8 @@
   <title>Hybrid RAG Study Assistant</title>
   <meta name="description" content="Evidence-grounded chat, quizzes and paper comparison over your own PDFs.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23c9a35f'/><path d='M9 10h9a4 4 0 0 1 0 8h-4l5 5M9 10v13' stroke='white' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
-  <script>
-    // Apply the saved theme before first paint so there is no flash.
-    try {
-      const saved = localStorage.getItem("theme") || "system";
-      const dark = saved === "dark" || (saved === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
-      document.documentElement.dataset.theme = dark ? "dark" : "light";
-    } catch (_) { document.documentElement.dataset.theme = "dark"; }
-  </script>
+  <!-- Synchronous on purpose: applies the saved theme before first paint. -->
+  <script src="/static/theme.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -362,15 +356,5 @@
   </dialog>
 
   <script src="/static/app.js"></script>
-  <script>
-    // Pointer spotlight for glass surfaces: feeds --mx / --my to the hovered element.
-    document.addEventListener("pointermove", event => {
-      const el = event.target.closest?.(".card, .starter, .option");
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      el.style.setProperty("--mx", `${event.clientX - rect.left}px`);
-      el.style.setProperty("--my", `${event.clientY - rect.top}px`);
-    }, { passive: true });
-  </script>
 </body>
 </html>

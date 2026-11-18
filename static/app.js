@@ -1755,3 +1755,12 @@ function startApp() {
     showAuth();
   }
 })();
+
+/* Pointer spotlight for glass surfaces: feeds --mx / --my to the hovered element. */
+document.addEventListener("pointermove", event => {
+  const el = event.target.closest?.(".card, .starter, .option");
+  if (!el) return;
+  const rect = el.getBoundingClientRect();
+  el.style.setProperty("--mx", `${event.clientX - rect.left}px`);
+  el.style.setProperty("--my", `${event.clientY - rect.top}px`);
+}, { passive: true });
