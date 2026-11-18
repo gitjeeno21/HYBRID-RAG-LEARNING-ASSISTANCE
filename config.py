@@ -21,7 +21,8 @@ BASE_DIR = Path(__file__).resolve().parent
 PDF_DIR = BASE_DIR / "data"
 REMOVED_PDF_DIR = BASE_DIR / "removed_pdfs"
 CHROMA_DIR = BASE_DIR / "chroma_db"
-EVAL_RESULTS_PATH = BASE_DIR / "eval_results.json"
+# Written by the original chunking grid search (legacy/evaluator.py).
+EVAL_RESULTS_PATH = BASE_DIR / "legacy" / "results" / "eval_results.json"
 
 # --- Vector store ----------------------------------------------------------
 # One collection for the whole corpus. Changing this value requires a
@@ -36,22 +37,75 @@ EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 LLM_MODEL = "openai/gpt-oss-120b"
 
 # --- Chunking and retrieval ------------------------------------------------
-# Defaults, used when eval_results.json does not exist yet. evaluator.py
-# overwrites these at runtime with the configuration it measured as best.
-CHUNK_SIZE = 1000
+# 1500 characters, 50 overlap: the best of the 8-configuration grid search
+# (legacy/results/eval_results.json, still read first by
+# ingest.best_chunk_config). Kept equal here so behaviour does not depend
+# on that file being present.
+CHUNK_SIZE = 1500
 CHUNK_OVERLAP = 50
-TOP_K = 3
+# Passages sent to the model per question (per selected paper). Raised from 3
+# to 5 in Phase 3: it never loses a hit, gains on both eval sets, and lifts
+# multi-hop coverage from 5/10 to 8/10 for ~59% more context tokens
+# (eval/ABLATION.md). RAG_TOP_K=3 restores the previous behaviour.
+TOP_K = int(os.getenv("RAG_TOP_K", "5"))
+# The historical experiments (evaluator.py grid, hybrid.py/rerank.py/run_judging.py)
+# were run at k=3; they stay pinned so their recorded results remain reproducible.
+LEGACY_EVAL_TOP_K = 3
+
+
+def _env_flag(name: str, default: bool) -> bool:
+    """Read an on/off switch from the environment (1/true/yes/on)."""
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+# --- Retrieval switches (Phase 3 ablations; see eval/ABLATION.md) -----------
+# Every change to live retrieval is behind a switch. A switch is only turned
+# on after eval/ablation.py shows it does not lose on the dev set AND improves
+# the held-out set. Each can also be overridden from the environment for A/B
+# runs without editing code, e.g. `RAG_RERANK=0 python -m uvicorn main:app`.
+#
+# Candidates each retriever (dense, BM25) contributes before RRF fusion.
+RETRIEVAL_CANDIDATES = int(os.getenv("RAG_CANDIDATES", "10"))
+# Re-score the first RERANK_POOL fused results with a cross-encoder.
+RERANK_ENABLED = _env_flag("RAG_RERANK", False)
+# The LLM support check behind the confidence label. Off by default after
+# calibration (eval/ANSWER_QUALITY_k5_stage4.md): it returned SUPPORTED for
+# 43 of 43 answers, including the 4 the judge found unsupported sentences in,
+# while costing about half of every answer's tokens. APP_SUPPORT_CHECK=1
+# turns it back on.
+SUPPORT_CHECK_ENABLED = _env_flag("APP_SUPPORT_CHECK", False)
+RERANK_POOL = int(os.getenv("RAG_RERANK_POOL", "10"))
+# Measured at k=5 (eval/RETRIEVAL_COMPARISON.md): MiniLM gains on held-out but
+# loses on dev; BGE-reranker-base does not lose on dev but gains one held-out
+# question at ~3 s/query on CPU. Neither is on by default.
+# RAG_RERANKER_MODEL=BAAI/bge-reranker-base selects the larger model.
+RERANKER_MODEL = os.getenv("RAG_RERANKER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
+# Split each PDF as one text so chunks can cross page breaks (cited by the
+# page they start on). Changing this requires re-running `python ingest.py`.
+CROSS_PAGE_CHUNKS = _env_flag("RAG_CROSS_PAGE", False)
 
 # --- Prompting -------------------------------------------------------------
 # Kept here so main.py (web app) and rag.py (CLI) send the identical prompt;
 # otherwise the two answer paths would drift and results would not compare.
 NO_ANSWER_TEXT = "I don't know based on the provided documents."
 
+# WHY partial answers are allowed (Stage 4): the previous wording ("if the
+# context does not contain the answer, reply with exactly this sentence and
+# nothing else") made refusal all-or-nothing. In Phase 4, multi-hop questions
+# whose passages held one of two facts were refused outright (v2_21, v2_22),
+# a 19% false-refusal rate overall. The fixed sentence is still required when
+# the context holds NONE of the answer, so refusal detection is unchanged.
 PROMPT_TEMPLATE = (
     "Answer the question using ONLY the context below. Do not use outside "
     "knowledge.\n"
-    "If the context does not contain the answer, reply with exactly this "
-    f'sentence and nothing else: "{NO_ANSWER_TEXT}"\n\n'
+    "If the context contains none of the answer, reply with exactly this "
+    f'sentence and nothing else: "{NO_ANSWER_TEXT}"\n'
+    "If the context answers only part of the question, answer that part and "
+    "then say plainly which part the documents do not cover. Never fill a gap "
+    "with outside knowledge.\n\n"
     "Context:\n{context}\n\n"
     "Question: {question}\n\n"
     "Answer in at most 120 words and cite the pages you used with the "

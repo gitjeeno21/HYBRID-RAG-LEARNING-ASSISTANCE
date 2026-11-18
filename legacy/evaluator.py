@@ -53,14 +53,6 @@ from datetime import datetime, timezone
 from functools import lru_cache
 
 from dotenv import load_dotenv
-from groq import (
-    APIConnectionError,
-    APIStatusError,
-    APITimeoutError,
-    AuthenticationError,
-    Groq,
-    RateLimitError,
-)
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -71,7 +63,7 @@ from config import (
     EVAL_RESULTS_PATH,
     LLM_MODEL,
     PROMPT_TEMPLATE,
-    TOP_K,
+    LEGACY_EVAL_TOP_K,
     citation,
 )
 from ingest import load_documents
@@ -94,11 +86,6 @@ CHUNK_OVERLAPS = [50, 150]
 TOP_CONFIGS_TO_JUDGE = 3
 RUNS_PER_CONFIG = 2
 
-# Rate-limit handling: Groq's free tier throttles aggressively, so wait and
-# retry instead of throwing away a multi-minute experiment.
-MAX_ATTEMPTS = 4
-BASE_SLEEP_SECONDS = 5  # 5s, 10s, 15s between attempts
-
 JUDGE_PROMPT_TEMPLATE = (
     "You are a strict grader for a retrieval-augmented question answering "
     "system. Score the ANSWER from 1 to 5.\n"
@@ -116,7 +103,9 @@ JUDGE_PROMPT_TEMPLATE = (
     "Reply with only the line: SCORE: <1-5>"
 )
 
-client = Groq()  # reads GROQ_API_KEY from .env
+# The LLM client and its retry policy live in llm.py (shared with the app);
+# re-exported here so existing scripts that import them from evaluator keep working.
+from llm import call_llm, call_llm_stream  # noqa: E402,F401
 
 
 @lru_cache(maxsize=1)
@@ -161,89 +150,6 @@ def parse_score(reply: str) -> int | None:
         r"\b([1-5])\b", reply
     )
     return int(match.group(1)) if match else None
-
-
-def _generation_options() -> dict:
-    """Extra request options that keep reasoning models from truncating replies.
-
-    WHY: Groq caps completions at 2048 tokens by default, and gpt-oss models
-    spend hidden "reasoning" tokens out of that same budget. The reasoning
-    alone can use all of it, so the visible reply comes back empty or cut off
-    mid-JSON. A larger cap plus low reasoning effort leaves room for the answer.
-    """
-    options: dict = {"max_completion_tokens": 8192}
-    if LLM_MODEL.startswith("openai/gpt-oss"):
-        options["reasoning_effort"] = "low"
-    return options
-
-
-def call_llm(prompt: str, temperature: float = 0.0, label: str = "llm") -> str:
-    """Send one prompt to Groq, retrying on rate limits and transient errors.
-
-    WHY: a 240-call evaluation will hit free-tier throttling. Without retries
-    the run aborts an hour in; with them it slows down and finishes.
-    """
-    for attempt in range(1, MAX_ATTEMPTS + 1):
-        try:
-            response = client.chat.completions.create(
-                model=LLM_MODEL,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=temperature,
-                **_generation_options(),
-            )
-            return response.choices[0].message.content or ""
-        except AuthenticationError:
-            # A bad or missing key never fixes itself; retrying only adds a
-            # ~30 s delay before the same error reaches the user.
-            raise
-        except RateLimitError:
-            # 429: waiting is the only correct response, retrying immediately
-            # just burns another unit of quota.
-            if attempt == MAX_ATTEMPTS:
-                raise
-            wait = BASE_SLEEP_SECONDS * attempt
-            print(f"    [rate limit] {label}: waiting {wait}s "
-                  f"(attempt {attempt}/{MAX_ATTEMPTS})", flush=True)
-            time.sleep(wait)
-        except (APIConnectionError, APITimeoutError, APIStatusError) as exc:
-            if attempt == MAX_ATTEMPTS:
-                raise
-            wait = BASE_SLEEP_SECONDS * attempt
-            print(f"    [api error] {label}: {type(exc).__name__}, retrying in "
-                  f"{wait}s (attempt {attempt}/{MAX_ATTEMPTS})", flush=True)
-            time.sleep(wait)
-    raise RuntimeError("unreachable")
-
-
-def call_llm_stream(prompt: str, temperature: float = 0.0, label: str = "llm"):
-    """Yield the reply as text fragments, for the web UI's streaming chat.
-
-    Retries (same policy as call_llm) apply only while opening the stream:
-    once text has been sent to the browser, a retry would duplicate it, so a
-    mid-stream failure is raised to the caller instead.
-    """
-    for attempt in range(1, MAX_ATTEMPTS + 1):
-        try:
-            stream = client.chat.completions.create(
-                model=LLM_MODEL,
-                messages=[{"role": "user", "content": prompt}],
-                temperature=temperature,
-                stream=True,
-                **_generation_options(),
-            )
-            break
-        except AuthenticationError:
-            raise
-        except (RateLimitError, APIConnectionError, APITimeoutError, APIStatusError) as exc:
-            if attempt == MAX_ATTEMPTS:
-                raise
-            wait = BASE_SLEEP_SECONDS * attempt
-            print(f"    [{type(exc).__name__}] {label}: retrying in {wait}s "
-                  f"(attempt {attempt}/{MAX_ATTEMPTS})", flush=True)
-            time.sleep(wait)
-    for chunk in stream:
-        if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
-            yield chunk.choices[0].delta.content
 
 
 def build_chunks(documents: list, chunk_size: int, chunk_overlap: int) -> list:
@@ -306,7 +212,7 @@ def build_context(docs: list) -> str:
 # ---------------------------------------------------------------------------
 def question_is_hit(store: Chroma, question: dict) -> bool:
     """True if one top-k chunk is from the expected PDF and has a keyword."""
-    docs = store.similarity_search(question["question"], k=TOP_K)
+    docs = store.similarity_search(question["question"], k=LEGACY_EVAL_TOP_K)
     for doc in docs:
         metadata = doc.metadata
         filename = metadata.get("filename") or ""
@@ -338,7 +244,7 @@ def evaluate_retrieval(store: Chroma, questions: list) -> dict:
 # ---------------------------------------------------------------------------
 def answer_question(store: Chroma, question: str) -> tuple[str, str]:
     """Return (retrieved context, answer) for one question."""
-    docs = store.similarity_search(question, k=TOP_K)
+    docs = store.similarity_search(question, k=LEGACY_EVAL_TOP_K)
     context = build_context(docs)
     prompt = PROMPT_TEMPLATE.format(context=context, question=question)
     return context, call_llm(prompt, temperature=0.2, label="answer")
@@ -483,7 +389,7 @@ def main() -> None:
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "questions_hash": q_hash,
         "num_questions": len(questions),
-        "top_k": TOP_K,
+        "top_k": LEGACY_EVAL_TOP_K,
         "runs_per_config": RUNS_PER_CONFIG,
         "chunk_sizes": CHUNK_SIZES,
         "chunk_overlaps": CHUNK_OVERLAPS,

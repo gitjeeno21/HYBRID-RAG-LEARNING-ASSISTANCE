@@ -1,0 +1,968 @@
+[
+ {
+  "id": "q01",
+  "q": "What BLEU score did the big Transformer model achieve on the WMT 2014 English-to-German translation task?",
+  "file": "source_doc.pdf",
+  "page": [
+   1,
+   8
+  ],
+  "hops": [
+   [
+    1,
+    8
+   ]
+  ],
+  "type": "legacy_numeric",
+  "answer": "28.4 BLEU, a new state of the art for English-to-German in this paper.",
+  "original_page": 8,
+  "pages_added": [
+   1
+  ],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q02",
+  "q": "How many attention heads does the base Transformer use, and what is the dimension of each head?",
+  "file": "source_doc.pdf",
+  "page": [
+   5
+  ],
+  "hops": [
+   [
+    5
+   ]
+  ],
+  "type": "legacy_numeric",
+  "answer": "h = 8 parallel attention heads, with dk = dv = dmodel/h = 64.",
+  "original_page": 5,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q03",
+  "q": "How long did training the big Transformer model take, and on how many GPUs?",
+  "file": "source_doc.pdf",
+  "page": [
+   8
+  ],
+  "hops": [
+   [
+    8
+   ]
+  ],
+  "type": "legacy_numeric",
+  "answer": "3.5 days (300,000 steps) on 8 NVIDIA P100 GPUs.",
+  "original_page": 8,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q04",
+  "q": "In which three ways is multi-head attention applied inside the Transformer?",
+  "file": "source_doc.pdf",
+  "page": [
+   5
+  ],
+  "hops": [
+   [
+    5
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "As encoder-decoder attention, as encoder self-attention, and as masked decoder self-attention.",
+  "original_page": 5,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q05",
+  "q": "Why does scaled dot-product attention divide the dot products by the square root of dk?",
+  "file": "source_doc.pdf",
+  "page": [
+   4
+  ],
+  "hops": [
+   [
+    4
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "For large dk the dot products grow large, pushing softmax into regions with extremely small gradients; scaling counteracts this.",
+  "original_page": 4,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q06",
+  "q": "What is the per-layer computational complexity of self-attention compared with a recurrent layer?",
+  "file": "source_doc.pdf",
+  "page": [
+   6
+  ],
+  "hops": [
+   [
+    6
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "Self-attention is O(n^2 * d) per layer, a recurrent layer is O(n * d^2).",
+  "original_page": 6,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q07",
+  "q": "How many sentence pairs were in the WMT 2014 English-German training set, and what was the vocabulary size?",
+  "file": "source_doc.pdf",
+  "page": [
+   7
+  ],
+  "hops": [
+   [
+    7
+   ]
+  ],
+  "type": "legacy_numeric",
+  "answer": "About 4.5 million sentence pairs, byte-pair encoded with a shared vocabulary of about 37,000 tokens.",
+  "original_page": 7,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q08",
+  "q": "Which optimizer and learning-rate warmup schedule were used to train the Transformer?",
+  "file": "source_doc.pdf",
+  "page": [
+   7
+  ],
+  "hops": [
+   [
+    7
+   ]
+  ],
+  "type": "legacy_factual",
+  "answer": "Adam with beta1 = 0.9, beta2 = 0.98, eps = 1e-9, linear warmup for 4000 steps then inverse-square-root decay.",
+  "original_page": 7,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q09",
+  "q": "What are the model dimension and the feed-forward inner dimension of the base Transformer?",
+  "file": "source_doc.pdf",
+  "page": [
+   5
+  ],
+  "hops": [
+   [
+    5
+   ]
+  ],
+  "type": "legacy_numeric",
+  "answer": "dmodel = 512 and the position-wise feed-forward inner layer has dimension dff = 2048.",
+  "original_page": 5,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q10",
+  "q": "What F1 score did the 4-layer Transformer reach on WSJ Section 23 constituency parsing when trained only on the WSJ training set?",
+  "file": "source_doc.pdf",
+  "page": [
+   10
+  ],
+  "hops": [
+   [
+    10
+   ]
+  ],
+  "type": "legacy_numeric",
+  "answer": "91.3 F1 (WSJ only, discriminative); 92.7 in the semi-supervised setting.",
+  "original_page": 10,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q11",
+  "q": "What percentile did GPT-4 score on the simulated bar exam, and how did GPT-3.5 compare?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   1
+  ],
+  "hops": [
+   [
+    1
+   ]
+  ],
+  "type": "legacy_numeric",
+  "answer": "GPT-4 scored around the top 10% of test takers; GPT-3.5 scored in the bottom 10%.",
+  "original_page": 1,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q12",
+  "q": "What accuracy did GPT-4 achieve on the MMLU benchmark, and how many subjects does MMLU cover?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   7
+  ],
+  "hops": [
+   [
+    7
+   ]
+  ],
+  "type": "legacy_numeric",
+  "answer": "86.4% compared with 70.0% for GPT-3.5; MMLU covers 57 subjects.",
+  "original_page": 7,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q13",
+  "q": "What HumanEval pass rate did GPT-4 achieve, and what does the HumanEval benchmark measure?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   7
+  ],
+  "hops": [
+   [
+    7
+   ]
+  ],
+  "type": "legacy_numeric",
+  "answer": "67.0% pass rate at 0-shot; HumanEval measures the ability to synthesize Python functions.",
+  "original_page": 7,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q14",
+  "q": "What score did GPT-4 get on GSM-8K, and what caveat does the report give about that result?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   7
+  ],
+  "hops": [
+   [
+    7
+   ]
+  ],
+  "type": "legacy_factual",
+  "answer": "92.0% with 5-shot chain-of-thought, but part of the GSM-8K training set was included in GPT-4's pre-training mix.",
+  "original_page": 7,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q15",
+  "q": "How much does the GPT-4 technical report disclose about the model's architecture and size?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   2
+  ],
+  "hops": [
+   [
+    2
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "It discloses almost nothing: no further details about architecture (including model size), hardware, training compute, dataset construction or training method.",
+  "original_page": 2,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q16",
+  "q": "On what percentage of prompts were GPT-4's responses preferred over GPT-3.5, and on how many prompts was this measured?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   7
+  ],
+  "hops": [
+   [
+    7
+   ]
+  ],
+  "type": "legacy_numeric",
+  "answer": "Preferred on 70.2% of 5,214 prompts submitted to ChatGPT and the OpenAI API.",
+  "original_page": 7,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q17",
+  "q": "In how many of the languages tested did GPT-4 beat the English-language state of the art on translated MMLU?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   1
+  ],
+  "hops": [
+   [
+    1
+   ]
+  ],
+  "type": "legacy_numeric",
+  "answer": "24 of the 26 languages considered.",
+  "original_page": 1,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q18",
+  "q": "How was GPT-4 fine-tuned after pre-training?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   2,
+   42
+  ],
+  "hops": [
+   [
+    2,
+    42
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "It was fine-tuned using Reinforcement Learning from Human Feedback (RLHF).",
+  "original_page": 2,
+  "pages_added": [
+   42
+  ],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q19",
+  "q": "How did OpenAI predict GPT-4's final loss before training finished, and with models trained using how much less compute?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   2
+  ],
+  "hops": [
+   [
+    2
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "They fitted a scaling law to models trained with at most 10,000x less compute and predicted final loss with high accuracy.",
+  "original_page": 2,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q20",
+  "q": "According to the introduction, which risk areas does the accompanying system card discuss?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   2
+  ],
+  "hops": [
+   [
+    2
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "Bias, disinformation, over-reliance, privacy, cybersecurity and proliferation, among others (introduction, not the system card itself).",
+  "original_page": 2,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q21",
+  "q": "How many identical layers are stacked in the Transformer's encoder and in its decoder?",
+  "file": "source_doc.pdf",
+  "page": [
+   3
+  ],
+  "hops": [
+   [
+    3
+   ]
+  ],
+  "type": "legacy_factual",
+  "answer": "N = 6 identical layers in the encoder stack, and also N = 6 in the decoder stack.",
+  "original_page": 3,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q22",
+  "q": "How large was the WMT 2014 English-French training set, and what vocabulary size was used for it?",
+  "file": "source_doc.pdf",
+  "page": [
+   7
+  ],
+  "hops": [
+   [
+    7
+   ]
+  ],
+  "type": "legacy_numeric",
+  "answer": "About 36M sentences, tokenised into a 32000 word-piece vocabulary.",
+  "original_page": 7,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q23",
+  "q": "Why did the authors choose sinusoidal positional encodings instead of learned positional embeddings?",
+  "file": "source_doc.pdf",
+  "page": [
+   6
+  ],
+  "hops": [
+   [
+    6
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "Learned and sinusoidal encodings gave nearly identical results, but the sinusoidal version may allow the model to extrapolate to sequence lengths longer than those seen in training.",
+  "original_page": 6,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q24",
+  "q": "What beam size and length penalty did the Transformer use for inference on the WMT 2014 translation tasks?",
+  "file": "source_doc.pdf",
+  "page": [
+   8
+  ],
+  "hops": [
+   [
+    8
+   ]
+  ],
+  "type": "legacy_numeric",
+  "answer": "Beam search with a beam size of 4 and a length penalty alpha = 0.6.",
+  "original_page": 8,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q25",
+  "q": "According to the paper, what effect does label smoothing have on perplexity and on BLEU score?",
+  "file": "source_doc.pdf",
+  "page": [
+   8
+  ],
+  "hops": [
+   [
+    8
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "Label smoothing of value 0.1 hurts perplexity because the model learns to be less sure, but improves accuracy and BLEU score.",
+  "original_page": 8,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q26",
+  "q": "What LSAT score did GPT-4 achieve, and what percentile does that correspond to compared with GPT-3.5?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   5,
+   30
+  ],
+  "hops": [
+   [
+    5,
+    30
+   ]
+  ],
+  "type": "legacy_numeric",
+  "answer": "163, around the 88th percentile, against 149 (around the 40th percentile) for GPT-3.5.",
+  "original_page": 5,
+  "pages_added": [
+   30
+  ],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q27",
+  "q": "What score did GPT-4 get on the USABO Semifinal Exam 2020?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   5,
+   30
+  ],
+  "hops": [
+   [
+    5,
+    30
+   ]
+  ],
+  "type": "legacy_numeric",
+  "answer": "87 out of 150, around the 99th-100th percentile, versus 43 / 150 for GPT-3.5.",
+  "original_page": 5,
+  "pages_added": [
+   30
+  ],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q28",
+  "q": "In the HumanEval capability prediction, how many of the hardest problems were excluded and into how many difficulty buckets were the rest split?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   4
+  ],
+  "hops": [
+   [
+    4
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "All but the 15 hardest HumanEval problems were split into 6 difficulty buckets based on smaller models' performance.",
+  "original_page": 4,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q29",
+  "q": "What does the report observe about GPT-4's behaviour on the Inverse Scaling Prize task called Hindsight Neglect?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   4
+  ],
+  "hops": [
+   [
+    4
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "Where accuracy was expected to decrease with scale, GPT-4 reverses that trend and improves instead.",
+  "original_page": 4,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q30",
+  "q": "Which dataset did OpenAI use to check its prediction of GPT-4's final loss, and was that data part of the training set?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   2
+  ],
+  "hops": [
+   [
+    2
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "They predicted final loss on their internal codebase, a dataset that is not part of the training set.",
+  "original_page": 2,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q31",
+  "q": "What role does positional information play in a model that otherwise processes tokens without recurrence or convolution?",
+  "file": "source_doc.pdf",
+  "page": [
+   6
+  ],
+  "hops": [
+   [
+    6
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "Because the architecture has no recurrence or convolution, it adds positional encodings to input embeddings to represent token order; the encoding dimension matches the embeddings so they can be summed.",
+  "original_page": 6,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q32",
+  "q": "How does the decoder prevent its predictions from depending on target tokens that have not yet been generated?",
+  "file": "source_doc.pdf",
+  "page": [
+   3
+  ],
+  "hops": [
+   [
+    3
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "The decoder masks attention to later positions and offsets output embeddings by one position, so a prediction depends only on already-known outputs.",
+  "original_page": 3,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q33",
+  "q": "What feature of the attention stack lets distant input positions exchange information without a chain of recurrent updates?",
+  "file": "source_doc.pdf",
+  "page": [
+   6
+  ],
+  "hops": [
+   [
+    6
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "Self-attention lets positions connect directly within a layer, giving a maximum path length of O(1), while recurrent layers have a maximum path length of O(n).",
+  "original_page": 6,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q34",
+  "q": "Which two kinds of sublayer are repeated in each encoder layer?",
+  "file": "source_doc.pdf",
+  "page": [
+   3
+  ],
+  "hops": [
+   [
+    3
+   ]
+  ],
+  "type": "legacy_factual",
+  "answer": "Each encoder layer contains a multi-head self-attention mechanism and a position-wise fully connected feed-forward network.",
+  "original_page": 3,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q35",
+  "q": "How does the decoder use information from the input sequence while producing target representations?",
+  "file": "source_doc.pdf",
+  "page": [
+   5
+  ],
+  "hops": [
+   [
+    5
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "An added multi-head attention sublayer takes queries from the previous decoder layer and keys and values from the encoder output, allowing every decoder position to attend to all input positions.",
+  "original_page": 5,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q36",
+  "q": "What does the report attribute GPT-4's exam results to, and how strong is the apparent contribution of post-training feedback?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   6
+  ],
+  "hops": [
+   [
+    6
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "The authors say exam capabilities stem primarily from pre-training and are not significantly affected by RLHF.",
+  "original_page": 6,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q37",
+  "q": "Why did the report track held-out code prediction loss instead of a different benchmark metric when scaling compute?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   3
+  ],
+  "hops": [
+   [
+    3
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "The report used final loss because it tends to be less noisy than other measures across different amounts of training compute.",
+  "original_page": 3,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q38",
+  "q": "What caveat should readers keep in mind when interpreting some percentile results in the exam comparison?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   6
+  ],
+  "hops": [
+   [
+    6
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "The report conservatively gives the lower end of percentile ranges; wide scoring bins can create artifacts, such as a perfect AP Biology score appearing at the 85th percentile because 15 percent of test takers also achieve it.",
+  "original_page": 6,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q39",
+  "q": "How did the authors limit look-ahead when forecasting GPT-4's coding performance?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   4
+  ],
+  "hops": [
+   [
+    4
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "They registered the predictions before training finished and used only information available prior to training.",
+  "original_page": 4,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q40",
+  "q": "On the Uniform Bar Examination comparison, how did GPT-4's score without image input compare to its regular score?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   5,
+   30
+  ],
+  "hops": [
+   [
+    5,
+    30
+   ]
+  ],
+  "type": "legacy_factual",
+  "answer": "GPT-4 with and without vision scored 298 out of 400, around the 90th percentile.",
+  "original_page": 5,
+  "pages_added": [
+   30
+  ],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q41",
+  "q": "Why can recurrent sequence models become difficult to scale to long examples, even after computational-efficiency improvements?",
+  "file": "source_doc.pdf",
+  "page": [
+   2
+  ],
+  "hops": [
+   [
+    2
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "Their sequential nature prevents parallelization within a training example, a growing bottleneck for longer sequences when memory limits batching across examples.",
+  "original_page": 2,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q42",
+  "q": "What is the computational trade-off when each position is limited to a local window rather than attending across the whole sequence?",
+  "file": "source_doc.pdf",
+  "page": [
+   6,
+   7
+  ],
+  "hops": [
+   [
+    6,
+    7
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "Restricting self-attention to a neighborhood of size r gives per-layer complexity O(r · n · d), while the maximum path length increases to O(n/r).",
+  "original_page": 6,
+  "pages_added": [
+   7
+  ],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q43",
+  "q": "What happened to translation quality when the attention design used a single head or an excessive number of heads?",
+  "file": "source_doc.pdf",
+  "page": [
+   9
+  ],
+  "hops": [
+   [
+    9
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "The single-head variant scored 0.9 BLEU below the best setting, and quality also declined when the number of heads became too large.",
+  "original_page": 9,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q44",
+  "q": "In the sentence illustration, what kind of relationship do some encoder heads connect across separated words?",
+  "file": "source_doc.pdf",
+  "page": [
+   13
+  ],
+  "hops": [
+   [
+    13
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "Some heads follow a long-distance dependency, linking the verb “making” with the later phrase “more difficult.”",
+  "original_page": 13,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q45",
+  "q": "What linguistic task is illustrated by attention focused on a possessive word in the second example?",
+  "file": "source_doc.pdf",
+  "page": [
+   14
+  ],
+  "hops": [
+   [
+    14
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "The example illustrates anaphora resolution; the attention associated with “its” is described as very sharp.",
+  "original_page": 14,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q46",
+  "q": "What precautions does the report recommend choosing according to the consequences of a model's use?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   10
+  ],
+  "hops": [
+   [
+    10
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "It suggests options such as human review, grounding with additional context, or avoiding high-stakes uses altogether, with the choice matched to the application.",
+  "original_page": 10,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q47",
+  "q": "How did the relationship between the model's stated confidence and correctness change after alignment training?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   11
+  ],
+  "hops": [
+   [
+    11
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "Before post-training, confidence in an answer generally matches its probability of being correct; after post-training, calibration is reduced.",
+  "original_page": 11,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q48",
+  "q": "Why does the report say deployment safeguards are still necessary even after model-level safety improvements?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   14
+  ],
+  "hops": [
+   [
+    14
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "Jailbreaks can still elicit prohibited behavior, so deployment-time protections such as abuse monitoring and rapid iterative model improvement remain important.",
+  "original_page": 14,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q49",
+  "q": "How broadly did translated MMLU performance compare with prior English-language systems, and what types of languages were among the strong cases?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   8
+  ],
+  "hops": [
+   [
+    8
+   ]
+  ],
+  "type": "legacy_conceptual",
+  "answer": "GPT-4 exceeded prior English-language performance for the vast majority of tested languages, including examples such as Latvian, Welsh, and Swahili.",
+  "original_page": 8,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "q50",
+  "q": "How did the reported expected calibration error differ between the pre-training model and its post-trained counterpart?",
+  "file": "gpt4_technical_report.pdf",
+  "page": [
+   12
+  ],
+  "hops": [
+   [
+    12
+   ]
+  ],
+  "type": "legacy_factual",
+  "answer": "On the plotted MMLU subset, ECE increased from 0.007 for the pre-trained model to 0.074 for the post-trained model.",
+  "original_page": 12,
+  "pages_added": [],
+  "label_rule": "all expected_keywords within 400 chars"
+ },
+ {
+  "id": "t01",
+  "q": "What is the recommended baking time and temperature for a homemade apple pie?",
+  "file": null,
+  "page": null,
+  "type": "unanswerable"
+ },
+ {
+  "id": "t02",
+  "q": "Can you summarize the plot of the latest Marvel movie?",
+  "file": null,
+  "page": null,
+  "type": "unanswerable"
+ },
+ {
+  "id": "t03",
+  "q": "Exactly how many parameter weights and layers does the GPT-4 model contain?",
+  "file": null,
+  "page": null,
+  "type": "unanswerable"
+ },
+ {
+  "id": "t04",
+  "q": "What specific datasets and source code were used to pre-train the GPT-4 model?",
+  "file": null,
+  "page": null,
+  "type": "unanswerable"
+ },
+ {
+  "id": "t05",
+  "q": "How did the release of the Transformer paper in 2017 impact Google's quarterly stock earnings?",
+  "file": null,
+  "page": null,
+  "type": "unanswerable"
+ },
+ {
+  "id": "t06",
+  "q": "What was the exact brand and model of the cooling system used for the P100 GPUs during the Transformer model training?",
+  "file": null,
+  "page": null,
+  "type": "unanswerable"
+ }
+]

@@ -6,14 +6,8 @@
   <title>Hybrid RAG Study Assistant</title>
   <meta name="description" content="Evidence-grounded chat, quizzes and paper comparison over your own PDFs.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%23c9a35f'/><path d='M9 10h9a4 4 0 0 1 0 8h-4l5 5M9 10v13' stroke='white' stroke-width='2.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
-  <script>
-    // Apply the saved theme before first paint so there is no flash.
-    try {
-      const saved = localStorage.getItem("theme") || "system";
-      const dark = saved === "dark" || (saved === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
-      document.documentElement.dataset.theme = dark ? "dark" : "light";
-    } catch (_) { document.documentElement.dataset.theme = "dark"; }
-  </script>
+  <!-- Synchronous on purpose: applies the saved theme before first paint. -->
+  <script src="/static/theme.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -45,11 +39,50 @@
       <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></symbol>
       <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/></symbol>
       <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
       <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v7H6z"/></symbol>
     </defs>
   </svg>
 
-  <div class="app">
+  <!-- Landing + sign in / create account. Shown until a session exists. -->
+  <div id="auth-screen" class="auth-screen hidden">
+    <section class="auth-hero">
+      <div class="brand"><div class="brand-mark">RAG</div><div><div class="brand-name">Hybrid RAG</div><div class="brand-sub">Study assistant</div></div></div>
+      <h1>Answers from your own papers, with the evidence attached.</h1>
+      <p>Upload research PDFs, ask questions, quiz yourself and compare papers. Every answer is built only from passages retrieved from your library, and every citation is checked.</p>
+      <ul class="auth-points">
+        <li><b>Hybrid retrieval.</b> Keyword (BM25) and semantic search, fused with Reciprocal Rank Fusion and measured on a held-out benchmark.</li>
+        <li><b>Grounded answers.</b> Page citations, checked automatically. It says when your papers do not contain the answer.</li>
+        <li><b>Your library stays yours.</b> Each account has its own private papers, history and search index.</li>
+      </ul>
+    </section>
+    <section class="card card-pad auth-card" aria-labelledby="auth-title">
+      <div id="auth-tabs" class="segmented auth-tabs" role="tablist" aria-label="Account" data-modes="login register">
+        <button type="button" role="tab" data-auth-mode="login" aria-pressed="true">Sign in</button>
+        <button type="button" role="tab" data-auth-mode="register" aria-pressed="false">Create account</button>
+      </div>
+      <h2 id="auth-title">Welcome back</h2>
+      <p id="auth-lead" class="hint auth-lead hidden"></p>
+      <form id="auth-form" novalidate>
+        <label class="form-label" data-modes="register">Name <span class="hint">(optional)</span><input id="auth-name" class="field" autocomplete="name" maxlength="100"></label>
+        <label class="form-label" data-modes="login register forgot">Email<input id="auth-email" class="field" type="email" autocomplete="email" maxlength="254"></label>
+        <label class="form-label" data-modes="login register">Password<input id="auth-password" class="field" type="password" autocomplete="current-password" maxlength="256"></label>
+        <label class="form-label" data-modes="verify reset">6-digit code<input id="auth-code" class="field code-field" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="000000"></label>
+        <label class="form-label" data-modes="reset">New password<input id="auth-new-password" class="field" type="password" autocomplete="new-password" maxlength="256"></label>
+        <p class="hint" style="margin:0" data-modes="register reset">At least 10 characters. A passphrase of a few words works well.</p>
+        <div id="auth-info" class="notice notice-info hidden" role="status"></div>
+        <div id="auth-error" class="notice notice-error hidden" role="alert"></div>
+        <button id="auth-submit" class="btn btn-primary auth-submit" type="submit">Sign in</button>
+        <div class="auth-links">
+          <button type="button" class="link-btn" data-modes="login" data-go="forgot">Forgot password?</button>
+          <button type="button" id="auth-resend" class="link-btn" data-modes="verify reset">Send a new code</button>
+          <button type="button" class="link-btn" data-modes="verify forgot reset" data-go="login">Back to sign in</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div class="app hidden" id="app-shell">
     <aside id="sidebar" class="sidebar" aria-label="Navigation and paper library">
       <div class="brand">
         <div class="brand-mark">RAG</div>
@@ -63,6 +96,7 @@
         <button class="nav-item active" data-mode="chat"><svg class="icon"><use href="#i-chat"/></svg>Chat<kbd>1</kbd></button>
         <button class="nav-item" data-mode="quiz"><svg class="icon"><use href="#i-quiz"/></svg>Quiz<kbd>2</kbd></button>
         <button class="nav-item" data-mode="compare"><svg class="icon"><use href="#i-compare"/></svg>Compare<kbd>3</kbd></button>
+        <button class="nav-item" data-mode="inspect"><svg class="icon"><use href="#i-search"/></svg>Inspect<kbd>4</kbd></button>
       </nav>
 
       <section class="library" aria-labelledby="library-label">
@@ -93,6 +127,15 @@
         <div class="topbar-actions">
           <button id="progress-button" class="btn btn-ghost btn-sm" type="button"><svg class="icon"><use href="#i-chart"/></svg><span>Progress</span></button>
           <button id="settings-button" class="icon-btn" type="button" aria-label="Settings"><svg class="icon"><use href="#i-settings"/></svg></button>
+          <div class="account">
+            <button id="account-button" class="account-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Account">?</button>
+            <div id="account-menu" class="menu hidden" role="menu">
+              <div class="account-who"><div id="account-name" class="title"></div><div id="account-email" class="hint"></div></div>
+              <div class="account-usage"><div class="hint">AI use today</div><div id="account-usage-text" class="usage-text">…</div><div class="usage-track"><span id="account-usage-bar"></span></div></div>
+              <button id="open-account" type="button" role="menuitem">Account settings</button>
+              <button id="sign-out" type="button" role="menuitem">Sign out</button>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -176,6 +219,43 @@
           </div>
           <div id="compare-result"></div>
         </section>
+
+        <!-- INSPECT: retrieval debugger + evaluation dashboard -->
+        <section id="inspect-panel" class="hidden stack" aria-label="Inspect">
+          <div class="card card-pad">
+            <div class="row"><strong>Retrieval inspector</strong><span class="spacer"></span><span class="badge badge-neutral">No AI call</span></div>
+            <p class="hint" style="margin:6px 0 14px">Runs only the live retrieval pipeline and shows every candidate: where BM25 and dense search ranked it, its fused RRF score, and which passages the model would receive.</p>
+            <form id="inspect-form" class="inspect-form">
+              <label class="form-label inspect-query">Query<input id="inspect-query" class="field" placeholder="e.g. What BLEU score did the Transformer reach?" autocomplete="off"></label>
+              <label class="form-label">Search in<select id="inspect-scope" class="field"></select></label>
+              <label class="form-label">Top-k<input id="inspect-top-k" class="field" type="number" min="1" max="10"></label>
+              <button id="inspect-button" class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-search"/></svg><span>Inspect</span></button>
+            </form>
+          </div>
+          <div id="inspect-result"></div>
+
+          <div class="card card-pad viz-root">
+            <div class="row" style="align-items:flex-start">
+              <div>
+                <strong>Retrieval benchmark</strong>
+                <p id="eval-caption" class="hint" style="margin:4px 0 0">Loading recorded results…</p>
+              </div>
+              <span class="spacer"></span>
+              <div id="eval-metric" class="segmented" role="group" aria-label="Metric">
+                <button type="button" data-metric="hit" aria-pressed="true">Hit@k</button>
+                <button type="button" data-metric="ndcg" aria-pressed="false">nDCG@k</button>
+                <button type="button" data-metric="mrr" aria-pressed="false">MRR@10</button>
+                <button type="button" data-metric="precision" aria-pressed="false">P@k</button>
+                <button type="button" data-metric="recall" aria-pressed="false">R@k</button>
+              </div>
+            </div>
+            <div id="eval-charts" class="eval-charts"></div>
+            <details class="eval-table-wrap">
+              <summary>Table view: every metric, 95% confidence interval and latency</summary>
+              <div id="eval-table"></div>
+            </details>
+          </div>
+        </section>
       </div>
 
       <footer class="footer">Study aid only. Answers are grounded in retrieved passages but are not guaranteed to be correct.</footer>
@@ -211,6 +291,45 @@
     <div class="dialog-foot"><button class="btn btn-primary" data-close type="button">Done</button></div>
   </dialog>
 
+  <dialog id="account-dialog" aria-labelledby="account-title">
+    <div class="dialog-head"><h2 id="account-title">Account settings</h2><button class="icon-btn" data-close aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button></div>
+    <div class="dialog-body account-settings">
+      <section>
+        <h3>Profile</h3>
+        <div class="row account-email-row"><span id="settings-email"></span><span id="settings-verified" class="badge badge-high">Verified</span></div>
+        <form id="profile-form" class="row" style="align-items:flex-end">
+          <label class="form-label" style="flex:1">Name<input id="settings-name" class="field" maxlength="100" autocomplete="name"></label>
+          <button class="btn" type="submit">Save</button>
+        </form>
+      </section>
+      <section>
+        <h3>Change password</h3>
+        <form id="password-form" class="stack-tight">
+          <label class="form-label">Current password<input id="current-password" class="field" type="password" autocomplete="current-password" maxlength="256" required></label>
+          <label class="form-label">New password<input id="new-password" class="field" type="password" autocomplete="new-password" maxlength="256" required></label>
+          <label class="form-label">Confirm new password<input id="confirm-password" class="field" type="password" autocomplete="new-password" maxlength="256" required></label>
+          <p class="hint" style="margin:0">At least 10 characters. Other devices are signed out when you change it.</p>
+          <div id="password-error" class="notice notice-error hidden" role="alert"></div>
+          <button class="btn btn-primary" type="submit">Change password</button>
+        </form>
+      </section>
+      <section>
+        <h3>Sessions</h3>
+        <p class="hint" style="margin:0 0 10px">Lost a device, or signed in on a shared computer? End every session, including this one.</p>
+        <button id="sign-out-everywhere" class="btn" type="button">Sign out of all devices</button>
+      </section>
+      <section class="danger-zone">
+        <h3>Delete account</h3>
+        <p class="hint" style="margin:0 0 10px">Permanently deletes your account, every PDF in your library, its search index, and your quiz history and feedback. This cannot be undone.</p>
+        <form id="delete-account-form" class="row" style="align-items:flex-end">
+          <label class="form-label" style="flex:1">Password<input id="delete-password" class="field" type="password" autocomplete="current-password" maxlength="256" required></label>
+          <button class="btn btn-danger" type="submit">Delete account</button>
+        </form>
+        <div id="delete-error" class="notice notice-error hidden" role="alert" style="margin-top:10px"></div>
+      </section>
+    </div>
+  </dialog>
+
   <dialog id="progress-dialog" aria-labelledby="progress-title">
     <div class="dialog-head"><h2 id="progress-title">Your progress</h2><button class="icon-btn" data-close aria-label="Close"><svg class="icon"><use href="#i-x"/></svg></button></div>
     <div id="progress-content" class="dialog-body">Loading…</div>
@@ -237,15 +356,5 @@
   </dialog>
 
   <script src="/static/app.js"></script>
-  <script>
-    // Pointer spotlight for glass surfaces: feeds --mx / --my to the hovered element.
-    document.addEventListener("pointermove", event => {
-      const el = event.target.closest?.(".card, .starter, .option");
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      el.style.setProperty("--mx", `${event.clientX - rect.left}px`);
-      el.style.setProperty("--my", `${event.clientY - rect.top}px`);
-    }, { passive: true });
-  </script>
 </body>
 </html>

@@ -143,7 +143,7 @@ def _call_llm(prompt: str, ask: AskFunction | None, label: str) -> str:
     """Use an injected mock or the project's retrying Groq helper."""
     if ask is not None:
         return ask(prompt)
-    from evaluator import call_llm
+    from llm import call_llm
 
     return call_llm(prompt, temperature=0.2, label=label)
 
@@ -360,13 +360,58 @@ def build_grading_prompt(
     )
 
 
+def _key_gradable(question: Mapping[str, object], user_answer: str) -> bool:
+    """True for a multiple-choice / true-false item answered with one of its options."""
+    options = question.get("options") if isinstance(question, Mapping) else None
+    return (isinstance(options, list) and bool(options)
+            and question.get("answer") in options and user_answer in options)
+
+
+def _grade_by_key(question: Mapping[str, object], user_answer: str) -> dict:
+    """Grade a choice question against its validated answer key, without an LLM.
+
+    WHY: the key was already checked at generation time (it must be one of the
+    options and cite a retrieved passage). Asking an LLM to grade a radio-button
+    choice spent a call, could disagree with the key the quiz itself displayed,
+    and could grade the same choice differently on a retry.
+    """
+    key = str(question["answer"])
+    correct = user_answer == key
+    return {
+        "grade": "Correct" if correct else "Incorrect",
+        "feedback": "Correct." if correct else f"Not quite. The passage supports: {key}",
+        "correct_answer": key,
+        "source": str(question.get("source", "")),
+    }
+
+
 def grade_quiz(
     questions: Sequence[Mapping[str, str]],
     user_answers: Sequence[str],
     context: str,
     ask: AskFunction | None = None,
 ) -> dict:
-    """Grade answers in one source-grounded LLM request."""
+    """Grade a quiz: choice questions against their key, open answers in one LLM request."""
+    if not questions or len(questions) != len(user_answers):
+        raise ValueError("Grading requires the same non-empty number of questions and answers")
+    open_indices = [i for i, (question, answer) in enumerate(zip(questions, user_answers))
+                    if not _key_gradable(question, answer)]
+    llm_results = iter(_grade_open_answers(
+        [questions[i] for i in open_indices], [user_answers[i] for i in open_indices], context, ask,
+    ) if open_indices else [])
+    results = [next(llm_results) if index in open_indices else _grade_by_key(question, answer)
+               for index, (question, answer) in enumerate(zip(questions, user_answers))]
+    points = sum({"Correct": 1.0, "Partial": 0.5, "Incorrect": 0.0}[r["grade"]] for r in results)
+    return {"results": results, "score": points, "maximum": len(results)}
+
+
+def _grade_open_answers(
+    questions: Sequence[Mapping[str, str]],
+    user_answers: Sequence[str],
+    context: str,
+    ask: AskFunction | None,
+) -> list[dict]:
+    """Grade free-text answers in one source-grounded LLM request."""
     prompt = build_grading_prompt(questions, user_answers, context)
     payload = _parse_json(_call_llm(prompt, ask, "quiz_grade"))
     results = payload.get("results")
@@ -383,7 +428,6 @@ def grade_quiz(
         re.sub(r"\s+", " ", source).casefold(): source for source in valid_sources
     }
     validated_results = []
-    points = 0.0
     for question, item in zip(questions, results):
         if isinstance(item, dict) and item.get("source") not in valid_sources:
             # WHY repair instead of failing the whole grade: the model often
@@ -410,7 +454,6 @@ def grade_quiz(
             raise ValueError("Each grading result needs feedback, correct answer, and source")
         if source not in valid_sources:
             raise ValueError(f"Grading citation does not match retrieved context: {source!r}")
-        points += {"Correct": 1.0, "Partial": 0.5, "Incorrect": 0.0}[grade]
         validated_results.append(
             {
                 "grade": grade,
@@ -419,11 +462,7 @@ def grade_quiz(
                 "source": source,
             }
         )
-    return {
-        "results": validated_results,
-        "score": points,
-        "maximum": len(validated_results),
-    }
+    return validated_results
 
 
 def make_quiz_state(

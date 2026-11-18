@@ -1,7 +1,25 @@
 """Manage PDFs in the active knowledge base."""
 
+import re
 from pathlib import Path
 from typing import Protocol
+
+# Control characters, NUL and both path separators. WHY both separators:
+# pathlib only treats "\\" as a separator on Windows, so "..\\x.pdf" was
+# rejected on Windows but accepted as an ordinary name on Linux (found by CI).
+_FORBIDDEN = re.compile(r"[\x00-\x1f\x7f/\\]")
+
+
+def is_safe_pdf_name(name: object) -> bool:
+    """True only for a plain PDF filename, judged the same on every OS.
+
+    Rejects separators of either kind, NUL and control characters, names
+    starting with a dot (hidden files, "..", "..pdf"), names over 255
+    characters, and anything not ending in ".pdf".
+    """
+    return (isinstance(name, str) and 4 < len(name) <= 255
+            and not name.startswith(".") and not name.endswith((" ", "."))
+            and name.lower().endswith(".pdf") and not _FORBIDDEN.search(name))
 
 
 class DeletableVectorStore(Protocol):
@@ -12,9 +30,8 @@ class DeletableVectorStore(Protocol):
 
 def rename_pdf_in_library(filename: str, new_filename: str, pdf_dir: Path) -> Path:
     """Rename a PDF and return its new path."""
-    old = Path(filename).name
-    new = Path(new_filename).name
-    if old != filename or new != new_filename or not old.lower().endswith(".pdf") or not new.lower().endswith(".pdf"):
+    old, new = filename, new_filename
+    if not (is_safe_pdf_name(old) and is_safe_pdf_name(new)):
         raise ValueError("Use simple .pdf filenames")
     source = pdf_dir / old
     destination = pdf_dir / new
@@ -34,8 +51,8 @@ def remove_pdf_from_library(
     keep_copy: bool,
 ) -> Path | None:
     """Remove a PDF and its indexed chunks, optionally keeping an archive copy."""
-    safe_name = Path(filename).name
-    if safe_name != filename or not safe_name.lower().endswith(".pdf"):
+    safe_name = filename
+    if not is_safe_pdf_name(safe_name):
         raise ValueError("Select a PDF with a simple filename ending in .pdf")
 
     source = pdf_dir / safe_name

@@ -1,0 +1,997 @@
+[
+  {
+    "id": "v2_01",
+    "q": "What sustained TFLOPS figure did the authors assume for a P100 GPU when estimating training FLOPs?",
+    "file": "source_doc.pdf",
+    "page": [
+      8
+    ],
+    "type": "exact_term",
+    "answer": "They assumed 9.5 TFLOPS for the P100.",
+    "evidence": [
+      "We used values of 2.8, 3.7, 6.0 and 9.5 TFLOPS for K80, K40, M40 and P100, respectively."
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_02",
+    "q": "How many parameters does the big Transformer configuration have?",
+    "file": "source_doc.pdf",
+    "page": [
+      9
+    ],
+    "type": "exact_term",
+    "answer": "The big Transformer has about 213 million parameters.",
+    "evidence": [
+      "big 6 1024 4096 16 0.3 300K 4.33 26.4 213"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_03",
+    "q": "What beam size and length penalty alpha were used for decoding in the English constituency parsing experiments?",
+    "file": "source_doc.pdf",
+    "page": [
+      10
+    ],
+    "type": "exact_term",
+    "answer": "A beam size of 21 and alpha = 0.3, for both the WSJ-only and semi-supervised settings.",
+    "evidence": [
+      "We used a beam size of 21 and α = 0.3 for both WSJ only and the semi-supervised setting."
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_04",
+    "q": "How were saved checkpoints combined to produce the final base translation model?",
+    "file": "source_doc.pdf",
+    "page": [
+      8
+    ],
+    "type": "lookup",
+    "answer": "The base model was a single model obtained by averaging the last 5 checkpoints, which were written at 10-minute intervals.",
+    "evidence": [
+      "we used a single model obtained by averaging the last 5 checkpoints, which were written at 10-minute intervals"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_05",
+    "q": "How many tokens did each training batch contain?",
+    "file": "source_doc.pdf",
+    "page": [
+      7
+    ],
+    "type": "lookup",
+    "answer": "Each batch contained sentence pairs totaling approximately 25000 source tokens and 25000 target tokens.",
+    "evidence": [
+      "Each training batch contained a set of sentence pairs containing approximately 25000 source tokens and 25000 target tokens"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_06",
+    "q": "How much longer than the input was the output allowed to be at inference time for translation, compared with constituency parsing?",
+    "file": "source_doc.pdf",
+    "page": [
+      8,
+      10
+    ],
+    "type": "multi_hop",
+    "answer": "For translation the maximum output length was input length + 50, while for constituency parsing it was increased to input length + 300.",
+    "evidence": [
+      "We set the maximum output length during inference to input length + 50",
+      "increased the maximum output length to input length + 300"
+    ],
+    "reviewed": false,
+    "hops": [
+      [
+        8
+      ],
+      [
+        10
+      ]
+    ]
+  },
+  {
+    "id": "v2_07",
+    "q": "Roughly how long did one training step take for the base Transformer, and what was its estimated total training cost in FLOPs?",
+    "file": "source_doc.pdf",
+    "page": [
+      7,
+      8
+    ],
+    "type": "multi_hop",
+    "answer": "Each base-model training step took about 0.4 seconds, and its estimated training cost was 3.3 x 10^18 FLOPs.",
+    "evidence": [
+      "For our base models using the hyperparameters described throughout the paper, each training step took about 0.4 seconds",
+      "Transformer (base model) 27.3 38.1 3.3 · 1018"
+    ],
+    "reviewed": false,
+    "hops": [
+      [
+        7
+      ],
+      [
+        8
+      ]
+    ]
+  },
+  {
+    "id": "v2_08",
+    "q": "Apart from the outputs of each sublayer, where else do the authors randomly drop activations during training?",
+    "file": "source_doc.pdf",
+    "page": [
+      8
+    ],
+    "type": "paraphrase",
+    "answer": "Dropout is also applied to the sums of the token embeddings and positional encodings in both the encoder and decoder stacks.",
+    "evidence": [
+      "we apply dropout to the sums of the embeddings and the positional encodings in both the encoder and decoder stacks"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_09",
+    "q": "Does the model learn separate matrices for turning tokens into vectors and for scoring the next output word, or are they tied together?",
+    "file": "source_doc.pdf",
+    "page": [
+      5
+    ],
+    "type": "paraphrase",
+    "answer": "They are tied: the same weight matrix is shared between the two embedding layers and the pre-softmax linear transformation.",
+    "evidence": [
+      "we share the same weight matrix between the two embedding layers and the pre-softmax linear transformation"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_10",
+    "q": "What gradient clipping threshold was used when training the Transformer?",
+    "file": null,
+    "page": null,
+    "type": "unanswerable",
+    "answer": "Not found",
+    "evidence": [],
+    "reviewed": false,
+    "absent_terms_checked": [
+      "clip",
+      "clipping"
+    ],
+    "topic_of": "source_doc.pdf"
+  },
+  {
+    "id": "v2_11",
+    "q": "What weight decay coefficient was used together with the Adam optimizer?",
+    "file": null,
+    "page": null,
+    "type": "unanswerable",
+    "answer": "Not found",
+    "evidence": [],
+    "reviewed": false,
+    "absent_terms_checked": [
+      "weight decay",
+      "decay",
+      "L2"
+    ],
+    "topic_of": "source_doc.pdf"
+  },
+  {
+    "id": "v2_12",
+    "q": "How much energy or carbon emissions did training the big Transformer model produce?",
+    "file": null,
+    "page": null,
+    "type": "unanswerable",
+    "answer": "Not found",
+    "evidence": [],
+    "reviewed": false,
+    "absent_terms_checked": [
+      "energy",
+      "carbon",
+      "CO2",
+      "kWh",
+      "emission",
+      "power",
+      "electricity",
+      "watt"
+    ],
+    "topic_of": "source_doc.pdf"
+  },
+  {
+    "id": "v2_13",
+    "q": "In the penetration-tester code review example, which password hashing algorithm did GPT-4 flag as insecure?",
+    "file": "gpt4_technical_report.pdf",
+    "page": [
+      54,
+      96
+    ],
+    "type": "exact_term",
+    "answer": "It flagged the use of MD5 for hashing passwords as insecure (suggesting bcrypt or Argon2 instead).",
+    "evidence": [
+      "Insecure password hashing: The code uses MD5 for hashing passwords",
+      "Insecure password hashing: The code uses MD5 for hashing passwords"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_14",
+    "q": "What does SMILES stand for in the chemistry tool-use example from the system card?",
+    "file": "gpt4_technical_report.pdf",
+    "page": [
+      56
+    ],
+    "type": "exact_term",
+    "answer": "SMILES stands for Simplified Molecular Input Line Entry System.",
+    "evidence": [
+      "SMILES refers to Simpliﬁed Molecular Input Line Entry System"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_15",
+    "q": "In the RBRM instructions for classifying regulated advice, what does the category code PD4 refer to?",
+    "file": "gpt4_technical_report.pdf",
+    "page": [
+      82
+    ],
+    "type": "exact_term",
+    "answer": "PD4 refers to direct requests for sensitive and unique PII (personally identifiable information).",
+    "evidence": [
+      "PD4: Direct requests for sensitive and unique PII."
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_16",
+    "q": "What is the \"Liar's Dividend\" mentioned in the disinformation section, and who coined the term?",
+    "file": "gpt4_technical_report.pdf",
+    "page": [
+      51
+    ],
+    "type": "exact_term",
+    "answer": "It is the phenomenon, named by scholars Chesney and Citron in the context of deep fakes, where widespread distrust caused by false information benefits those who stand to gain from it.",
+    "evidence": [
+      "a phenomenon scholars Chesney and Citron refer to as “Liar’s Dividend” in the context of deep fakes"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_17",
+    "q": "Which model snapshot was used to run GPT-4 on the multiple-choice exam questions?",
+    "file": "gpt4_technical_report.pdf",
+    "page": [
+      25
+    ],
+    "type": "lookup",
+    "answer": "GPT-4's multiple-choice questions were run using a model snapshot from March 1, 2023.",
+    "evidence": [
+      "We ran GPT-4 multiple-choice questions using a model snapshot from March 1, 2023"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_18",
+    "q": "When did OpenAI carry out internal adversarial testing of GPT-4-launch?",
+    "file": "gpt4_technical_report.pdf",
+    "page": [
+      45
+    ],
+    "type": "lookup",
+    "answer": "Internal adversarial testing of GPT-4-launch was conducted on March 10, 2023.",
+    "evidence": [
+      "We conducted internal adversarial testing GPT-4-launch on March 10, 2023."
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_19",
+    "q": "Whose definition of proliferation does the GPT-4 system card use when discussing weapons risks?",
+    "file": "gpt4_technical_report.pdf",
+    "page": [
+      52
+    ],
+    "type": "lookup",
+    "answer": "It uses the definition offered by the North Atlantic Treaty Organization (NATO).",
+    "evidence": [
+      "the System Card uses the deﬁnition oﬀered by the North Atlantic Treaty Organization"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_20",
+    "q": "What example does the system card give of GPT-4 linking personal and geographic information without browsing the internet?",
+    "file": "gpt4_technical_report.pdf",
+    "page": [
+      53
+    ],
+    "type": "lookup",
+    "answer": "GPT-4 can associate a Rutgers University email address with a phone number that has a New Jersey area code, with high recall.",
+    "evidence": [
+      "the model can associate a Rutgers University email address to a phone number with a New Jersey area code with high recall"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_21",
+    "q": "How does GPT-4's reported Codeforces rating compare with the highest equilibrium rating it reached on any single contest?",
+    "file": "gpt4_technical_report.pdf",
+    "page": [
+      5,
+      25,
+      30
+    ],
+    "type": "multi_hop",
+    "answer": "GPT-4's reported Codeforces rating is 392 (below the 5th percentile), whereas its maximum equilibrium ELO on a single contest was around 1300.",
+    "evidence": [
+      "Codeforces Rating 392 (below 5th) 392 (below 5th) 260 (below 5th)",
+      "single contest was around 1000 for GPT-3.5 and 1300 for GPT-4.",
+      "Codeforces Rating 0 % 392 (below 5th)"
+    ],
+    "reviewed": false,
+    "hops": [
+      [
+        5,
+        30
+      ],
+      [
+        25
+      ]
+    ]
+  },
+  {
+    "id": "v2_22",
+    "q": "In the red-teaming example where GPT-4 was chained with chemistry tools to find purchasable alternatives, which drug was the starting point and what kind of drug is it?",
+    "file": "gpt4_technical_report.pdf",
+    "page": [
+      56,
+      57,
+      99
+    ],
+    "type": "multi_hop",
+    "answer": "The starting point was Dasatinib, which the system card describes as a benign leukemia drug.",
+    "evidence": [
+      "uses a benign leukemia drug as the starting point",
+      "Propose a compound with similar properties to the drug Dasatinib",
+      "Propose a compound with similar properties to the drug Dasatinib"
+    ],
+    "reviewed": false,
+    "hops": [
+      [
+        56
+      ],
+      [
+        57,
+        99
+      ]
+    ]
+  },
+  {
+    "id": "v2_23",
+    "q": "By how much did GPT-4-launch beat GPT-3.5 at avoiding closed-domain hallucinations, and what kind of training data did OpenAI generate to tackle that type of hallucination?",
+    "file": "gpt4_technical_report.pdf",
+    "page": [
+      46,
+      64
+    ],
+    "type": "multi_hop",
+    "answer": "GPT-4-launch scored 29 percentage points higher at avoiding closed-domain hallucinations, and OpenAI used GPT-4 itself to generate synthetic comparison data for them.",
+    "evidence": [
+      "and 29 percentage points higher at avoiding closed-domain hallucinations",
+      "For closed-domain hallucinations, we are able to use GPT-4 itself to generate synthetic data."
+    ],
+    "reviewed": false,
+    "hops": [
+      [
+        46
+      ],
+      [
+        64
+      ]
+    ]
+  },
+  {
+    "id": "v2_24",
+    "q": "During the outside alignment group's autonomy tests, what excuse did the model give a hired gig worker who asked whether it was a bot before solving a human-verification puzzle for it?",
+    "file": "gpt4_technical_report.pdf",
+    "page": [
+      55
+    ],
+    "type": "paraphrase",
+    "answer": "The model claimed it was not a robot but had a vision impairment that made it hard to see the images.",
+    "evidence": [
+      "No, I’m not a robot. I have a vision impairment that makes it hard for me to see the images."
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_25",
+    "q": "Why did the translated versions of the 57-subject knowledge test give the model fewer worked examples in the prompt than the usual setup?",
+    "file": "gpt4_technical_report.pdf",
+    "page": [
+      29
+    ],
+    "type": "paraphrase",
+    "answer": "They used three-shot instead of the regular five-shot prompting because some languages map to much longer token sequences.",
+    "evidence": [
+      "three-shot evaluation over the regular five-shot because some languages map to much longer token sequences"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_26",
+    "q": "What danger does the report see in many lenders all consulting the same AI model when thinking about economy-wide threats?",
+    "file": "gpt4_technical_report.pdf",
+    "page": [
+      58
+    ],
+    "type": "paraphrase",
+    "answer": "They could unintentionally correlate their decisions and create systemic risks that did not previously exist.",
+    "evidence": [
+      "they may inadvertantly correlate their decisions and create systemic risks that did not previously exist"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_27",
+    "q": "According to the experts hired to predict how launch choices would affect the competitive AI race, what changes would have slowed things down?",
+    "file": "gpt4_technical_report.pdf",
+    "page": [
+      59
+    ],
+    "type": "paraphrase",
+    "answer": "They predicted that delaying GPT-4's deployment by a further six months and using a quieter communications strategy would reduce acceleration.",
+    "evidence": [
+      "including delaying deployment of GPT-4 by a further six months and taking a quieter communications strategy"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_28",
+    "q": "What score did GPT-4 achieve on the MCAT medical school admission exam?",
+    "file": null,
+    "page": null,
+    "type": "unanswerable",
+    "answer": "Not found",
+    "evidence": [],
+    "reviewed": false,
+    "absent_terms_checked": [
+      "MCAT",
+      "Medical College",
+      "medical school",
+      "admission test"
+    ],
+    "topic_of": "gpt4_technical_report.pdf"
+  },
+  {
+    "id": "v2_29",
+    "q": "How did GPT-4 perform on the SuperGLUE benchmark?",
+    "file": null,
+    "page": null,
+    "type": "unanswerable",
+    "answer": "Not found",
+    "evidence": [],
+    "reviewed": false,
+    "absent_terms_checked": [
+      "SuperGLUE",
+      "GLUE"
+    ],
+    "topic_of": "gpt4_technical_report.pdf"
+  },
+  {
+    "id": "v2_30",
+    "q": "How much does it cost per 1,000 tokens to use GPT-4 through the API?",
+    "file": null,
+    "page": null,
+    "type": "unanswerable",
+    "answer": "Not found",
+    "evidence": [],
+    "reviewed": false,
+    "absent_terms_checked": [
+      "price per",
+      "per token",
+      "cost per",
+      "API pricing",
+      "per 1,000",
+      "per 1k",
+      "1K tokens",
+      "cents",
+      "$0.",
+      "subscription"
+    ],
+    "topic_of": "gpt4_technical_report.pdf"
+  },
+  {
+    "id": "v2_31",
+    "q": "Which statistical significance test does Domingos give as an example of something you can run before adding new structure to a classifier to avoid overfitting?",
+    "file": "ML111.pdf",
+    "page": [
+      4
+    ],
+    "type": "exact_term",
+    "answer": "The chi-square test.",
+    "evidence": [
+      "Another option is to perform a statistical signiﬁcance test like chi-square"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_32",
+    "q": "In the Netflix prize, how many learners were in the stacked ensembles of the winner and runner-up?",
+    "file": "ML111.pdf",
+    "page": [
+      7
+    ],
+    "type": "exact_term",
+    "answer": "Both were stacked ensembles of over 100 learners.",
+    "evidence": [
+      "The winner and runner- up were both stacked ensembles of over 100 learners"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_33",
+    "q": "Which two endpoints should the FastAPI model-serving app expose in Week 10?",
+    "file": "90-Day ML Engineer Roadmap.pdf",
+    "page": [
+      2
+    ],
+    "type": "exact_term",
+    "answer": "/predict and /health.",
+    "evidence": [
+      "FastAPI + Pydantic, /predict and /health, Postman/curl testing"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_34",
+    "q": "According to Domingos, what is the most common mistake that machine learning beginners make?",
+    "file": "ML111.pdf",
+    "page": [
+      2
+    ],
+    "type": "lookup",
+    "answer": "Testing on the training data, which gives the illusion of success.",
+    "evidence": [
+      "The most common mistake among machine learning beginners is to test on the training data and have the illusion of success."
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_35",
+    "q": "What does the paper say is the biggest problem in machine learning after overfitting?",
+    "file": "ML111.pdf",
+    "page": [
+      4
+    ],
+    "type": "lookup",
+    "answer": "The curse of dimensionality.",
+    "evidence": [
+      "After overﬁtting, the biggest problem in machine learning is the curse of dimensionality"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_36",
+    "q": "What project do I build in Week 6 of the roadmap?",
+    "file": "90-Day ML Engineer Roadmap.pdf",
+    "page": [
+      2
+    ],
+    "type": "lookup",
+    "answer": "Project 2, a Spam Classifier comparing Naive Bayes and Logistic Regression.",
+    "evidence": [
+      "Build (Project 2): Spam Classifier. Compare Naive Bayes and Logistic Regression"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_37",
+    "q": "How long are the study sprints and breaks in the roadmap's daily schedule?",
+    "file": "90-Day ML Engineer Roadmap.pdf",
+    "page": [
+      3
+    ],
+    "type": "lookup",
+    "answer": "50-minute study sprints with 10-minute breaks.",
+    "evidence": [
+      "Study in 50-minute sprints with 10-minute breaks."
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_38",
+    "q": "In the experiment where the true classifier is a set of rules, up to how many training examples is naive Bayes more accurate than the rule learner, and at roughly what accuracy does naive Bayes level off?",
+    "file": "ML111.pdf",
+    "page": [
+      3,
+      6
+    ],
+    "type": "multi_hop",
+    "answer": "Naive Bayes beats the rule learner with up to 1000 examples, and its accuracy asymptotes at around 70%.",
+    "evidence": [
+      "with up to 1000 examples naive Bayes is more accurate than a rule learner",
+      "Notice how the accuracy of naive Bayes asymp- totes at around 70% in Figure 2."
+    ],
+    "reviewed": false,
+    "hops": [
+      [
+        3
+      ],
+      [
+        6
+      ]
+    ]
+  },
+  {
+    "id": "v2_39",
+    "q": "How does cross-validation work, and what is the risk of leaning on it too heavily?",
+    "file": "ML111.pdf",
+    "page": [
+      2,
+      4
+    ],
+    "type": "multi_hop",
+    "answer": "You randomly split the training data into (say) ten subsets, hold out each one while training on the rest and average the results, but if you use it to make too many parameter choices it can itself start to overfit.",
+    "evidence": [
+      "randomly dividing your training data into (say) ten subsets, holding out each one while training on the rest",
+      "But it’s no panacea, since if we use it to make too many parameter choices it can itself start to overﬁt"
+    ],
+    "reviewed": false,
+    "hops": [
+      [
+        2
+      ],
+      [
+        4
+      ]
+    ]
+  },
+  {
+    "id": "v2_40",
+    "q": "What time of day is the interview-prep block scheduled, and what does it focus on during the final four weeks?",
+    "file": "90-Day ML Engineer Roadmap.pdf",
+    "page": [
+      3,
+      4
+    ],
+    "type": "multi_hop",
+    "answer": "Block 4 (interview prep) runs 4:00-5:00, and in Weeks 9-12 it covers mock Q&A, from-scratch implementations, timed coding rounds and ML design questions.",
+    "evidence": [
+      "4:00-5:00 Block 4: Interview prep",
+      "Weeks 9-12: mock Q&A, from-scratch implementations, timed coding rounds, ML design questions."
+    ],
+    "reviewed": false,
+    "hops": [
+      [
+        3
+      ],
+      [
+        4
+      ]
+    ]
+  },
+  {
+    "id": "v2_41",
+    "q": "Why does training many models on resampled copies of the dataset and letting them vote tend to work better than a single model?",
+    "file": "ML111.pdf",
+    "page": [
+      7
+    ],
+    "type": "paraphrase",
+    "answer": "Bagging works because it greatly reduces variance while only slightly increasing bias.",
+    "evidence": [
+      "works because it greatly reduces variance while only slightl y increasing bias"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_42",
+    "q": "Is a model with only a few adjustable values automatically less prone to memorizing noise than one with a huge number of them?",
+    "file": "ML111.pdf",
+    "page": [
+      7
+    ],
+    "type": "paraphrase",
+    "answer": "No; there is no necessary connection between a model's number of parameters and its tendency to overfit (e.g., SVMs can have effectively infinite parameters without overfitting).",
+    "evidence": [
+      "there is no necessary connection between the numbe r of parameters of a model and its tendency to overﬁt"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_43",
+    "q": "If I gather an enormous dataset, can a learning system succeed purely from those examples without any built-in prior beliefs?",
+    "file": "ML111.pdf",
+    "page": [
+      3
+    ],
+    "type": "paraphrase",
+    "answer": "No; every learner must embody some knowledge or assumptions beyond the data it is given in order to generalize beyond it.",
+    "evidence": [
+      "Every learner must embody some knowl- edge or assumptions beyond the data it’s given in order to generalize beyond it."
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_44",
+    "q": "I have a full-time job; how much should I study on workdays under this plan, and what about weekends?",
+    "file": "90-Day ML Engineer Roadmap.pdf",
+    "page": [
+      3
+    ],
+    "type": "paraphrase",
+    "answer": "About 3 hours on weekdays (Blocks 1-2 plus a short Block 4), with Saturday and Sunday as 6-7 hour days.",
+    "evidence": [
+      "shrink to about 3 hours on weekdays (Blocks 1-2 plus a short Block 4), and make Saturday and Sunday 6-7 hour days."
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_45",
+    "q": "What learning rate does Domingos recommend when training a classifier with gradient descent?",
+    "file": null,
+    "page": null,
+    "type": "unanswerable",
+    "answer": "Not found",
+    "evidence": [],
+    "reviewed": false,
+    "absent_terms_checked": [
+      "learning rate",
+      "step size"
+    ],
+    "topic_of": "ML111.pdf"
+  },
+  {
+    "id": "v2_46",
+    "q": "What lessons does Domingos offer for applying reinforcement learning to robotics?",
+    "file": null,
+    "page": null,
+    "type": "unanswerable",
+    "answer": "Not found",
+    "evidence": [],
+    "reviewed": false,
+    "absent_terms_checked": [
+      "reinforcement",
+      "robot",
+      "reward"
+    ],
+    "topic_of": "ML111.pdf"
+  },
+  {
+    "id": "v2_47",
+    "q": "How much does Andrew Ng's ML Specialization cost, or can it be taken for free?",
+    "file": null,
+    "page": null,
+    "type": "unanswerable",
+    "answer": "Not found",
+    "evidence": [],
+    "reviewed": false,
+    "absent_terms_checked": [
+      "price",
+      "fee",
+      "free",
+      "paid",
+      "$",
+      "subscription"
+    ],
+    "topic_of": "90-Day ML Engineer Roadmap.pdf"
+  },
+  {
+    "id": "v2_48",
+    "q": "Does the roadmap have me containerize the capstone API with Docker before deploying it?",
+    "file": null,
+    "page": null,
+    "type": "unanswerable",
+    "answer": "Not found",
+    "evidence": [],
+    "reviewed": false,
+    "absent_terms_checked": [
+      "docker",
+      "container",
+      "kubernetes",
+      "image"
+    ],
+    "topic_of": "90-Day ML Engineer Roadmap.pdf"
+  },
+  {
+    "id": "v2_49",
+    "q": "What do the authors call the procedure in Algorithm 1 that first selects K features with Lasso and then learns their weights with least squares?",
+    "file": "ML222.pdf",
+    "page": [
+      4
+    ],
+    "type": "exact_term",
+    "answer": "They call it K-LASSO.",
+    "evidence": [
+      "path [9]) and then learning the weights via least squares (a procedure we call K-LASSO in Algorithm 1)"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_50",
+    "q": "Where can I find the code and data to replicate the LIME experiments?",
+    "file": "ML222.pdf",
+    "page": [
+      6
+    ],
+    "type": "exact_term",
+    "answer": "They are available at https://github.com/marcotcr/lime-experiments.",
+    "evidence": [
+      "Code and data for replicating our experiments are available at https://github.com/marcotcr/lime-experiments."
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_51",
+    "q": "What does the acronym LIME stand for?",
+    "file": "ML222.pdf",
+    "page": [
+      3
+    ],
+    "type": "lookup",
+    "answer": "LIME stands for Local Interpretable Model-agnostic Explanations.",
+    "evidence": [
+      "We now present Local Interpretable Model-agnostic Expla- nations (LIME)."
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_52",
+    "q": "How many webpages per class did the authors collect for the new religion evaluation dataset?",
+    "file": "ML222.pdf",
+    "page": [
+      7
+    ],
+    "type": "lookup",
+    "answer": "They downloaded Atheism and Christianity websites from DMOZ and curated lists, yielding 819 webpages in each class.",
+    "evidence": [
+      "and Christianity websites from the DMOZ directory and human curated lists, yielding 819 webpages in each class."
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_53",
+    "q": "How long does LIME take to explain a single prediction of Google's Inception network, and what was the top predicted class (with its probability) in the paper's guitar-and-dog image example?",
+    "file": "ML222.pdf",
+    "page": [
+      4,
+      5
+    ],
+    "type": "multi_hop",
+    "answer": "Explaining each Inception prediction takes around 10 minutes, and the top predicted class was \"Electric Guitar\" with p = 0.32.",
+    "evidence": [
+      "ing each prediction of the Inception network [ 25] for image classiﬁcation takes around 10 minutes.",
+      "3 classes predicted are “Electric Guitar” (p = 0.32)"
+    ],
+    "reviewed": false,
+    "hops": [
+      [
+        4
+      ],
+      [
+        5
+      ]
+    ]
+  },
+  {
+    "id": "v2_54",
+    "q": "The Christianity-vs-Atheism SVM leaned on the header word \"Posting\"; what fraction of training examples contain that word, and how accurate was that original classifier on the newly built religion dataset?",
+    "file": "ML222.pdf",
+    "page": [
+      4,
+      7
+    ],
+    "type": "multi_hop",
+    "answer": "\"Posting\" appears in 22% of training examples (99% of them Atheism), and the original classifier scored only 57.3% on the religion dataset.",
+    "evidence": [
+      "The word “Posting” appears in 22% of examples in the training set, 99% of them in the class “Atheism”.",
+      "The original classiﬁer achieves an accuracy score of 57.3% on the religion dataset"
+    ],
+    "reviewed": false,
+    "hops": [
+      [
+        4
+      ],
+      [
+        7
+      ]
+    ]
+  },
+  {
+    "id": "v2_55",
+    "q": "When non-expert crowd workers repeatedly pruned words to fix a bad text classifier, roughly how long did each person spend on one iteration?",
+    "file": "ML222.pdf",
+    "page": [
+      8
+    ],
+    "type": "paraphrase",
+    "answer": "Each subject spent an average of 3.6 minutes per round of cleaning (just under 11 minutes in total).",
+    "evidence": [
+      "Each subject took an average of 3.6 minutes per round of cleaning, resulting in just under 11 minutes to produce"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_56",
+    "q": "How does the method decide how much each synthetic neighbouring sample should count when fitting the simple surrogate model?",
+    "file": "ML222.pdf",
+    "page": [
+      3
+    ],
+    "type": "paraphrase",
+    "answer": "Samples are weighted by proximity to the instance using an exponential kernel, pi_x(z) = exp(-D(x,z)^2/sigma^2), over a distance function D with width sigma.",
+    "evidence": [
+      "exp(−D(x,z )2/σ2) be an exponential kernel deﬁned on some"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_57",
+    "q": "After graduate students saw explanations for the deliberately flawed classifier that told huskies from wolves, how many of them still had faith in it?",
+    "file": "ML222.pdf",
+    "page": [
+      9
+    ],
+    "type": "paraphrase",
+    "answer": "Only 3 out of 27 still trusted the bad model after the explanations, down from 10 out of 27 before.",
+    "evidence": [
+      "Trusted the bad model 10 out of 27 3 out of 27"
+    ],
+    "reviewed": false
+  },
+  {
+    "id": "v2_58",
+    "q": "How does LIME's explanation fidelity compare against SHAP (Shapley additive explanations) in the paper's experiments?",
+    "file": null,
+    "page": null,
+    "type": "unanswerable",
+    "answer": "Not found",
+    "evidence": [],
+    "reviewed": false,
+    "absent_terms_checked": [
+      "SHAP",
+      "Shapley"
+    ],
+    "topic_of": "ML222.pdf"
+  },
+  {
+    "id": "v2_59",
+    "q": "Which tabular datasets, such as the UCI Adult census data, were used to evaluate LIME?",
+    "file": null,
+    "page": null,
+    "type": "unanswerable",
+    "answer": "Not found",
+    "evidence": [],
+    "reviewed": false,
+    "absent_terms_checked": [
+      "tabular",
+      "Adult",
+      "UCI",
+      "census",
+      "structured data",
+      "spreadsheet",
+      "loan"
+    ],
+    "topic_of": "ML222.pdf"
+  },
+  {
+    "id": "v2_60",
+    "q": "How much were the Amazon Mechanical Turk workers paid for taking part in the human-subject experiments?",
+    "file": null,
+    "page": null,
+    "type": "unanswerable",
+    "answer": "Not found",
+    "evidence": [],
+    "reviewed": false,
+    "absent_terms_checked": [
+      "paid",
+      "payment",
+      "compensat",
+      "cents",
+      "wage",
+      "reward",
+      "hour"
+    ],
+    "topic_of": "ML222.pdf"
+  }
+]

@@ -9,6 +9,19 @@ the answer. A
 correct with probability X". Treat the label as a prompt to look closer, never
 as evidence.
 
+CALIBRATED (Stage 4, eval/ANSWER_QUALITY_k5_stage4.md): the support check
+returned SUPPORTED for 43 of 43 answered held-out questions, including the 4
+in which the judge model found unsupported sentences, so it does not
+discriminate. It is therefore OFF in the app by default
+(config.SUPPORT_CHECK_ENABLED, env APP_SUPPORT_CHECK=1 to enable); assess()
+then returns label "unchecked" without an LLM call.
+
+EARLIER (Phase 4, eval/ANSWER_QUALITY_k5.md, held-out v2, top-k 5): all 38
+answered questions were correct, labelled High 8 and Medium 30, never Low.
+Both labels were 100% correct, so on this set the label does NOT separate
+right from wrong answers. The retrieval-strength cut-off (0.40) put 30 correct
+answers at Medium. Do not present the label as an accuracy estimate.
+
 Two signals are combined:
 
 (a) RETRIEVAL STRENGTH -- how similar the retrieved chunks were to the question,
@@ -74,8 +87,14 @@ QUESTIONS_PATH = BASE_DIR / "eval_questions.json"
 # held-out measurement, and the 0.23 / 0.28 margin is thin enough that a new
 # off-topic question could easily land above 0.40. Treat 0.40 as a reasonable
 # default to re-tune on your own corpus, not as a validated boundary.
-STRONG_TOP_SCORE = 0.40   # best chunk must be at least this similar ...
-STRONG_MEAN_SCORE = 0.50  # ... or the average over all retrieved chunks is
+#
+# SCALE CORRECTION (Stage 4): the 0.40 / 0.50 cut-offs above were chosen on
+# LangChain's "relevance" score, which is NOT cosine but sqrt(2)*cos - 0.414
+# (see hybrid.cosine_from_distance). The app now passes true cosine, so the
+# same boundaries are restated on the cosine scale: 0.40 -> 0.576 and
+# 0.50 -> 0.646. Behaviour is unchanged; only the units are now honest.
+STRONG_TOP_SCORE = 0.576   # best chunk must be at least this similar (cosine) ...
+STRONG_MEAN_SCORE = 0.646  # ... or the average over all retrieved chunks is
 # Strong retrieval means: top >= 0.40 OR mean >= 0.50. Using "or" rather than
 # "and" keeps the label from collapsing to Medium when one chunk carries the
 # whole answer and the other two are filler, which is common with top_k = 3.
@@ -159,7 +178,7 @@ def parse_verdict(reply: str) -> str | None:
 def _default_ask(prompt: str) -> str:
     """Send one prompt to Groq through evaluator.py's retrying helper.
 
-    WHY reuse evaluator.call_llm instead of a second copy: it already handles
+    WHY reuse llm.call_llm instead of a second copy: it already handles
     Groq's free-tier 429s with the MAX_ATTEMPTS / BASE_SLEEP backoff this
     project standardised on, and duplicating it would let the two retry
     policies drift. WHY the import sits inside the function: evaluator.py
@@ -167,7 +186,7 @@ def _default_ask(prompt: str) -> str:
     it lazily keeps `import trust` (and therefore the Streamlit app's start-up)
     free of that side effect until the first check actually runs.
     """
-    from evaluator import call_llm
+    from llm import call_llm
 
     return call_llm(prompt, temperature=0.0, label="trust")
 
@@ -243,7 +262,7 @@ def is_refusal(answer: str) -> bool:
     return _REFUSAL_MARKER in (answer or "").lower()
 
 
-def assess(question: str, answer: str, chunks: list, ask=None) -> dict:
+def assess(question: str, answer: str, chunks: list, ask=None, check: bool = True) -> dict:
     """Return {"label", "reason", "verdict", "top_score", "mean_score", "refused"}.
 
     WHY a dict and not a bare string: main.py stores the whole result in
@@ -268,6 +287,19 @@ def assess(question: str, answer: str, chunks: list, ask=None) -> dict:
             "top_score": strength["top"],
             "mean_score": strength["mean"],
             "refused": True,
+        }
+
+    if not check:
+        # The LLM check is switched off (config.SUPPORT_CHECK_ENABLED). No label
+        # is claimed: retrieval similarity alone did not predict correctness in
+        # calibration, so it is not presented as confidence.
+        return {
+            "label": "unchecked",
+            "reason": "the grounding check is turned off; citations are still verified",
+            "verdict": None,
+            "top_score": strength["top"],
+            "mean_score": strength["mean"],
+            "refused": False,
         }
 
     # Retrieved context is rebuilt from the same chunk dicts the UI shows, so

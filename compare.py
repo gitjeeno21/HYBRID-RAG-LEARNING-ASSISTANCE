@@ -109,7 +109,7 @@ def generate_comparison(
     def request_answer() -> str:
         if ask is None:
             # Reuse the app's transient-error/rate-limit retry behavior.
-            from evaluator import call_llm
+            from llm import call_llm
 
             return call_llm(prompt, temperature=0.2, label="compare")
         # Injected test callbacks verify the full prompt without network access.

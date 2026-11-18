@@ -28,6 +28,7 @@ from config import (
     CHUNK_OVERLAP,
     CHUNK_SIZE,
     COLLECTION_NAME,
+    CROSS_PAGE_CHUNKS,
     EMBEDDING_MODEL,
     EVAL_RESULTS_PATH,
     PDF_DIR,
@@ -103,11 +104,61 @@ def split_documents(documents: list, chunk_size: int | None = None,
     if chunk_size is None or chunk_overlap is None:
         chunk_size, chunk_overlap = best_chunk_config()
 
+    if CROSS_PAGE_CHUNKS:
+        return split_documents_cross_page(documents, chunk_size, chunk_overlap)
+
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
     )
     return splitter.split_documents(documents)
+
+
+def split_documents_cross_page(pages: list, chunk_size: int, chunk_overlap: int) -> list:
+    """Split each PDF as one continuous text so chunks can cross page breaks.
+
+    WHY: the default split runs per page, so a sentence that continues on the
+    next page is cut in two and neither half carries the whole answer
+    (PAGE_SPLIT in eval/ERROR_ANALYSIS.md). Here the pages of one file are
+    joined, split once, and every chunk is labelled with the page it STARTS on
+    (`page`, `page_label`, so citations stay a single page) plus
+    `page_end_label` for the last page it reaches.
+    """
+    from langchain_core.documents import Document
+
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size, chunk_overlap=chunk_overlap, add_start_index=True
+    )
+    by_file: dict[str, list] = {}
+    for page in pages:
+        by_file.setdefault(page.metadata.get("filename") or page.metadata.get("source"), []).append(page)
+
+    chunks = []
+    # A single newline, not a blank line: the splitter prefers to cut at "\n\n",
+    # so joining pages with one would make chunks snap to page boundaries again.
+    separator = "\n"
+    for file_pages in by_file.values():
+        offsets, parts, position = [], [], 0
+        for page in file_pages:
+            # Strip page edges: a trailing newline plus the separator would form
+            # "\n\n" and reintroduce a preferred split at every page break.
+            content = page.page_content.strip()
+            offsets.append(position)
+            parts.append(content)
+            position += len(content) + len(separator)
+        text = separator.join(parts)
+        base = dict(file_pages[0].metadata)
+        for piece in splitter.split_documents([Document(page_content=text, metadata=base)]):
+            start = piece.metadata.pop("start_index")
+            end = start + len(piece.page_content) - 1
+            first = max(i for i, offset in enumerate(offsets) if offset <= start)
+            last = max(i for i, offset in enumerate(offsets) if offset <= end)
+            meta = dict(file_pages[first].metadata)
+            # Chroma rejects None metadata values, so fall back to the start page.
+            meta["page_end_label"] = (file_pages[last].metadata.get("page_label")
+                                      or meta.get("page_label") or "")
+            chunks.append(Document(page_content=piece.page_content, metadata=meta))
+    return chunks
 
 
 def main() -> None:

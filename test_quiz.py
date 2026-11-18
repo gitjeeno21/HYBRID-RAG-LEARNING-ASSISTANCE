@@ -6,12 +6,15 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
+from auth_testing import authed_client
+
 from langchain_core.documents import Document
 
 from quiz import (
     build_grading_prompt,
     build_quiz_context,
     generate_quiz,
+    grade_quiz,
     make_quiz_state,
     submit_quiz_state,
 )
@@ -20,7 +23,7 @@ from quiz import (
 class QuizGradingApiTests(unittest.TestCase):
     def setUp(self) -> None:
         from main import app
-        self.client = TestClient(app)
+        self.client = authed_client(app)
         # The payloads cite ML222.pdf; make the library contain it so these
         # tests do not depend on which PDFs happen to be in data/.
         pdfs = patch("main.list_pdf_names", return_value=["ML222.pdf"])
@@ -263,3 +266,54 @@ class QuizWorkflowTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class KeyGradingTests(unittest.TestCase):
+    CONTEXT = "Source: paper.pdf, p. 3\nSelf-attention lets tokens attend to each other."
+    MCQ = {"question": "What lets tokens attend to each other?", "answer": "Self-attention",
+           "options": ["Recurrence", "Self-attention", "Convolution", "Pooling"],
+           "source": "paper.pdf, p. 3", "type": "Multiple choice"}
+    TF = {"question": "Tokens can attend to each other.", "answer": "True",
+          "options": ["True", "False"], "source": "paper.pdf, p. 3", "type": "True/False"}
+    OPEN = {"question": "What does self-attention do?", "answer": "Relates tokens",
+            "source": "paper.pdf, p. 3", "type": "Short answer"}
+
+    def test_choice_only_quiz_is_graded_without_any_llm_call(self) -> None:
+        def no_llm(prompt: str) -> str:
+            raise AssertionError("choice questions must not call the LLM")
+
+        result = grade_quiz([self.MCQ, self.TF], ["Self-attention", "False"], self.CONTEXT, ask=no_llm)
+        self.assertEqual([r["grade"] for r in result["results"]], ["Correct", "Incorrect"])
+        self.assertEqual(result["score"], 1.0)
+        self.assertEqual(result["results"][1]["correct_answer"], "True")
+        self.assertEqual(result["results"][1]["source"], "paper.pdf, p. 3")
+
+    def test_mixed_quiz_sends_only_open_answers_to_the_llm_and_keeps_order(self) -> None:
+        prompts: list[str] = []
+
+        def grader(prompt: str) -> str:
+            prompts.append(prompt)
+            return json.dumps({"results": [{"grade": "Partial", "feedback": "Close.",
+                                            "correct_answer": "It relates tokens.",
+                                            "source": "paper.pdf, p. 3"}]})
+
+        result = grade_quiz([self.MCQ, self.OPEN, self.TF],
+                            ["Recurrence", "it mixes tokens", "True"], self.CONTEXT, ask=grader)
+        self.assertEqual(len(prompts), 1)
+        self.assertIn("it mixes tokens", prompts[0])
+        self.assertNotIn("Recurrence", prompts[0])
+        self.assertEqual([r["grade"] for r in result["results"]], ["Incorrect", "Partial", "Correct"])
+        self.assertEqual(result["score"], 1.5)
+        self.assertEqual(result["maximum"], 3)
+
+    def test_choice_answer_outside_the_options_falls_back_to_the_llm(self) -> None:
+        calls: list[str] = []
+
+        def grader(prompt: str) -> str:
+            calls.append(prompt)
+            return json.dumps({"results": [{"grade": "Incorrect", "feedback": "No.",
+                                            "correct_answer": "Self-attention",
+                                            "source": "paper.pdf, p. 3"}]})
+
+        grade_quiz([self.MCQ], ["something typed"], self.CONTEXT, ask=grader)
+        self.assertEqual(len(calls), 1)

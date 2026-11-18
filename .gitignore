@@ -42,3 +42,14 @@ removed_pdfs/
 
 # Local tool state
 .freebuff/
+
+# Personal documents: never commit (contain contact details)
+data/*Resume*.pdf
+eval/.index/
+eval/.cache/
+
+# Multi-user runtime data: accounts database and per-user libraries/index
+app.db
+app.db-wal
+app.db-shm
+storage/

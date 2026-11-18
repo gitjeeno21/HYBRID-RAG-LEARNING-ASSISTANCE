@@ -1,0 +1,874 @@
+{
+  "test (held-out v2)": {
+    "summary": {
+      "top_cosine": {
+        "auc": 0.607,
+        "answerable_min": 0.266,
+        "unanswerable_max": 0.586,
+        "refused_unanswerable_at_full_recall": 1,
+        "n_answerable": 47,
+        "n_unanswerable": 13
+      },
+      "mean_cosine": {
+        "auc": 0.607,
+        "answerable_min": 0.233,
+        "unanswerable_max": 0.511,
+        "refused_unanswerable_at_full_recall": 1,
+        "n_answerable": 47,
+        "n_unanswerable": 13
+      },
+      "ce_top": {
+        "auc": 0.715,
+        "answerable_min": -9.158,
+        "unanswerable_max": 4.012,
+        "refused_unanswerable_at_full_recall": 0,
+        "n_answerable": 47,
+        "n_unanswerable": 13
+      }
+    },
+    "rows": [
+      {
+        "id": "v2_01",
+        "answerable": true,
+        "top_cosine": 0.38461095094680786,
+        "mean_cosine": 0.36542920271555585,
+        "ce_top": 0.4508679509162903
+      },
+      {
+        "id": "v2_02",
+        "answerable": true,
+        "top_cosine": 0.5276552438735962,
+        "mean_cosine": 0.41336753964424133,
+        "ce_top": -0.9604120850563049
+      },
+      {
+        "id": "v2_03",
+        "answerable": true,
+        "top_cosine": 0.4989505410194397,
+        "mean_cosine": 0.4563514143228531,
+        "ce_top": 1.5137403011322021
+      },
+      {
+        "id": "v2_04",
+        "answerable": true,
+        "top_cosine": 0.4406149983406067,
+        "mean_cosine": 0.424660325050354,
+        "ce_top": -2.469964027404785
+      },
+      {
+        "id": "v2_05",
+        "answerable": true,
+        "top_cosine": 0.4674859046936035,
+        "mean_cosine": 0.37961206436157224,
+        "ce_top": 4.23778772354126
+      },
+      {
+        "id": "v2_06",
+        "answerable": true,
+        "top_cosine": 0.5732524991035461,
+        "mean_cosine": 0.548487663269043,
+        "ce_top": 1.7389825582504272
+      },
+      {
+        "id": "v2_07",
+        "answerable": true,
+        "top_cosine": 0.45175766944885254,
+        "mean_cosine": 0.4236308733622233,
+        "ce_top": 1.869523048400879
+      },
+      {
+        "id": "v2_08",
+        "answerable": true,
+        "top_cosine": 0.39741039276123047,
+        "mean_cosine": 0.3954242467880249,
+        "ce_top": -7.198385238647461
+      },
+      {
+        "id": "v2_09",
+        "answerable": true,
+        "top_cosine": 0.5437467992305756,
+        "mean_cosine": 0.46085257083177567,
+        "ce_top": -0.476212739944458
+      },
+      {
+        "id": "v2_10",
+        "answerable": false,
+        "top_cosine": 0.4098215699195862,
+        "mean_cosine": 0.35014912486076355,
+        "ce_top": -2.740309238433838
+      },
+      {
+        "id": "v2_11",
+        "answerable": false,
+        "top_cosine": 0.3407059907913208,
+        "mean_cosine": 0.3263065020243327,
+        "ce_top": -5.671532154083252
+      },
+      {
+        "id": "v2_12",
+        "answerable": false,
+        "top_cosine": 0.4847310185432434,
+        "mean_cosine": 0.4027024507522583,
+        "ce_top": -1.7378942966461182
+      },
+      {
+        "id": "v2_13",
+        "answerable": true,
+        "top_cosine": 0.5213511288166046,
+        "mean_cosine": 0.4718049690127373,
+        "ce_top": 3.398162364959717
+      },
+      {
+        "id": "v2_14",
+        "answerable": true,
+        "top_cosine": 0.37278664112091064,
+        "mean_cosine": 0.31135905981063844,
+        "ce_top": 0.7011834383010864
+      },
+      {
+        "id": "v2_15",
+        "answerable": true,
+        "top_cosine": 0.43970662355422974,
+        "mean_cosine": 0.4227503538131714,
+        "ce_top": 6.374573707580566
+      },
+      {
+        "id": "v2_16",
+        "answerable": true,
+        "top_cosine": 0.49160146713256836,
+        "mean_cosine": 0.28709544241428375,
+        "ce_top": 1.9177353382110596
+      },
+      {
+        "id": "v2_17",
+        "answerable": true,
+        "top_cosine": 0.6016141474246979,
+        "mean_cosine": 0.5597663164138794,
+        "ce_top": 7.397191047668457
+      },
+      {
+        "id": "v2_18",
+        "answerable": true,
+        "top_cosine": 0.657602071762085,
+        "mean_cosine": 0.5952240109443665,
+        "ce_top": 4.117858409881592
+      },
+      {
+        "id": "v2_19",
+        "answerable": true,
+        "top_cosine": 0.6925172805786133,
+        "mean_cosine": 0.5569423913955689,
+        "ce_top": 4.775673866271973
+      },
+      {
+        "id": "v2_20",
+        "answerable": true,
+        "top_cosine": 0.5727300345897675,
+        "mean_cosine": 0.5057082871596018,
+        "ce_top": 5.77742862701416
+      },
+      {
+        "id": "v2_21",
+        "answerable": true,
+        "top_cosine": 0.5700996220111847,
+        "mean_cosine": 0.5509378711382548,
+        "ce_top": 4.196831703186035
+      },
+      {
+        "id": "v2_22",
+        "answerable": true,
+        "top_cosine": 0.5712262392044067,
+        "mean_cosine": 0.5320874750614166,
+        "ce_top": 4.2723541259765625
+      },
+      {
+        "id": "v2_23",
+        "answerable": true,
+        "top_cosine": 0.6882176697254181,
+        "mean_cosine": 0.58348598331213,
+        "ce_top": 3.7278711795806885
+      },
+      {
+        "id": "v2_24",
+        "answerable": true,
+        "top_cosine": 0.48715901374816895,
+        "mean_cosine": 0.464960773785909,
+        "ce_top": -5.679166793823242
+      },
+      {
+        "id": "v2_25",
+        "answerable": true,
+        "top_cosine": 0.4589696526527405,
+        "mean_cosine": 0.43876175085703534,
+        "ce_top": -1.6340742111206055
+      },
+      {
+        "id": "v2_26",
+        "answerable": true,
+        "top_cosine": 0.5076077282428741,
+        "mean_cosine": 0.49153297146161395,
+        "ce_top": -4.676658630371094
+      },
+      {
+        "id": "v2_27",
+        "answerable": true,
+        "top_cosine": 0.48587626218795776,
+        "mean_cosine": 0.3983357846736908,
+        "ce_top": -5.2112650871276855
+      },
+      {
+        "id": "v2_28",
+        "answerable": false,
+        "top_cosine": 0.5623876452445984,
+        "mean_cosine": 0.5107591152191162,
+        "ce_top": 0.6356588006019592
+      },
+      {
+        "id": "v2_29",
+        "answerable": false,
+        "top_cosine": 0.5863336324691772,
+        "mean_cosine": 0.5024863243103027,
+        "ce_top": 4.0122456550598145
+      },
+      {
+        "id": "v2_30",
+        "answerable": false,
+        "top_cosine": 0.45258986949920654,
+        "mean_cosine": 0.4249171217282613,
+        "ce_top": -5.018609046936035
+      },
+      {
+        "id": "v2_31",
+        "answerable": true,
+        "top_cosine": 0.46766436100006104,
+        "mean_cosine": 0.3957892209291458,
+        "ce_top": 0.9604542255401611
+      },
+      {
+        "id": "v2_32",
+        "answerable": true,
+        "top_cosine": 0.5358553230762482,
+        "mean_cosine": 0.4271221458911896,
+        "ce_top": -5.55902099609375
+      },
+      {
+        "id": "v2_33",
+        "answerable": true,
+        "top_cosine": 0.3000606894493103,
+        "mean_cosine": 0.2821194976568222,
+        "ce_top": -1.5670979022979736
+      },
+      {
+        "id": "v2_34",
+        "answerable": true,
+        "top_cosine": 0.585864782333374,
+        "mean_cosine": 0.5482397377490997,
+        "ce_top": 0.600781261920929
+      },
+      {
+        "id": "v2_35",
+        "answerable": true,
+        "top_cosine": 0.5912715792655945,
+        "mean_cosine": 0.5027735888957977,
+        "ce_top": 3.272122621536255
+      },
+      {
+        "id": "v2_36",
+        "answerable": true,
+        "top_cosine": 0.45129209756851196,
+        "mean_cosine": 0.3810219168663025,
+        "ce_top": 2.82985258102417
+      },
+      {
+        "id": "v2_37",
+        "answerable": true,
+        "top_cosine": 0.5909358263015747,
+        "mean_cosine": 0.478819876909256,
+        "ce_top": 3.460495948791504
+      },
+      {
+        "id": "v2_38",
+        "answerable": true,
+        "top_cosine": 0.5835005044937134,
+        "mean_cosine": 0.44690777361392975,
+        "ce_top": 6.672480583190918
+      },
+      {
+        "id": "v2_39",
+        "answerable": true,
+        "top_cosine": 0.4377604126930237,
+        "mean_cosine": 0.36569565534591675,
+        "ce_top": 2.4070518016815186
+      },
+      {
+        "id": "v2_40",
+        "answerable": true,
+        "top_cosine": 0.44061505794525146,
+        "mean_cosine": 0.37629641592502594,
+        "ce_top": 0.49728840589523315
+      },
+      {
+        "id": "v2_41",
+        "answerable": true,
+        "top_cosine": 0.5015053749084473,
+        "mean_cosine": 0.4349291721979777,
+        "ce_top": 1.6501129865646362
+      },
+      {
+        "id": "v2_42",
+        "answerable": true,
+        "top_cosine": 0.4097667932510376,
+        "mean_cosine": 0.36221736669540405,
+        "ce_top": -8.808683395385742
+      },
+      {
+        "id": "v2_43",
+        "answerable": true,
+        "top_cosine": 0.5446258187294006,
+        "mean_cosine": 0.48047304153442383,
+        "ce_top": -0.852468729019165
+      },
+      {
+        "id": "v2_44",
+        "answerable": true,
+        "top_cosine": 0.5556363463401794,
+        "mean_cosine": 0.4034993648529053,
+        "ce_top": -7.32952356338501
+      },
+      {
+        "id": "v2_45",
+        "answerable": false,
+        "top_cosine": 0.5316936075687408,
+        "mean_cosine": 0.42620783050855,
+        "ce_top": -3.452960968017578
+      },
+      {
+        "id": "v2_46",
+        "answerable": false,
+        "top_cosine": 0.49908334016799927,
+        "mean_cosine": 0.4495622714360555,
+        "ce_top": -0.7061949372291565
+      },
+      {
+        "id": "v2_47",
+        "answerable": false,
+        "top_cosine": 0.41613125801086426,
+        "mean_cosine": 0.31178919474283856,
+        "ce_top": 0.2134946882724762
+      },
+      {
+        "id": "v2_48",
+        "answerable": false,
+        "top_cosine": 0.20521867275238037,
+        "mean_cosine": 0.18279202779134116,
+        "ce_top": -7.726711273193359
+      },
+      {
+        "id": "v2_49",
+        "answerable": true,
+        "top_cosine": 0.40844714641571045,
+        "mean_cosine": 0.36420661211013794,
+        "ce_top": 6.831793785095215
+      },
+      {
+        "id": "v2_50",
+        "answerable": true,
+        "top_cosine": 0.26718777418136597,
+        "mean_cosine": 0.25537580251693726,
+        "ce_top": 0.3822705149650574
+      },
+      {
+        "id": "v2_51",
+        "answerable": true,
+        "top_cosine": 0.2657638192176819,
+        "mean_cosine": 0.23303332924842834,
+        "ce_top": -1.509161353111267
+      },
+      {
+        "id": "v2_52",
+        "answerable": true,
+        "top_cosine": 0.43937385082244873,
+        "mean_cosine": 0.3614504635334015,
+        "ce_top": 6.718010902404785
+      },
+      {
+        "id": "v2_53",
+        "answerable": true,
+        "top_cosine": 0.5666877627372742,
+        "mean_cosine": 0.49217108488082884,
+        "ce_top": 2.2659928798675537
+      },
+      {
+        "id": "v2_54",
+        "answerable": true,
+        "top_cosine": 0.4725577235221863,
+        "mean_cosine": 0.40975719690322876,
+        "ce_top": 3.0944597721099854
+      },
+      {
+        "id": "v2_55",
+        "answerable": true,
+        "top_cosine": 0.4362054467201233,
+        "mean_cosine": 0.40108445286750793,
+        "ce_top": -5.972802639007568
+      },
+      {
+        "id": "v2_56",
+        "answerable": true,
+        "top_cosine": 0.28810399770736694,
+        "mean_cosine": 0.2820736765861511,
+        "ce_top": -9.157615661621094
+      },
+      {
+        "id": "v2_57",
+        "answerable": true,
+        "top_cosine": 0.5567673444747925,
+        "mean_cosine": 0.42294868230819704,
+        "ce_top": 3.4155397415161133
+      },
+      {
+        "id": "v2_58",
+        "answerable": false,
+        "top_cosine": 0.5502037107944489,
+        "mean_cosine": 0.4700539171695709,
+        "ce_top": 0.7195619344711304
+      },
+      {
+        "id": "v2_59",
+        "answerable": false,
+        "top_cosine": 0.30609434843063354,
+        "mean_cosine": 0.2935723662376404,
+        "ce_top": -2.819627046585083
+      },
+      {
+        "id": "v2_60",
+        "answerable": false,
+        "top_cosine": 0.44372034072875977,
+        "mean_cosine": 0.377659539381663,
+        "ce_top": -1.4416614770889282
+      }
+    ]
+  },
+  "dev (legacy)": {
+    "summary": {
+      "top_cosine": {
+        "auc": 0.86,
+        "answerable_min": 0.395,
+        "unanswerable_max": 0.604,
+        "refused_unanswerable_at_full_recall": 4,
+        "n_answerable": 50,
+        "n_unanswerable": 6
+      },
+      "mean_cosine": {
+        "auc": 0.8,
+        "answerable_min": 0.318,
+        "unanswerable_max": 0.55,
+        "refused_unanswerable_at_full_recall": 4,
+        "n_answerable": 50,
+        "n_unanswerable": 6
+      },
+      "ce_top": {
+        "auc": 0.8,
+        "answerable_min": -6.113,
+        "unanswerable_max": 4.006,
+        "refused_unanswerable_at_full_recall": 3,
+        "n_answerable": 50,
+        "n_unanswerable": 6
+      }
+    },
+    "rows": [
+      {
+        "id": "q01",
+        "answerable": true,
+        "top_cosine": 0.7437440454959869,
+        "mean_cosine": 0.6180696070194245,
+        "ce_top": 8.113235473632812
+      },
+      {
+        "id": "q02",
+        "answerable": true,
+        "top_cosine": 0.60343998670578,
+        "mean_cosine": 0.4233955591917038,
+        "ce_top": 2.579002618789673
+      },
+      {
+        "id": "q03",
+        "answerable": true,
+        "top_cosine": 0.541701465845108,
+        "mean_cosine": 0.4317560732364655,
+        "ce_top": 6.838837623596191
+      },
+      {
+        "id": "q04",
+        "answerable": true,
+        "top_cosine": 0.6514709889888763,
+        "mean_cosine": 0.44790504574775697,
+        "ce_top": 3.290067672729492
+      },
+      {
+        "id": "q05",
+        "answerable": true,
+        "top_cosine": 0.6430177688598633,
+        "mean_cosine": 0.3920046925544739,
+        "ce_top": 6.5052409172058105
+      },
+      {
+        "id": "q06",
+        "answerable": true,
+        "top_cosine": 0.7610352337360382,
+        "mean_cosine": 0.6640366435050964,
+        "ce_top": 5.449794769287109
+      },
+      {
+        "id": "q07",
+        "answerable": true,
+        "top_cosine": 0.6223351359367371,
+        "mean_cosine": 0.48001326322555543,
+        "ce_top": 7.300469398498535
+      },
+      {
+        "id": "q08",
+        "answerable": true,
+        "top_cosine": 0.5016621053218842,
+        "mean_cosine": 0.4597890302538872,
+        "ce_top": -2.566000461578369
+      },
+      {
+        "id": "q09",
+        "answerable": true,
+        "top_cosine": 0.48601073026657104,
+        "mean_cosine": 0.40441346168518066,
+        "ce_top": -0.9301341772079468
+      },
+      {
+        "id": "q10",
+        "answerable": true,
+        "top_cosine": 0.5796509683132172,
+        "mean_cosine": 0.455153888463974,
+        "ce_top": 6.229137420654297
+      },
+      {
+        "id": "q11",
+        "answerable": true,
+        "top_cosine": 0.6204672753810883,
+        "mean_cosine": 0.5480617761611939,
+        "ce_top": 4.885952949523926
+      },
+      {
+        "id": "q12",
+        "answerable": true,
+        "top_cosine": 0.5842945873737335,
+        "mean_cosine": 0.5465517640113831,
+        "ce_top": 5.264884948730469
+      },
+      {
+        "id": "q13",
+        "answerable": true,
+        "top_cosine": 0.5372779071331024,
+        "mean_cosine": 0.5049485191702843,
+        "ce_top": 4.660522937774658
+      },
+      {
+        "id": "q14",
+        "answerable": true,
+        "top_cosine": 0.577751874923706,
+        "mean_cosine": 0.5450838208198547,
+        "ce_top": 4.607287406921387
+      },
+      {
+        "id": "q15",
+        "answerable": true,
+        "top_cosine": 0.571302205324173,
+        "mean_cosine": 0.5511814256509145,
+        "ce_top": 2.248065710067749
+      },
+      {
+        "id": "q16",
+        "answerable": true,
+        "top_cosine": 0.682803750038147,
+        "mean_cosine": 0.6064716180165609,
+        "ce_top": 6.7864298820495605
+      },
+      {
+        "id": "q17",
+        "answerable": true,
+        "top_cosine": 0.6787620782852173,
+        "mean_cosine": 0.5796984970569611,
+        "ce_top": 4.085613250732422
+      },
+      {
+        "id": "q18",
+        "answerable": true,
+        "top_cosine": 0.6076249778270721,
+        "mean_cosine": 0.5921039506793022,
+        "ce_top": 5.3478684425354
+      },
+      {
+        "id": "q19",
+        "answerable": true,
+        "top_cosine": 0.6137575209140778,
+        "mean_cosine": 0.5864613711833954,
+        "ce_top": 7.050217628479004
+      },
+      {
+        "id": "q20",
+        "answerable": true,
+        "top_cosine": 0.49820417165756226,
+        "mean_cosine": 0.45679054260253904,
+        "ce_top": 1.2726199626922607
+      },
+      {
+        "id": "q21",
+        "answerable": true,
+        "top_cosine": 0.6479459702968597,
+        "mean_cosine": 0.45912935137748717,
+        "ce_top": 7.852478981018066
+      },
+      {
+        "id": "q22",
+        "answerable": true,
+        "top_cosine": 0.543170839548111,
+        "mean_cosine": 0.47677192836999893,
+        "ce_top": 5.469306945800781
+      },
+      {
+        "id": "q23",
+        "answerable": true,
+        "top_cosine": 0.49053168296813965,
+        "mean_cosine": 0.4129848778247833,
+        "ce_top": 4.8097991943359375
+      },
+      {
+        "id": "q24",
+        "answerable": true,
+        "top_cosine": 0.5612476170063019,
+        "mean_cosine": 0.4838200926780701,
+        "ce_top": 3.522548198699951
+      },
+      {
+        "id": "q25",
+        "answerable": true,
+        "top_cosine": 0.40004438161849976,
+        "mean_cosine": 0.31800682544708253,
+        "ce_top": 0.9837130904197693
+      },
+      {
+        "id": "q26",
+        "answerable": true,
+        "top_cosine": 0.5659767985343933,
+        "mean_cosine": 0.546750674645106,
+        "ce_top": 3.6289074420928955
+      },
+      {
+        "id": "q27",
+        "answerable": true,
+        "top_cosine": 0.6878675222396851,
+        "mean_cosine": 0.5940290570259095,
+        "ce_top": 5.485677719116211
+      },
+      {
+        "id": "q28",
+        "answerable": true,
+        "top_cosine": 0.5500746965408325,
+        "mean_cosine": 0.43596680959065753,
+        "ce_top": 4.064776420593262
+      },
+      {
+        "id": "q29",
+        "answerable": true,
+        "top_cosine": 0.5817532241344452,
+        "mean_cosine": 0.537847888469696,
+        "ce_top": 4.480184555053711
+      },
+      {
+        "id": "q30",
+        "answerable": true,
+        "top_cosine": 0.5543708503246307,
+        "mean_cosine": 0.5046351253986359,
+        "ce_top": 6.055779457092285
+      },
+      {
+        "id": "q31",
+        "answerable": true,
+        "top_cosine": 0.4805688261985779,
+        "mean_cosine": 0.45144089063008624,
+        "ce_top": -3.053433656692505
+      },
+      {
+        "id": "q32",
+        "answerable": true,
+        "top_cosine": 0.5616323053836823,
+        "mean_cosine": 0.4311274066567421,
+        "ce_top": -1.8301994800567627
+      },
+      {
+        "id": "q33",
+        "answerable": true,
+        "top_cosine": 0.5513315498828888,
+        "mean_cosine": 0.521120035648346,
+        "ce_top": -2.6690008640289307
+      },
+      {
+        "id": "q34",
+        "answerable": true,
+        "top_cosine": 0.5184611082077026,
+        "mean_cosine": 0.4077579140663147,
+        "ce_top": 2.6745572090148926
+      },
+      {
+        "id": "q35",
+        "answerable": true,
+        "top_cosine": 0.4962571859359741,
+        "mean_cosine": 0.45072526931762696,
+        "ce_top": 0.43431025743484497
+      },
+      {
+        "id": "q36",
+        "answerable": true,
+        "top_cosine": 0.6006523966789246,
+        "mean_cosine": 0.5655659884214401,
+        "ce_top": 2.4592928886413574
+      },
+      {
+        "id": "q37",
+        "answerable": true,
+        "top_cosine": 0.451973557472229,
+        "mean_cosine": 0.4082317650318146,
+        "ce_top": -1.1249537467956543
+      },
+      {
+        "id": "q38",
+        "answerable": true,
+        "top_cosine": 0.6174029409885406,
+        "mean_cosine": 0.5652107298374176,
+        "ce_top": -2.737107276916504
+      },
+      {
+        "id": "q39",
+        "answerable": true,
+        "top_cosine": 0.6119587421417236,
+        "mean_cosine": 0.6039187709490458,
+        "ce_top": 1.529175043106079
+      },
+      {
+        "id": "q40",
+        "answerable": true,
+        "top_cosine": 0.5826251804828644,
+        "mean_cosine": 0.5545803844928742,
+        "ce_top": 0.42524558305740356
+      },
+      {
+        "id": "q41",
+        "answerable": true,
+        "top_cosine": 0.5285661518573761,
+        "mean_cosine": 0.49885444045066835,
+        "ce_top": 2.9671249389648438
+      },
+      {
+        "id": "q42",
+        "answerable": true,
+        "top_cosine": 0.39534878730773926,
+        "mean_cosine": 0.37237536907196045,
+        "ce_top": -6.112529754638672
+      },
+      {
+        "id": "q43",
+        "answerable": true,
+        "top_cosine": 0.4919056296348572,
+        "mean_cosine": 0.46578291058540344,
+        "ce_top": -0.7332193851470947
+      },
+      {
+        "id": "q44",
+        "answerable": true,
+        "top_cosine": 0.39548301696777344,
+        "mean_cosine": 0.3566164493560791,
+        "ce_top": -5.298550605773926
+      },
+      {
+        "id": "q45",
+        "answerable": true,
+        "top_cosine": 0.4667659401893616,
+        "mean_cosine": 0.40428705513477325,
+        "ce_top": -4.9066643714904785
+      },
+      {
+        "id": "q46",
+        "answerable": true,
+        "top_cosine": 0.49890339374542236,
+        "mean_cosine": 0.4788844386736552,
+        "ce_top": 0.004358738660812378
+      },
+      {
+        "id": "q47",
+        "answerable": true,
+        "top_cosine": 0.4071615934371948,
+        "mean_cosine": 0.3988964756329854,
+        "ce_top": -3.872039318084717
+      },
+      {
+        "id": "q48",
+        "answerable": true,
+        "top_cosine": 0.6412145495414734,
+        "mean_cosine": 0.5600499957799911,
+        "ce_top": 0.11897848546504974
+      },
+      {
+        "id": "q49",
+        "answerable": true,
+        "top_cosine": 0.5225562453269958,
+        "mean_cosine": 0.4972400814294815,
+        "ce_top": 1.552575707435608
+      },
+      {
+        "id": "q50",
+        "answerable": true,
+        "top_cosine": 0.6677823960781097,
+        "mean_cosine": 0.4574693515896797,
+        "ce_top": 1.3371856212615967
+      },
+      {
+        "id": "t01",
+        "answerable": false,
+        "top_cosine": 0.15714788436889648,
+        "mean_cosine": 0.13561928272247314,
+        "ce_top": -11.202117919921875
+      },
+      {
+        "id": "t02",
+        "answerable": false,
+        "top_cosine": 0.1971977949142456,
+        "mean_cosine": 0.16804246107737222,
+        "ce_top": -9.966391563415527
+      },
+      {
+        "id": "t03",
+        "answerable": false,
+        "top_cosine": 0.4868033528327942,
+        "mean_cosine": 0.4670876661936442,
+        "ce_top": 0.4019302427768707
+      },
+      {
+        "id": "t04",
+        "answerable": false,
+        "top_cosine": 0.6036371290683746,
+        "mean_cosine": 0.5497810343901316,
+        "ce_top": 4.006111145019531
+      },
+      {
+        "id": "t05",
+        "answerable": false,
+        "top_cosine": 0.31228768825531006,
+        "mean_cosine": 0.29261869192123413,
+        "ce_top": -6.48089599609375
+      },
+      {
+        "id": "t06",
+        "answerable": false,
+        "top_cosine": 0.3463848829269409,
+        "mean_cosine": 0.27872462272644044,
+        "ce_top": 1.0890363454818726
+      }
+    ]
+  }
+}

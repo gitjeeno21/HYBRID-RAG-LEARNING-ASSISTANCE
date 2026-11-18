@@ -8,6 +8,7 @@ from langchain_community.document_loaders import PyPDFLoader
 from langchain_core.documents import Document
 
 from ingest import split_documents
+from library import is_safe_pdf_name
 
 
 def add_pdf_to_library(
@@ -19,8 +20,8 @@ def add_pdf_to_library(
     chunk_overlap: int,
 ) -> int:
     """Validate, persist, and index one new PDF; return its indexed chunk count."""
-    safe_name = Path(filename).name
-    if safe_name != filename or not safe_name.lower().endswith(".pdf"):
+    safe_name = filename
+    if not is_safe_pdf_name(safe_name):
         raise ValueError("Upload a PDF with a simple filename ending in .pdf")
     if not file_bytes.startswith(b"%PDF-"):
         raise ValueError("The uploaded file does not have a valid PDF header")
@@ -53,7 +54,8 @@ def add_pdf_to_library(
             # Use the final filename in citations and the eventual source path,
             # not the temporary parser path.
             page.metadata["filename"] = safe_name
-            page.metadata["source"] = str(destination)
+            # The bare name, not the server path: metadata is sent to the browser.
+            page.metadata["source"] = safe_name
 
         chunks: list[Document] = split_documents(
             pages,

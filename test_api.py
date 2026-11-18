@@ -7,32 +7,29 @@ from pathlib import Path
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
+
+from auth_testing import authed_client
 from groq import RateLimitError
 
+import db
 import main
+import workspace
 
 
 class ApiTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = TestClient(main.app)
+        self.client = authed_client(main.app)
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        tmp = Path(self.tmp.name)
-        for name, value in (
-            ("FEEDBACK_PATH", tmp / "feedback.json"),
-            ("QUIZ_HISTORY_PATH", tmp / "history.json"),
-        ):
-            patcher = patch.object(main, name, value)
-            patcher.start()
-            self.addCleanup(patcher.stop)
 
     def test_feedback_accepts_json_body(self) -> None:
         response = self.client.post(
             "/api/chat/feedback", json={"message": "An answer", "feedback": "up", "query": "q"}
         )
         self.assertEqual(response.status_code, 200)
-        saved = json.loads(main.FEEDBACK_PATH.read_text(encoding="utf-8"))
-        self.assertEqual(saved[0]["feedback"], "up")
+        with db.connect() as conn:
+            saved = conn.execute("SELECT feedback, query FROM chat_feedback").fetchall()
+        self.assertEqual([tuple(row) for row in saved], [("up", "q")])
 
     def test_feedback_rejects_unknown_value(self) -> None:
         response = self.client.post("/api/chat/feedback", json={"message": "x", "feedback": "meh"})
@@ -66,13 +63,43 @@ class ApiTests(unittest.TestCase):
             response = self.client.post("/api/chat/stream", json={"query": "hello"})
         return response, [json.loads(line) for line in response.text.splitlines() if line.strip()]
 
-    def test_stream_sends_meta_tokens_then_done(self) -> None:
-        response, events = self._stream(return_value=iter(["Hel", "lo (a.pdf, p. 1)"]))
+    def test_stream_sends_meta_tokens_done_then_the_trust_label(self) -> None:
+        with patch("main.SUPPORT_CHECK_ENABLED", True):
+            response, events = self._stream(return_value=iter(["Hel", "lo (a.pdf, p. 1)"]))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual([event["type"] for event in events], ["meta", "token", "token", "done"])
+        self.assertEqual([event["type"] for event in events], ["meta", "token", "token", "done", "trust"])
         self.assertEqual(events[0]["context"][0]["citation"], "a.pdf, p. 1")
-        self.assertEqual(events[-1]["answer"], "Hello (a.pdf, p. 1)")
-        self.assertEqual(events[-1]["trust"]["label"], "High")
+        done, trust = events[-2], events[-1]
+        self.assertEqual(done["answer"], "Hello (a.pdf, p. 1)")
+        # The answer is final before the support check runs; the label follows.
+        self.assertEqual(done["trust"]["label"], "pending")
+        self.assertNotIn("support_check", done["trace"]["timings_ms"])
+        self.assertEqual(trust["trust"]["label"], "High")
+        self.assertIn("support_check", trust["trace"]["timings_ms"])
+
+    def test_with_the_check_off_done_is_final_and_no_label_is_claimed(self) -> None:
+        calls = []
+
+        def real_assess(question, answer, chunks, ask=None, check=True):
+            calls.append(check)
+            from trust import assess
+            return assess(question, answer, chunks, ask=ask, check=check)
+
+        with patch("main.SUPPORT_CHECK_ENABLED", False), patch("main.assess", side_effect=real_assess):
+            retrieved = [{"filename": "a.pdf", "citation": "a.pdf, p. 1", "text": "t", "score": 0.5}]
+            with (
+                patch("main.list_pdf_names", return_value=["a.pdf"]),
+                patch("main.rewrite_followup", side_effect=lambda q, h: q),
+                patch("main.retrieve_for_api", return_value=retrieved),
+                patch("main.call_llm", side_effect=AssertionError("no support-check LLM call")),
+                patch("main.call_llm_stream", return_value=iter(["Answer (a.pdf, p. 1)"])),
+            ):
+                response = self.client.post("/api/chat/stream", json={"query": "q"})
+        events = [json.loads(line) for line in response.text.splitlines() if line.strip()]
+        done = next(event for event in events if event["type"] == "done")
+        self.assertEqual(calls, [False])
+        self.assertEqual(done["trust"]["label"], "unchecked")
+        self.assertTrue(done["citation_check"]["verified"])
 
     def test_stream_reports_provider_error_in_band(self) -> None:
         def failing(*_, **__):
@@ -89,10 +116,10 @@ class ApiTests(unittest.TestCase):
 
     def test_pdf_parse_cache_reuses_unchanged_files(self) -> None:
         from langchain_core.documents import Document
-        main._parse_pdf.cache_clear()
+        workspace._parse_pdf.cache_clear()
         pdf = Path(self.tmp.name) / "paper.pdf"
         pdf.write_bytes(b"%PDF-1.4 test")
-        with patch("main.PyPDFLoader") as loader:
+        with patch("workspace.PyPDFLoader") as loader:
             loader.return_value.load.return_value = [Document(page_content="x", metadata={"page": 0})]
             first = main.load_pdf_pages(pdf)
             first[0].metadata["mutated"] = True  # callers must not corrupt the cache
@@ -100,7 +127,7 @@ class ApiTests(unittest.TestCase):
         self.assertEqual(loader.call_count, 1)
         self.assertEqual(second[0].metadata["filename"], "paper.pdf")
         self.assertNotIn("mutated", second[0].metadata)
-        main._parse_pdf.cache_clear()
+        workspace._parse_pdf.cache_clear()
 
     def test_chat_top_k_is_validated(self) -> None:
         response = self.client.post("/api/chat", json={"query": "hello", "top_k": 99})

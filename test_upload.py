@@ -55,10 +55,8 @@ class PdfUploadTests(unittest.TestCase):
                 store.added_documents[0].metadata["filename"],
                 "new_paper.pdf",
             )
-            self.assertEqual(
-                store.added_documents[0].metadata["source"],
-                str(pdf_dir / "new_paper.pdf"),
-            )
+            # The bare filename, never the server path (metadata reaches the browser).
+            self.assertEqual(store.added_documents[0].metadata["source"], "new_paper.pdf")
             self.assertEqual(store.deleted_filters, [])
 
     def test_rejects_non_pdf_and_path_traversal_before_writing(self) -> None:

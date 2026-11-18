@@ -19,17 +19,16 @@ from pathlib import Path
 from langchain_chroma import Chroma
 
 from config import BASE_DIR, page_number, source_filename
-from evaluator import build_chunks, get_embeddings
+from legacy.evaluator import build_chunks, get_embeddings
 from hybrid import (
     CANDIDATES_PER_METHOD,
-    DENSE_CHUNK_OVERLAP,
-    DENSE_CHUNK_SIZE,
     RRF_K,
     bm25_ranking,
     build_bm25,
     hybrid_search,
 )
 from ingest import load_documents
+from legacy.hybrid_eval import DENSE_CHUNK_OVERLAP, DENSE_CHUNK_SIZE
 
 QUESTION_IDS = ("q35", "q38", "q39", "q40")
 INDEX_PATH = BASE_DIR / "chroma_db_eval_1500_50"

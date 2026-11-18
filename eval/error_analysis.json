@@ -1,0 +1,1783 @@
+{
+  "generated_at": "2026-11-09T20:00:20+00:00",
+  "top_n": 20,
+  "index": "38aa73feeb2d",
+  "llm_calls": 0,
+  "sets": {
+    "heldout_v2": {
+      "summary": {
+        "n": 47,
+        "classes": {
+          "HIT_TOP3": 41,
+          "NOT_RETRIEVED": 1,
+          "PAGE_SPLIT": 3,
+          "RANKED_4_TO_20": 2
+        },
+        "miss_classes_by_type": {
+          "exact_term": {
+            "PAGE_SPLIT": 1
+          },
+          "lookup": {
+            "PAGE_SPLIT": 1
+          },
+          "paraphrase": {
+            "NOT_RETRIEVED": 1,
+            "PAGE_SPLIT": 1,
+            "RANKED_4_TO_20": 2
+          }
+        },
+        "misses_in_dense_top20": 4,
+        "misses_in_bm25_top20": 6,
+        "misses_in_neither_top20": 0,
+        "evidence_split_across_chunks": 0,
+        "evidence_beyond_embedding_window": {
+          "all": 12,
+          "dense_rank_when_blind": [
+            2,
+            1,
+            null,
+            2,
+            2,
+            2,
+            2,
+            5,
+            8,
+            1,
+            7,
+            2
+          ],
+          "dense_top3_when_blind": 8,
+          "dense_top3_when_visible": 30,
+          "n_visible": 35
+        },
+        "rerank_top10_vs_live": {
+          "miss_to_hit": [
+            "v2_09",
+            "v2_13",
+            "v2_42",
+            "v2_56"
+          ],
+          "hit_to_miss": []
+        }
+      },
+      "questions": [
+        {
+          "id": "v2_01",
+          "type": "exact_term",
+          "file": "source_doc.pdf",
+          "page": [
+            8
+          ],
+          "rank_dense": 10,
+          "rank_bm25": 1,
+          "rank_final": 3,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 42,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_02",
+          "type": "exact_term",
+          "file": "source_doc.pdf",
+          "page": [
+            9
+          ],
+          "rank_dense": 2,
+          "rank_bm25": 3,
+          "rank_final": 3,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 313,
+          "evidence_beyond_embedding_window": true,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_03",
+          "type": "exact_term",
+          "file": "source_doc.pdf",
+          "page": [
+            10
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 3,
+          "rank_final": 2,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 269,
+          "evidence_beyond_embedding_window": true,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_04",
+          "type": "lookup",
+          "file": "source_doc.pdf",
+          "page": [
+            8
+          ],
+          "rank_dense": 2,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 177,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_05",
+          "type": "lookup",
+          "file": "source_doc.pdf",
+          "page": [
+            7
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 164,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_06",
+          "type": "multi_hop",
+          "file": "source_doc.pdf",
+          "page": [
+            8,
+            10
+          ],
+          "rank_dense": 2,
+          "rank_bm25": 3,
+          "rank_final": 3,
+          "rank_reranked": 2,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 249,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_07",
+          "type": "multi_hop",
+          "file": "source_doc.pdf",
+          "page": [
+            7,
+            8
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 210,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_08",
+          "type": "paraphrase",
+          "file": "source_doc.pdf",
+          "page": [
+            8
+          ],
+          "rank_dense": null,
+          "rank_bm25": 14,
+          "rank_final": null,
+          "rank_reranked": null,
+          "class": "NOT_RETRIEVED",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 320,
+          "evidence_beyond_embedding_window": true,
+          "in_dense_top20": false,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_09",
+          "type": "paraphrase",
+          "file": "source_doc.pdf",
+          "page": [
+            5
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 7,
+          "rank_final": 4,
+          "rank_reranked": 1,
+          "class": "PAGE_SPLIT",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 26,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_13",
+          "type": "exact_term",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            54,
+            96
+          ],
+          "rank_dense": 7,
+          "rank_bm25": 1,
+          "rank_final": 4,
+          "rank_reranked": 1,
+          "class": "PAGE_SPLIT",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 103,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_14",
+          "type": "exact_term",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            56
+          ],
+          "rank_dense": 3,
+          "rank_bm25": 1,
+          "rank_final": 2,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 253,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_15",
+          "type": "exact_term",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            82
+          ],
+          "rank_dense": 2,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 261,
+          "evidence_beyond_embedding_window": true,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_16",
+          "type": "exact_term",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            51
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 120,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_17",
+          "type": "lookup",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            25
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 77,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_18",
+          "type": "lookup",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            45
+          ],
+          "rank_dense": 10,
+          "rank_bm25": 1,
+          "rank_final": 2,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 86,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_19",
+          "type": "lookup",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            52
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 166,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_20",
+          "type": "lookup",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            53
+          ],
+          "rank_dense": 2,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 78,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_21",
+          "type": "multi_hop",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            5,
+            25,
+            30
+          ],
+          "rank_dense": 2,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 281,
+          "evidence_beyond_embedding_window": true,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_22",
+          "type": "multi_hop",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            56,
+            57,
+            99
+          ],
+          "rank_dense": 2,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 155,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_23",
+          "type": "multi_hop",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            46,
+            64
+          ],
+          "rank_dense": 2,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 274,
+          "evidence_beyond_embedding_window": true,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_24",
+          "type": "paraphrase",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            55
+          ],
+          "rank_dense": 2,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 274,
+          "evidence_beyond_embedding_window": true,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_25",
+          "type": "paraphrase",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            29
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 12,
+          "rank_final": 2,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 124,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_26",
+          "type": "paraphrase",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            58
+          ],
+          "rank_dense": 3,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 131,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_27",
+          "type": "paraphrase",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            59
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 236,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_31",
+          "type": "exact_term",
+          "file": "ML111.pdf",
+          "page": [
+            4
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 126,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_32",
+          "type": "exact_term",
+          "file": "ML111.pdf",
+          "page": [
+            7
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 214,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_33",
+          "type": "exact_term",
+          "file": "90-Day ML Engineer Roadmap.pdf",
+          "page": [
+            2
+          ],
+          "rank_dense": 5,
+          "rank_bm25": 2,
+          "rank_final": 2,
+          "rank_reranked": 2,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 272,
+          "evidence_beyond_embedding_window": true,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_34",
+          "type": "lookup",
+          "file": "ML111.pdf",
+          "page": [
+            2
+          ],
+          "rank_dense": 3,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 2,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 186,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_35",
+          "type": "lookup",
+          "file": "ML111.pdf",
+          "page": [
+            4
+          ],
+          "rank_dense": 8,
+          "rank_bm25": 1,
+          "rank_final": 2,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 317,
+          "evidence_beyond_embedding_window": true,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_36",
+          "type": "lookup",
+          "file": "90-Day ML Engineer Roadmap.pdf",
+          "page": [
+            2
+          ],
+          "rank_dense": 2,
+          "rank_bm25": 2,
+          "rank_final": 2,
+          "rank_reranked": 2,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 70,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_37",
+          "type": "lookup",
+          "file": "90-Day ML Engineer Roadmap.pdf",
+          "page": [
+            3
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 116,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_38",
+          "type": "multi_hop",
+          "file": "ML111.pdf",
+          "page": [
+            3,
+            6
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 104,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_39",
+          "type": "multi_hop",
+          "file": "ML111.pdf",
+          "page": [
+            2,
+            4
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 219,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_40",
+          "type": "multi_hop",
+          "file": "90-Day ML Engineer Roadmap.pdf",
+          "page": [
+            3,
+            4
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 283,
+          "evidence_beyond_embedding_window": true,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_41",
+          "type": "paraphrase",
+          "file": "ML111.pdf",
+          "page": [
+            7
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 8,
+          "rank_final": 2,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 41,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_42",
+          "type": "paraphrase",
+          "file": "ML111.pdf",
+          "page": [
+            7
+          ],
+          "rank_dense": 3,
+          "rank_bm25": 5,
+          "rank_final": 7,
+          "rank_reranked": 2,
+          "class": "RANKED_4_TO_20",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 77,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_43",
+          "type": "paraphrase",
+          "file": "ML111.pdf",
+          "page": [
+            3
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 6,
+          "rank_final": 1,
+          "rank_reranked": 3,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 137,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_44",
+          "type": "paraphrase",
+          "file": "90-Day ML Engineer Roadmap.pdf",
+          "page": [
+            3
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 10,
+          "rank_final": 2,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 144,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_49",
+          "type": "exact_term",
+          "file": "ML222.pdf",
+          "page": [
+            4
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 14,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_50",
+          "type": "exact_term",
+          "file": "ML222.pdf",
+          "page": [
+            6
+          ],
+          "rank_dense": 7,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 298,
+          "evidence_beyond_embedding_window": true,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_51",
+          "type": "lookup",
+          "file": "ML222.pdf",
+          "page": [
+            3
+          ],
+          "rank_dense": null,
+          "rank_bm25": 18,
+          "rank_final": null,
+          "rank_reranked": null,
+          "class": "PAGE_SPLIT",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 145,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": false,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_52",
+          "type": "lookup",
+          "file": "ML222.pdf",
+          "page": [
+            7
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 61,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_53",
+          "type": "multi_hop",
+          "file": "ML222.pdf",
+          "page": [
+            4,
+            5
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 140,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_54",
+          "type": "multi_hop",
+          "file": "ML222.pdf",
+          "page": [
+            4,
+            7
+          ],
+          "rank_dense": 2,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 293,
+          "evidence_beyond_embedding_window": true,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_55",
+          "type": "paraphrase",
+          "file": "ML222.pdf",
+          "page": [
+            8
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 2,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 188,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_56",
+          "type": "paraphrase",
+          "file": "ML222.pdf",
+          "page": [
+            3
+          ],
+          "rank_dense": 5,
+          "rank_bm25": 16,
+          "rank_final": 10,
+          "rank_reranked": 3,
+          "class": "RANKED_4_TO_20",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 159,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        },
+        {
+          "id": "v2_57",
+          "type": "paraphrase",
+          "file": "ML222.pdf",
+          "page": [
+            9
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "evidence_in_one_chunk": true,
+          "evidence_token_start": 40,
+          "evidence_beyond_embedding_window": false,
+          "in_dense_top20": true,
+          "in_bm25_top20": true
+        }
+      ]
+    },
+    "legacy_dev": {
+      "summary": {
+        "n": 50,
+        "classes": {
+          "HIT_TOP3": 37,
+          "RANKED_4_TO_20": 8,
+          "PAGE_SPLIT": 4,
+          "NOT_RETRIEVED": 1
+        },
+        "miss_classes_by_type": {
+          "legacy_conceptual": {
+            "RANKED_4_TO_20": 4,
+            "PAGE_SPLIT": 3,
+            "NOT_RETRIEVED": 1
+          },
+          "legacy_factual": {
+            "RANKED_4_TO_20": 1,
+            "PAGE_SPLIT": 1
+          },
+          "legacy_numeric": {
+            "RANKED_4_TO_20": 3
+          }
+        },
+        "misses_in_dense_top20": 9,
+        "misses_in_bm25_top20": 12,
+        "misses_in_neither_top20": 1,
+        "evidence_split_across_chunks": 0,
+        "evidence_beyond_embedding_window": {
+          "all": 0,
+          "dense_rank_when_blind": [],
+          "dense_top3_when_blind": 0,
+          "dense_top3_when_visible": 0,
+          "n_visible": 0
+        },
+        "rerank_top10_vs_live": {
+          "miss_to_hit": [
+            "q11",
+            "q16",
+            "q43",
+            "q49"
+          ],
+          "hit_to_miss": [
+            "q26",
+            "q27",
+            "q38",
+            "q44",
+            "q45",
+            "q48"
+          ]
+        },
+        "label_suspect": [],
+        "misses_with_suspect_label": [],
+        "rerank_losses_with_suspect_label": []
+      },
+      "questions": [
+        {
+          "id": "q01",
+          "type": "legacy_numeric",
+          "file": "source_doc.pdf",
+          "page": [
+            8
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q02",
+          "type": "legacy_numeric",
+          "file": "source_doc.pdf",
+          "page": [
+            5
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 2,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q03",
+          "type": "legacy_numeric",
+          "file": "source_doc.pdf",
+          "page": [
+            8
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q04",
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            5
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 2,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q05",
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            4
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q06",
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            6
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q07",
+          "type": "legacy_numeric",
+          "file": "source_doc.pdf",
+          "page": [
+            7
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q08",
+          "type": "legacy_factual",
+          "file": "source_doc.pdf",
+          "page": [
+            7
+          ],
+          "rank_dense": 2,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 2,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q09",
+          "type": "legacy_numeric",
+          "file": "source_doc.pdf",
+          "page": [
+            5
+          ],
+          "rank_dense": 4,
+          "rank_bm25": 1,
+          "rank_final": 2,
+          "rank_reranked": 3,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q10",
+          "type": "legacy_numeric",
+          "file": "source_doc.pdf",
+          "page": [
+            10
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q11",
+          "type": "legacy_numeric",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            1
+          ],
+          "rank_dense": 16,
+          "rank_bm25": 6,
+          "rank_final": 10,
+          "rank_reranked": 1,
+          "class": "RANKED_4_TO_20",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q12",
+          "type": "legacy_numeric",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            7
+          ],
+          "rank_dense": 4,
+          "rank_bm25": 3,
+          "rank_final": 2,
+          "rank_reranked": 3,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q13",
+          "type": "legacy_numeric",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            7
+          ],
+          "rank_dense": null,
+          "rank_bm25": 5,
+          "rank_final": 5,
+          "rank_reranked": 5,
+          "class": "RANKED_4_TO_20",
+          "in_dense_top20": false,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q14",
+          "type": "legacy_factual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            7
+          ],
+          "rank_dense": 12,
+          "rank_bm25": 8,
+          "rank_final": 13,
+          "rank_reranked": 13,
+          "class": "RANKED_4_TO_20",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q15",
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            2
+          ],
+          "rank_dense": 6,
+          "rank_bm25": 1,
+          "rank_final": 2,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q16",
+          "type": "legacy_numeric",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            7
+          ],
+          "rank_dense": 15,
+          "rank_bm25": 2,
+          "rank_final": 4,
+          "rank_reranked": 2,
+          "class": "RANKED_4_TO_20",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q17",
+          "type": "legacy_numeric",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            1
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q18",
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            2
+          ],
+          "rank_dense": 13,
+          "rank_bm25": 1,
+          "rank_final": 3,
+          "rank_reranked": 3,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q19",
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            2
+          ],
+          "rank_dense": 5,
+          "rank_bm25": 1,
+          "rank_final": 2,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q20",
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            2
+          ],
+          "rank_dense": null,
+          "rank_bm25": 5,
+          "rank_final": 7,
+          "rank_reranked": 5,
+          "class": "RANKED_4_TO_20",
+          "in_dense_top20": false,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q21",
+          "type": "legacy_factual",
+          "file": "source_doc.pdf",
+          "page": [
+            3
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q22",
+          "type": "legacy_numeric",
+          "file": "source_doc.pdf",
+          "page": [
+            7
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q23",
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            6
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q24",
+          "type": "legacy_numeric",
+          "file": "source_doc.pdf",
+          "page": [
+            8
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q25",
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            8
+          ],
+          "rank_dense": 2,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q26",
+          "type": "legacy_numeric",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            5
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 9,
+          "rank_final": 2,
+          "rank_reranked": 6,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q27",
+          "type": "legacy_numeric",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            5
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 6,
+          "rank_final": 3,
+          "rank_reranked": 7,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q28",
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            4
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q29",
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            4
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q30",
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            2
+          ],
+          "rank_dense": 7,
+          "rank_bm25": 2,
+          "rank_final": 2,
+          "rank_reranked": 2,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q31",
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            6
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 2,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q32",
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            3
+          ],
+          "rank_dense": 10,
+          "rank_bm25": 7,
+          "rank_final": 13,
+          "rank_reranked": 13,
+          "class": "RANKED_4_TO_20",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q33",
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            6
+          ],
+          "rank_dense": 2,
+          "rank_bm25": 2,
+          "rank_final": 1,
+          "rank_reranked": 2,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q34",
+          "type": "legacy_factual",
+          "file": "source_doc.pdf",
+          "page": [
+            3
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q35",
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            5
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 2,
+          "rank_final": 1,
+          "rank_reranked": 2,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q36",
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            6
+          ],
+          "rank_dense": 10,
+          "rank_bm25": 7,
+          "rank_final": 4,
+          "rank_reranked": 9,
+          "class": "RANKED_4_TO_20",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q37",
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            3
+          ],
+          "rank_dense": 2,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q38",
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            6
+          ],
+          "rank_dense": 4,
+          "rank_bm25": 1,
+          "rank_final": 2,
+          "rank_reranked": 4,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q39",
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            4
+          ],
+          "rank_dense": 10,
+          "rank_bm25": 11,
+          "rank_final": 18,
+          "rank_reranked": 18,
+          "class": "PAGE_SPLIT",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q40",
+          "type": "legacy_factual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            5
+          ],
+          "rank_dense": 3,
+          "rank_bm25": 19,
+          "rank_final": 7,
+          "rank_reranked": 4,
+          "class": "PAGE_SPLIT",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q41",
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            2
+          ],
+          "rank_dense": 2,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 1,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q42",
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            6
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 4,
+          "rank_final": 2,
+          "rank_reranked": 3,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q43",
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            9
+          ],
+          "rank_dense": 18,
+          "rank_bm25": 2,
+          "rank_final": 6,
+          "rank_reranked": 1,
+          "class": "RANKED_4_TO_20",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q44",
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            13
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 2,
+          "rank_final": 1,
+          "rank_reranked": 6,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q45",
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            14
+          ],
+          "rank_dense": 9,
+          "rank_bm25": 1,
+          "rank_final": 2,
+          "rank_reranked": 7,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q46",
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            10
+          ],
+          "rank_dense": null,
+          "rank_bm25": null,
+          "rank_final": null,
+          "rank_reranked": null,
+          "class": "NOT_RETRIEVED",
+          "in_dense_top20": false,
+          "in_bm25_top20": false,
+          "label_ok": true
+        },
+        {
+          "id": "q47",
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            11
+          ],
+          "rank_dense": null,
+          "rank_bm25": 17,
+          "rank_final": null,
+          "rank_reranked": null,
+          "class": "PAGE_SPLIT",
+          "in_dense_top20": false,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q48",
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            14
+          ],
+          "rank_dense": 7,
+          "rank_bm25": 4,
+          "rank_final": 3,
+          "rank_reranked": 6,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q49",
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            8
+          ],
+          "rank_dense": 12,
+          "rank_bm25": 3,
+          "rank_final": 5,
+          "rank_reranked": 1,
+          "class": "PAGE_SPLIT",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        },
+        {
+          "id": "q50",
+          "type": "legacy_factual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            12
+          ],
+          "rank_dense": 1,
+          "rank_bm25": 1,
+          "rank_final": 1,
+          "rank_reranked": 2,
+          "class": "HIT_TOP3",
+          "in_dense_top20": true,
+          "in_bm25_top20": true,
+          "label_ok": true
+        }
+      ]
+    }
+  }
+}

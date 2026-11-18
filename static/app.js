@@ -34,10 +34,21 @@ const store = {
   },
 };
 
+function getCookie(name) {
+  const match = document.cookie.split("; ").find(part => part.startsWith(`${name}=`));
+  return match ? decodeURIComponent(match.slice(name.length + 1)) : "";
+}
+
+/* Every write request echoes the session's CSRF cookie in a header. A page on
+   another site cannot read the cookie, so it cannot forge the header. */
+function authHeaders(method, extra = {}) {
+  return method === "GET" ? extra : { ...extra, "X-CSRF-Token": getCookie("rag_csrf") };
+}
+
 async function api(path, { method = "GET", json, body } = {}) {
-  const options = { method };
+  const options = { method, headers: authHeaders(method) };
   if (json !== undefined) {
-    options.headers = { "Content-Type": "application/json" };
+    options.headers["Content-Type"] = "application/json";
     options.body = JSON.stringify(json);
   } else if (body) {
     options.body = body;
@@ -50,8 +61,12 @@ async function api(path, { method = "GET", json, body } = {}) {
   }
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
+    if (response.status === 401 && !path.startsWith("/api/auth/")) showAuth("Your session ended. Please sign in again.");
     if (response.status === 503 || response.status === 429) refreshHealth();
-    throw new Error(formatApiError(data.detail || data.message || data, `Request failed (${response.status})`));
+    const error = new Error(formatApiError(data.detail || data.message || data, `Request failed (${response.status})`));
+    error.status = response.status;
+    error.code = data.code || "";
+    throw error;
   }
   return data;
 }
@@ -460,6 +475,10 @@ function fillPaperSelects() {
     second.value = names.find(name => name !== $("#compare-pdf-one").value);
   }
   $("#generate-quiz").disabled = !names.length;
+  const scope = $("#inspect-scope");
+  const previousScope = scope.value;
+  scope.innerHTML = '<option value="">All papers</option>' + options;
+  if (names.includes(previousScope)) scope.value = previousScope;
   updateCompareControls();
 }
 
@@ -470,6 +489,7 @@ const MODE_COPY = {
   chat: ["Chat", "Ask questions answered only from your papers, with citations."],
   quiz: ["Quiz", "Test yourself with questions generated and graded from one paper."],
   compare: ["Compare", "Compare two papers side by side, using separate evidence for each."],
+  inspect: ["Inspect", "See how retrieval ranks passages, and how each retrieval method measured on the benchmark."],
 };
 
 function setMode(mode) {
@@ -484,6 +504,13 @@ function setMode(mode) {
   store.set("mode", mode);
   closeSidebar();
   if (mode === "quiz") loadQuizHistory();
+  if (mode === "inspect") {
+    loadEvalSummary();
+    // Show the server's default top-k rather than an empty box.
+    if (!$("#inspect-top-k").placeholder) {
+      api("/api/settings").then(settings => { $("#inspect-top-k").placeholder = String(settings.top_k); }).catch(() => {});
+    }
+  }
 }
 $$("[data-mode]").forEach(button => button.addEventListener("click", () => setMode(button.dataset.mode)));
 
@@ -550,8 +577,12 @@ const historyBefore = turn => state.turns
   .flatMap(item => [{ role: "user", content: item.query }, { role: "assistant", content: item.data.answer }])
   .slice(-6);
 
+// Chat history is kept per account, so a second person signing in on the
+// same browser never sees the first person's questions.
+const chatKey = () => `chatTurns:${state.user?.id ?? "anon"}`;
+
 function persistChat() {
-  store.session("chatTurns", state.turns.filter(turn => turn.status === "done").slice(-30));
+  store.session(chatKey(), state.turns.filter(turn => turn.status === "done").slice(-30));
   $("#export-chat").disabled = !state.turns.some(turn => turn.status === "done");
   $("#clear-chat").disabled = !state.turns.length;
 }
@@ -570,6 +601,7 @@ async function sendChat(query, existingTurn = null) {
   renderTurn(turn);
   scrollToBottom();
   state.busy = true;
+  state.activeTurn = turn;   // the request that currently owns "busy"
   updateSendButton();
   try {
     const payload = { query, papers: turn.papers, history: historyBefore(turn), top_k: state.settings.topK || undefined };
@@ -590,8 +622,17 @@ async function sendChat(query, existingTurn = null) {
         });
       } else if (event.type === "done") {
         cancelAnimationFrame(frame);
-        Object.assign(turn.data, { answer: event.answer, trust: event.trust });
+        Object.assign(turn.data, { answer: event.answer, trust: event.trust, citation_check: event.citation_check, trace: event.trace });
         turn.status = "done";
+        // The answer is final; the confidence label arrives in a later
+        // "trust" event, so show the answer and free the input right away.
+        if (state.activeTurn === turn) { state.busy = false; state.activeTurn = null; }
+        updateSendButton();
+        renderTurn(turn);
+      } else if (event.type === "trust") {
+        Object.assign(turn.data, { trust: event.trust, trace: event.trace });
+        renderTurn(turn);
+        persistChat();
       } else if (event.type === "error") {
         throw new Error(event.detail);
       }
@@ -601,7 +642,9 @@ async function sendChat(query, existingTurn = null) {
     turn.status = "error";
     turn.error = error.message;
   } finally {
-    state.busy = false;
+    // A newer question may have started while this one's label was pending;
+    // only the request that owns "busy" may release it.
+    if (state.activeTurn === turn) { state.busy = false; state.activeTurn = null; }
     updateSendButton();
   }
   renderTurn(turn);
@@ -614,13 +657,14 @@ async function streamChat(payload, onEvent) {
   let response;
   try {
     response = await fetch("/api/chat/stream", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
+      method: "POST", headers: authHeaders("POST", { "Content-Type": "application/json" }), body: JSON.stringify(payload),
     });
   } catch (_) {
     throw new Error("Network connection failed. Check that the app server is running.");
   }
   if (!response.ok || !response.body) {
     const data = await response.json().catch(() => ({}));
+    if (response.status === 401) showAuth("Your session ended. Please sign in again.");
     if (response.status === 503 || response.status === 429) refreshHealth();
     throw new Error(formatApiError(data.detail || data, `Request failed (${response.status})`));
   }
@@ -645,11 +689,30 @@ function scrollToBottom() {
 }
 
 function trustBadge(trust = {}) {
+  // No confidence is claimed when the grounding check is off; the citation
+  // badge (verified or not) carries the deterministic signal instead.
+  if (trust?.label === "unchecked") return "";
+  if (trust?.label === "pending") {
+    return `<span class="badge badge-neutral" title="Checking that every claim is supported by the passages.">Checking support…</span>`;
+  }
   const label = trust.label || "n/a";
   const cls = { High: "badge-high", Medium: "badge-medium", Low: "badge-low" }[label] || "badge-neutral";
   const text = label === "n/a" ? "No answer found" : `${label} confidence`;
   const reason = trust.reason ? `${trust.reason}. ` : "";
   return `<span class="badge ${cls}" title="${escapeHtml(reason)}A heuristic from retrieval similarity and a support check, not a guarantee.">${escapeHtml(text)}</span>`;
+}
+
+/** Warn when the answer cites a page that was not among the retrieved passages. */
+function citationWarning(check) {
+  const bad = check?.not_in_retrieved || [];
+  if (!bad.length) {
+    const cited = check?.cited || [];
+    return cited.length
+      ? ` <span class="badge badge-high" title="Every page this answer cites (${escapeHtml(cited.join("; "))}) is among the passages it was given.">Citations verified</span>`
+      : "";
+  }
+  const list = bad.join("; ");
+  return ` <span class="badge badge-low" title="The answer cites ${escapeHtml(list)}, which was not among the passages it was given. Check that claim against the PDF.">${bad.length} unverified citation${bad.length === 1 ? "" : "s"}</span>`;
 }
 
 function renderTurn(turn) {
@@ -677,15 +740,17 @@ function renderTurn(turn) {
     const streaming = turn.status === "streaming";
     const status = streaming
       ? `<span class="badge badge-neutral"><span class="spinner" style="width:10px;height:10px;border-width:1.5px"></span>Writing answer…</span>`
-      : trustBadge(data.trust);
+      : trustBadge(data.trust) + citationWarning(data.citation_check);
     bot = `${rewritten}
       <div class="md${streaming ? " streaming" : ""}">${renderMarkdown(stripSourcesLine(data.answer)) || "<p></p>"}</div>
       <div class="msg-meta">${status}
         ${turn.papers?.length ? `<span class="badge badge-neutral">Scope: ${turn.papers.map(paperTitle).map(escapeHtml).join(", ")}</span>` : ""}</div>
       ${sources ? `<div class="sources">${sources}</div>` : ""}
+      ${streaming ? "" : traceBlock(data.trace)}
       <div class="msg-actions${streaming ? " hidden" : ""}">
         <button type="button" class="icon-btn" data-act="copy" title="Copy answer" aria-label="Copy answer">${icon("copy")}</button>
         <button type="button" class="icon-btn" data-act="regenerate" title="Regenerate" aria-label="Regenerate answer">${icon("refresh")}</button>
+        <button type="button" class="icon-btn" data-act="inspect" title="Inspect retrieval for this question" aria-label="Inspect retrieval">${icon("search")}</button>
         <button type="button" class="icon-btn ${turn.feedback === "up" ? "on" : ""}" data-act="up" title="Helpful" aria-label="Helpful" aria-pressed="${turn.feedback === "up"}">${icon("up")}</button>
         <button type="button" class="icon-btn ${turn.feedback === "down" ? "on" : ""}" data-act="down" title="Not helpful" aria-label="Not helpful" aria-pressed="${turn.feedback === "down"}">${icon("down")}</button>
       </div>`;
@@ -714,6 +779,11 @@ $("#chat-messages").addEventListener("click", async event => {
   const act = event.target.closest("[data-act]")?.dataset.act;
   if (!act || !turn) return;
   if (act === "retry" || act === "regenerate") return sendChat(turn.query, turn);
+  if (act === "inspect") {
+    // Inspect the query retrieval actually used (after any follow-up rewrite).
+    const paper = turn.papers?.length === 1 ? turn.papers[0] : "";
+    return runInspection(turn.data.query_used || turn.query, paper);
+  }
   if (act === "copy") {
     try { await navigator.clipboard.writeText(turn.data.answer); toast("Answer copied", "success"); }
     catch (_) { toast("Clipboard is not available in this browser.", "warn"); }
@@ -764,14 +834,16 @@ $("#clear-chat").addEventListener("click", () => {
 
 $("#export-chat").addEventListener("click", () => {
   const body = state.turns.filter(turn => turn.status === "done").map(turn => {
-    const sources = (turn.data.context || []).map(item => `- ${item.citation}`).join("\n");
+    // Several passages can share a page, so list each cited page once.
+    const sources = [...new Set((turn.data.context || []).map(item => item.citation))]
+      .map(label => `- ${label}`).join("\n");
     return `## Q: ${turn.query}\n\n${turn.data.answer}\n\n**Confidence:** ${turn.data.trust?.label || "n/a"}\n\n**Retrieved sources**\n${sources || "- none"}`;
   }).join("\n\n---\n\n");
   downloadText(`chat-${new Date().toISOString().slice(0, 10)}.md`, `# Chat export\n\n${body}\n`);
 });
 
 function restoreChat() {
-  const saved = store.session("chatTurns");
+  const saved = store.session(chatKey());
   if (!Array.isArray(saved) || !saved.length) return;
   state.turns = saved.filter(turn => turn && turn.status === "done" && turn.data);
   const container = $("#chat-messages");
@@ -1192,6 +1264,198 @@ $("#progress-button").addEventListener("click", async () => {
   }
 });
 
+
+/* ==========================================================================
+   Pipeline trace (under each chat answer)
+   ========================================================================== */
+const ms = value => (value == null ? "–" : value >= 1000 ? `${(value / 1000).toFixed(1)} s` : `${Math.round(value)} ms`);
+
+function traceBlock(trace) {
+  if (!trace?.timings_ms) return "";
+  const t = trace.timings_ms;
+  const steps = [["Rewrite", t.rewrite], ["Retrieval", t.retrieval], ["First token", t.first_token],
+    ["Generation", t.generation], ["Support check", t.support_check]].filter(([, value]) => value != null);
+  const stages = (trace.retrieval || []).flatMap(search => Object.entries(search.timings_ms || {})
+    .map(([name, value]) => `${search.paper ? `${escapeHtml(paperTitle(search.paper))} · ` : ""}${name.replace("_ms", "")} ${value.toFixed(1)} ms`));
+  const tokens = Object.entries(trace.tokens || {}).filter(([name]) => name !== "total")
+    .map(([name, usage]) => `${name.replace("_", " ")} ${usage.total_tokens ?? "?"}`);
+  return `<details class="trace">
+    <summary>${icon("chart")}Pipeline trace · ${ms(t.total)}${trace.tokens?.total ? ` · ${trace.tokens.total.toLocaleString()} tokens` : ""}</summary>
+    <div class="trace-body">
+      <div class="trace-steps">${steps.map(([name, value]) => `<span><b>${name}</b>${ms(value)}</span>`).join("")}</div>
+      ${stages.length ? `<div class="hint">Retrieval stages: ${stages.join(" · ")}</div>` : ""}
+      ${tokens.length ? `<div class="hint">Tokens: ${tokens.join(" · ")}</div>` : ""}
+    </div>
+  </details>`;
+}
+
+/* ==========================================================================
+   Inspect: retrieval inspector
+   ========================================================================== */
+const fmt = (value, digits = 3) => (value == null ? "–" : Number(value).toFixed(digits));
+
+async function runInspection(query, paper = "") {
+  setMode("inspect");
+  $("#inspect-query").value = query;
+  $("#inspect-scope").value = paper;
+  return inspect();
+}
+
+async function inspect() {
+  const query = $("#inspect-query").value.trim();
+  if (!query) { $("#inspect-query").focus(); return; }
+  const button = $("#inspect-button");
+  const paper = $("#inspect-scope").value;
+  const topK = Number($("#inspect-top-k").value) || state.settings.topK || null;
+  setBusy(button, true, "Inspecting…");
+  try {
+    const data = await api("/api/retrieval/inspect", { method: "POST", json: { query, papers: paper ? [paper] : [], top_k: topK } });
+    renderInspection(data);
+  } catch (error) {
+    $("#inspect-result").innerHTML = `<div class="notice notice-error">${escapeHtml(error.message)}</div>`;
+  } finally {
+    setBusy(button, false);
+  }
+}
+
+function renderInspection(data) {
+  const searches = data.searches.map(search => {
+    const settings = search.settings || {};
+    const timings = Object.entries(search.timings_ms || {})
+      .map(([name, value]) => `<span class="badge badge-neutral">${name.replace("_ms", "")} ${value.toFixed(1)} ms</span>`).join("");
+    const rows = (search.candidates || []).map((c, index) => `
+      <tr class="${c.selected ? "selected" : ""}">
+        <td class="num">${index + 1}</td>
+        <td><details><summary>${escapeHtml(c.citation)}</summary><div class="passage">${escapeHtml(c.preview)}…</div></details></td>
+        <td class="num">${c.dense_rank ?? "–"}</td><td class="num">${fmt(c.dense_cosine)}</td>
+        <td class="num">${c.bm25_rank ?? "–"}</td><td class="num">${fmt(c.bm25_score, 2)}</td>
+        <td class="num">${fmt(c.rrf_score, 4)}</td>
+        ${settings.rerank ? `<td class="num">${fmt(c.rerank_score, 2)}</td>` : ""}
+        <td>${c.selected ? '<span class="badge badge-accent">sent</span>' : ""}</td>
+      </tr>`).join("");
+    const both = (search.candidates || []).filter(c => c.dense_rank && c.bm25_rank).length;
+    return `<div class="card card-pad">
+      <div class="row"><strong>${search.paper ? escapeHtml(paperTitle(search.paper)) : "All papers"}</strong><span class="spacer"></span>${timings}</div>
+      <p class="hint" style="margin:6px 0 12px">${search.candidates.length} candidates from ${settings.candidates_per_method} dense + ${settings.candidates_per_method} BM25 results (${both} found by both), fused with RRF (k = ${settings.rrf_k})${settings.rerank ? ", then reranked by a cross-encoder" : ""}. The top ${settings.top_k} are sent to the model.</p>
+      <div class="table-scroll"><table class="data-table">
+        <thead><tr><th class="num">Final</th><th>Passage</th><th class="num">Dense rank</th><th class="num">Cosine</th><th class="num">BM25 rank</th><th class="num">BM25 score</th><th class="num">RRF</th>${settings.rerank ? '<th class="num">Rerank</th>' : ""}<th></th></tr></thead>
+        <tbody>${rows}</tbody></table></div>
+    </div>`;
+  }).join("");
+  $("#inspect-result").innerHTML = searches || '<div class="notice notice-warn">No passages were retrieved.</div>';
+}
+
+$("#inspect-form").addEventListener("submit", event => { event.preventDefault(); inspect(); });
+
+/* ==========================================================================
+   Inspect: evaluation dashboard (recorded results only)
+   ========================================================================== */
+const METRIC_LABELS = { hit: "Hit@k", ndcg: "nDCG@k", mrr: "MRR@10", precision: "Precision@k", recall: "Recall@k" };
+const CONFIG_LABELS = {
+  dense: "Dense only", bm25: "BM25 only", hybrid_rrf60: "Hybrid (RRF)",
+  hybrid_rerank_top10: "Hybrid + rerank (top 10)", hybrid_rerank_top20: "Hybrid + rerank (top 20)",
+};
+let evalData = null;
+let evalMetric = "hit";
+
+async function loadEvalSummary(force = false) {
+  if (evalData && !force) return;
+  try {
+    evalData = await api("/api/eval/summary");
+    renderEval();
+  } catch (error) {
+    $("#eval-caption").textContent = error.message;
+  }
+}
+
+function renderEval() {
+  const sets = evalData.sets.filter(set => set.available);
+  if (!sets.length) {
+    $("#eval-caption").textContent = "No recorded results yet. Run: python eval/run_eval.py --top-k 5 --md …";
+    return;
+  }
+  const first = sets[0];
+  const k = first.configs[0]?.top_k;
+  $("#eval-caption").textContent = `Measured by eval/run_eval.py at commit ${first.git_commit || "?"} (${relativeDate(first.generated_at)}), k = ${k}. Bars: mean; whiskers: 95% bootstrap CI. Highlighted: the configuration the app runs.`;
+  $("#eval-charts").innerHTML = sets.map(set => chartFor(set)).join("");
+  $("#eval-table").innerHTML = sets.map(set => tableFor(set)).join("");
+}
+
+function chartFor(set) {
+  const live = evalData.live_config;
+  const rows = set.configs.filter(c => c.metrics[evalMetric]);
+  const bars = rows.map(c => {
+    const m = c.metrics[evalMetric];
+    const [low, high] = m.ci95;
+    const isLive = c.name === live;
+    const label = CONFIG_LABELS[c.name] || c.name;
+    const count = evalMetric === "hit" && m.n ? ` (${Math.round(m.count)}/${m.n})` : "";
+    const delta = c.vs_baseline?.[evalMetric === "mrr" ? "rr" : evalMetric];
+    const tip = `${label}: ${fmt(m.mean)}${count}. 95% CI ${fmt(low)}–${fmt(high)}.` +
+      (delta ? ` vs live: ${delta.delta >= 0 ? "+" : ""}${fmt(delta.delta)} (better on ${delta.better_on}, worse on ${delta.worse_on}).` : "");
+    return `<div class="bar-row${isLive ? " live" : ""}" tabindex="0" data-tip="${escapeHtml(tip)}" aria-label="${escapeHtml(tip)}">
+      <span class="bar-name">${escapeHtml(label)}${isLive ? ' <span class="badge badge-accent">live</span>' : ""}</span>
+      <span class="bar-track">
+        <span class="bar" style="width:${(m.mean * 100).toFixed(1)}%"></span>
+        <span class="whisker" style="left:${(low * 100).toFixed(1)}%;width:${((high - low) * 100).toFixed(1)}%"></span>
+      </span>
+      <span class="bar-value">${fmt(m.mean)}${count}</span>
+    </div>`;
+  }).join("");
+  return `<figure class="eval-chart">
+    <figcaption><b>${escapeHtml(set.label)}</b><span class="hint">${METRIC_LABELS[evalMetric]} · ${set.questions} questions</span></figcaption>
+    <div class="bars" role="list">${bars}</div>
+    <div class="bar-axis"><span>0</span><span>0.5</span><span>1</span></div>
+  </figure>`;
+}
+
+function tableFor(set) {
+  const metrics = Object.keys(METRIC_LABELS);
+  const rows = set.configs.map(c => `<tr>
+    <td>${escapeHtml(CONFIG_LABELS[c.name] || c.name)}</td>
+    ${metrics.map(metric => {
+      const m = c.metrics[metric];
+      return `<td class="num">${m ? `${fmt(m.mean)} <span class="hint">[${fmt(m.ci95[0], 2)}–${fmt(m.ci95[1], 2)}]</span>` : "–"}</td>`;
+    }).join("")}
+    <td class="num">${c.latency_ms?.total_ms ? `${c.latency_ms.total_ms.p50.toFixed(1)} / ${c.latency_ms.total_ms.p95.toFixed(1)}` : "–"}</td>
+  </tr>`).join("");
+  return `<h4>${escapeHtml(set.label)} · ${set.questions} questions · ${set.corpus?.chunks ?? "?"} chunks</h4>
+    <div class="table-scroll"><table class="data-table">
+      <thead><tr><th>Configuration</th>${metrics.map(metric => `<th class="num">${METRIC_LABELS[metric]}</th>`).join("")}<th class="num">Latency ms (p50 / p95)</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+}
+
+$("#eval-metric").addEventListener("click", event => {
+  const button = event.target.closest("[data-metric]");
+  if (!button || !evalData) return;
+  evalMetric = button.dataset.metric;
+  $$("#eval-metric button").forEach(item => item.setAttribute("aria-pressed", String(item === button)));
+  renderEval();
+});
+
+/* Hover / focus tooltip for the benchmark bars. */
+const evalTip = Object.assign(document.createElement("div"), { className: "viz-tip", role: "tooltip" });
+document.body.append(evalTip);
+function showTip(row, x, y) {
+  evalTip.textContent = row.dataset.tip;
+  evalTip.classList.add("show");
+  const box = evalTip.getBoundingClientRect();
+  evalTip.style.left = `${Math.min(window.innerWidth - box.width - 12, Math.max(12, x - box.width / 2))}px`;
+  evalTip.style.top = `${Math.max(12, y - box.height - 14)}px`;
+}
+$("#eval-charts").addEventListener("pointermove", event => {
+  const row = event.target.closest(".bar-row");
+  if (row) showTip(row, event.clientX, event.clientY); else evalTip.classList.remove("show");
+});
+$("#eval-charts").addEventListener("pointerleave", () => evalTip.classList.remove("show"));
+$("#eval-charts").addEventListener("focusin", event => {
+  const row = event.target.closest(".bar-row");
+  if (!row) return;
+  const rect = row.getBoundingClientRect();
+  showTip(row, rect.left + rect.width / 2, rect.top);
+});
+$("#eval-charts").addEventListener("focusout", () => evalTip.classList.remove("show"));
+
 /* ==========================================================================
    Keyboard shortcuts
    ========================================================================== */
@@ -1199,22 +1463,312 @@ document.addEventListener("keydown", event => {
   const typing = event.target.closest("input, textarea, select, [contenteditable]");
   if (event.key === "Escape") { closeMenus(); closeSidebar(); return; }
   if (typing || event.metaKey || event.ctrlKey || event.altKey || document.querySelector("dialog[open]")) return;
-  if (["1", "2", "3"].includes(event.key)) setMode(["chat", "quiz", "compare"][Number(event.key) - 1]);
+  if (["1", "2", "3", "4"].includes(event.key)) setMode(["chat", "quiz", "compare", "inspect"][Number(event.key) - 1]);
   if (event.key === "/") { event.preventDefault(); setMode("chat"); chatInput.focus(); }
+});
+
+/* ==========================================================================
+   Accounts: landing page, sign in / create account, sign out
+   ========================================================================== */
+let authMode = "login";
+let started = false;
+let pendingEmail = "";       // the address a code was sent to (verify / reset steps)
+let resendTimer = null;
+
+const AUTH_COPY = {
+  login: ["Welcome back", "Sign in", ""],
+  register: ["Create your account", "Create account", ""],
+  verify: ["Check your email", "Verify email", "Enter the 6-digit code we sent to"],
+  forgot: ["Reset your password", "Send code", "Enter your account's email and we'll send you a code."],
+  reset: ["Choose a new password", "Change password", "Enter the 6-digit code we sent to"],
+};
+
+function setAuthMode(mode, { info = "", keepError = false } = {}) {
+  authMode = mode;
+  const [title, submit, lead] = AUTH_COPY[mode];
+  $$("#auth-tabs button").forEach(button => button.setAttribute("aria-pressed", String(button.dataset.authMode === mode)));
+  $$("#auth-screen [data-modes]").forEach(element =>
+    element.classList.toggle("hidden", !element.dataset.modes.split(" ").includes(mode)));
+  $("#auth-title").textContent = title;
+  $("#auth-submit").textContent = submit;
+  $("#auth-password").autocomplete = mode === "register" ? "new-password" : "current-password";
+  const leadText = lead && (mode === "verify" || mode === "reset") ? `${lead} ${pendingEmail}.` : lead;
+  $("#auth-lead").textContent = leadText;
+  $("#auth-lead").classList.toggle("hidden", !leadText);
+  $("#auth-info").textContent = info;
+  $("#auth-info").classList.toggle("hidden", !info);
+  if (!keepError) $("#auth-error").classList.add("hidden");
+  if (mode === "verify" || mode === "reset") { $("#auth-code").value = ""; setTimeout(() => $("#auth-code").focus(), 0); }
+}
+
+function authError(message) {
+  $("#auth-error").textContent = message;
+  $("#auth-error").classList.remove("hidden");
+}
+
+/* "Send a new code" stays disabled for 60 s, matching the server's cooldown. */
+function startResendCooldown(seconds = 60) {
+  const button = $("#auth-resend");
+  clearInterval(resendTimer);
+  let left = seconds;
+  const tick = () => {
+    button.disabled = left > 0;
+    button.textContent = left > 0 ? `Send a new code (${left}s)` : "Send a new code";
+    left -= 1;
+    if (left < 0) clearInterval(resendTimer);
+  };
+  tick();
+  resendTimer = setInterval(tick, 1000);
+}
+
+function showAuth(message = "") {
+  state.user = null;
+  $("#app-shell").classList.add("hidden");
+  $("#auth-screen").classList.remove("hidden");
+  setAuthMode(authMode === "register" ? "register" : "login");
+  if (message) authError(message);
+  setTimeout(() => $("#auth-email").focus(), 0);
+}
+
+function showApp(user) {
+  state.user = user;
+  $("#auth-screen").classList.add("hidden");
+  $("#app-shell").classList.remove("hidden");
+  const label = user.name || user.email;
+  $("#account-button").textContent = label.trim().slice(0, 1).toUpperCase();
+  $("#account-button").title = user.email;
+  $("#account-name").textContent = user.name || "Signed in";
+  $("#account-email").textContent = user.email;
+  if (!started) { started = true; startApp(); }
+}
+
+$("#auth-tabs").addEventListener("click", event => {
+  const button = event.target.closest("[data-auth-mode]");
+  if (button) setAuthMode(button.dataset.authMode);
+});
+$$("#auth-screen [data-go]").forEach(button => button.addEventListener("click", () => setAuthMode(button.dataset.go)));
+
+$("#auth-code").addEventListener("input", event => {
+  event.target.value = event.target.value.replace(/\D/g, "").slice(0, 6);
+});
+
+$("#auth-resend").addEventListener("click", async () => {
+  const path = authMode === "reset" ? "/api/auth/password/forgot" : "/api/auth/resend-verification";
+  try {
+    const { detail } = await api(path, { method: "POST", json: { email: pendingEmail } });
+    setAuthMode(authMode, { info: detail });
+    startResendCooldown();
+  } catch (error) { authError(error.message); }
+});
+
+async function submitAuth() {
+  const email = $("#auth-email").value.trim();
+  switch (authMode) {
+    case "login":
+      try {
+        const { user } = await api("/api/auth/login", { method: "POST", json: { email, password: $("#auth-password").value } });
+        $("#auth-password").value = "";
+        showApp(user);
+      } catch (error) {
+        if (error.code !== "email_unverified") throw error;
+        // Right password, unverified email: send a fresh code and go straight to the code step.
+        pendingEmail = email;
+        await api("/api/auth/resend-verification", { method: "POST", json: { email } }).catch(() => {});
+        setAuthMode("verify", { info: "Your email isn't verified yet. We've sent you a code." });
+        startResendCooldown();
+      }
+      return;
+    case "register": {
+      const result = await api("/api/auth/register", { method: "POST", json: {
+        email, password: $("#auth-password").value, name: $("#auth-name").value.trim() } });
+      $("#auth-password").value = "";
+      pendingEmail = result.email;
+      setAuthMode("verify");
+      startResendCooldown();
+      return;
+    }
+    case "verify": {
+      const { user } = await api("/api/auth/verify-email", { method: "POST", json: { email: pendingEmail, code: $("#auth-code").value } });
+      showApp(user);
+      return;
+    }
+    case "forgot": {
+      const { detail } = await api("/api/auth/password/forgot", { method: "POST", json: { email } });
+      pendingEmail = email;
+      setAuthMode("reset", { info: detail });
+      startResendCooldown();
+      return;
+    }
+    case "reset": {
+      const { detail } = await api("/api/auth/password/reset", { method: "POST", json: {
+        email: pendingEmail, code: $("#auth-code").value, new_password: $("#auth-new-password").value } });
+      $("#auth-new-password").value = "";
+      $("#auth-email").value = pendingEmail;
+      setAuthMode("login", { info: detail });
+      return;
+    }
+  }
+}
+
+$("#auth-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const button = $("#auth-submit");
+  const label = { login: "Signing in…", register: "Creating account…", verify: "Verifying…",
+                  forgot: "Sending…", reset: "Changing password…" }[authMode];
+  setBusy(button, true, label);
+  try {
+    await submitAuth();
+  } catch (error) {
+    authError(error.message);
+  } finally {
+    setBusy(button, false);
+  }
+});
+
+/* ==========================================================================
+   Account settings
+   ========================================================================== */
+$("#open-account").addEventListener("click", () => {
+  $("#account-menu").classList.add("hidden");
+  $("#settings-email").textContent = state.user.email;
+  $("#settings-verified").classList.toggle("hidden", !state.user.email_verified);
+  $("#settings-name").value = state.user.name || "";
+  $("#password-form").reset();
+  $("#password-error").classList.add("hidden");
+  $("#delete-account-form").reset();
+  $("#delete-error").classList.add("hidden");
+  openDialog("account-dialog");
+});
+
+$("#profile-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  try {
+    const { user } = await api("/api/account/profile", { method: "POST", json: { name: $("#settings-name").value.trim() } });
+    showApp(user);
+    toast("Name saved", "success");
+  } catch (error) { toast(error.message, "error"); }
+});
+
+$("#password-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const error = $("#password-error");
+  const next = $("#new-password").value;
+  if (next !== $("#confirm-password").value) {
+    error.textContent = "The new passwords don't match.";
+    error.classList.remove("hidden");
+    return;
+  }
+  const button = event.target.querySelector("button[type=submit]");
+  setBusy(button, true, "Changing…");
+  try {
+    const { detail } = await api("/api/account/password", { method: "POST", json: {
+      current_password: $("#current-password").value, new_password: next } });
+    event.target.reset();
+    error.classList.add("hidden");
+    $("#account-dialog").close();
+    toast(detail, "success");
+  } catch (failure) {
+    error.textContent = failure.message;
+    error.classList.remove("hidden");
+  } finally {
+    setBusy(button, false);
+  }
+});
+
+$("#delete-account-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const error = $("#delete-error");
+  const ok = await confirmDialog({ title: "Delete your account?", message: "Your account, every PDF in your library and all your history will be permanently deleted. This cannot be undone.", okLabel: "Delete everything", danger: true });
+  if (!ok) return;
+  try {
+    await api("/api/account/delete", { method: "POST", json: { password: $("#delete-password").value } });
+    try { sessionStorage.clear(); } catch (_) { /* storage blocked */ }
+    location.reload();
+  } catch (failure) {
+    error.textContent = failure.message;
+    error.classList.remove("hidden");
+  }
+});
+
+$("#sign-out-everywhere").addEventListener("click", async () => {
+  const ok = await confirmDialog({ title: "Sign out of all devices?", message: "Every session ends, including this one. You'll need your password to sign in again.", okLabel: "Sign out everywhere", danger: true });
+  if (!ok) return;
+  try { await api("/api/account/sign-out-everywhere", { method: "POST" }); } catch (_) { /* reload anyway */ }
+  try { sessionStorage.clear(); } catch (_) { /* storage blocked */ }
+  location.reload();
+});
+
+async function loadUsage() {
+  try {
+    const usage = await api("/api/usage");
+    const used = usage.tokens_today.toLocaleString();
+    if (usage.daily_limit) {
+      const share = Math.min(1, usage.tokens_today / usage.daily_limit);
+      $("#account-usage-text").textContent = `${used} of ${usage.daily_limit.toLocaleString()} tokens`;
+      $("#account-usage-bar").style.width = `${(share * 100).toFixed(1)}%`;
+      $("#account-usage-bar").classList.toggle("high", share >= 0.9);
+    } else {
+      $("#account-usage-text").textContent = `${used} tokens (no limit)`;
+      $("#account-usage-bar").style.width = "0";
+    }
+  } catch (_) {
+    $("#account-usage-text").textContent = "Unavailable";
+  }
+}
+
+$("#account-button").addEventListener("click", event => {
+  event.stopPropagation();
+  const menu = $("#account-menu");
+  const open = menu.classList.toggle("hidden") === false;
+  $("#account-button").setAttribute("aria-expanded", String(open));
+  if (open) loadUsage();
+});
+document.addEventListener("click", event => {
+  if (!event.target.closest(".account")) $("#account-menu").classList.add("hidden");
+});
+
+$("#sign-out").addEventListener("click", async () => {
+  try { await api("/api/auth/logout", { method: "POST" }); } catch (_) { /* signing out anyway */ }
+  // Drop everything this account left in the tab, then start clean.
+  try { sessionStorage.clear(); } catch (_) { /* storage blocked */ }
+  location.reload();
 });
 
 /* ==========================================================================
    Init
    ========================================================================== */
-(function init() {
+function startApp() {
   state.settings.topK = Number(store.get("topK")) || null;
   state.settings.showContext = store.get("showContext") === "true";
   $("#setting-context").checked = state.settings.showContext;
-  applyTheme(store.get("theme", "system"));
   updateGenerateLabel();
   restoreChat();
-  const mode = store.get("mode", "chat");
+  // A link like /?q=...#inspect opens a mode directly (and runs that inspection).
+  const linked = location.hash.slice(1);
+  const mode = MODE_COPY[linked] ? linked : store.get("mode", "chat");
   setMode(MODE_COPY[mode] ? mode : "chat");
   refreshHealth();
-  loadLibrary();
+  loadLibrary().then(() => {
+    const query = new URLSearchParams(location.search).get("q");
+    if (linked === "inspect" && query) runInspection(query);
+  });
+}
+
+(async function boot() {
+  applyTheme(store.get("theme", "system"));
+  try {
+    const { user } = await api("/api/auth/me");
+    showApp(user);
+  } catch (_) {
+    showAuth();
+  }
 })();
+
+/* Pointer spotlight for glass surfaces: feeds --mx / --my to the hovered element. */
+document.addEventListener("pointermove", event => {
+  const el = event.target.closest?.(".card, .starter, .option");
+  if (!el) return;
+  const rect = el.getBoundingClientRect();
+  el.style.setProperty("--mx", `${event.clientX - rect.left}px`);
+  el.style.setProperty("--my", `${event.clientY - rect.top}px`);
+}, { passive: true });
