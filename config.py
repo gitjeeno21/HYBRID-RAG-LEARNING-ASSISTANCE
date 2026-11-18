@@ -21,7 +21,8 @@ BASE_DIR = Path(__file__).resolve().parent
 PDF_DIR = BASE_DIR / "data"
 REMOVED_PDF_DIR = BASE_DIR / "removed_pdfs"
 CHROMA_DIR = BASE_DIR / "chroma_db"
-EVAL_RESULTS_PATH = BASE_DIR / "eval_results.json"
+# Written by the original chunking grid search (legacy/evaluator.py).
+EVAL_RESULTS_PATH = BASE_DIR / "legacy" / "results" / "eval_results.json"
 
 # --- Vector store ----------------------------------------------------------
 # One collection for the whole corpus. Changing this value requires a
@@ -36,9 +37,11 @@ EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 LLM_MODEL = "openai/gpt-oss-120b"
 
 # --- Chunking and retrieval ------------------------------------------------
-# Defaults, used when eval_results.json does not exist yet. evaluator.py
-# overwrites these at runtime with the configuration it measured as best.
-CHUNK_SIZE = 1000
+# 1500 characters, 50 overlap: the best of the 8-configuration grid search
+# (legacy/results/eval_results.json, still read first by
+# ingest.best_chunk_config). Kept equal here so behaviour does not depend
+# on that file being present.
+CHUNK_SIZE = 1500
 CHUNK_OVERLAP = 50
 # Passages sent to the model per question (per selected paper). Raised from 3
 # to 5 in Phase 3: it never loses a hit, gains on both eval sets, and lifts

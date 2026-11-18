@@ -16,23 +16,21 @@ from sentence_transformers import CrossEncoder
 
 from config import BASE_DIR, page_number, source_filename
 from config import LEGACY_EVAL_TOP_K as TOP_K  # pinned: this experiment ran at k=3
-from evaluator import build_chunks, get_embeddings
+from legacy.evaluator import build_chunks, get_embeddings
 from hybrid import (
     CANDIDATES_PER_METHOD,
-    DENSE_CHUNK_OVERLAP,
-    DENSE_CHUNK_SIZE,
     RRF_K,
     build_bm25,
-    docs_hit,
     hybrid_search,
 )
 from ingest import load_documents
+from legacy.hybrid_eval import DENSE_CHUNK_OVERLAP, DENSE_CHUNK_SIZE, docs_hit
 
 RERANKER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 INDEX_PATH = BASE_DIR / "chroma_db_eval_1500_50"
 COLLECTION_NAME = "eval_1500_50"
 QUESTIONS_PATH = BASE_DIR / "eval_questions.json"
-RESULTS_PATH = BASE_DIR / "rerank_results.json"
+RESULTS_PATH = BASE_DIR / "legacy" / "results" / "rerank_results.json"
 METHODS = ("dense", "hybrid", "dense_rerank", "hybrid_rerank")
 SET_NAMES = ("q1-q20", "q21-q30", "q31-q40", "q41-q50")
 

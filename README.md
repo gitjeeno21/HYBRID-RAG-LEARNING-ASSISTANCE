@@ -145,7 +145,8 @@ python -m unittest discover -p "test_*.py"
 | `quiz.py`, `compare.py` | Grounded quiz and two-paper comparison |
 | `static/` | Vanilla JS frontend, no build step |
 | `eval/` | Benchmarks, question sets, reports |
-| `evaluator.py`, `run_judging.py`, `rerank.py`, `diagnose_misses.py`, `agent.py`, `rag.py`, `query.py` | Earlier experiments and CLI scripts, kept for reproducibility of their recorded results; superseded by `eval/` |
+| `legacy/` | Earlier experiments and command-line demos, kept so their recorded results stay reproducible; superseded by `eval/` ([what each one was](legacy/README.md)) |
+| `docs/archive/` | The original project report (its numbers are superseded) |
 
 Runtime data (git-ignored): `app.db` (accounts, sessions, history, usage) and `storage/` (each user's PDFs and the shared, user-tagged vector index). `chroma_db/` is the single-user index used by the legacy CLI scripts.
 
