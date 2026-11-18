@@ -1,5 +1,7 @@
 # Hybrid RAG Assistant
 
+[![CI](https://github.com/gitjeeno21/Hybrid-RAG-for-Evidence-Grounded-Knowledge-Discovery-Learning/actions/workflows/ci.yml/badge.svg)](.github/workflows/ci.yml)
+
 Evidence-grounded question answering, quizzes and paper comparison over your own PDFs. Every answer comes only from retrieved passages, cites its pages, and has those citations checked automatically. Retrieval quality is measured, not assumed: every retrieval setting in this repo was chosen, or rejected, by a reproducible zero-LLM benchmark with confidence intervals.
 
 ![Retrieval inspector and benchmark dashboard](docs/screenshots/inspect.png)
@@ -118,6 +120,8 @@ All retrieval experiments make **zero LLM calls** (the harness blocks the client
 python eval/run_eval.py --top-k 5                                   # held-out set
 python eval/run_eval.py --questions eval/dev_questions_multipage.json --top-k 5
 ```
+
+**Continuous integration** ([`ci.yml`](.github/workflows/ci.yml)) runs on every push and pull request, without an API key: the full test suite, then a **retrieval regression gate**. Live hybrid retrieval must keep hit@5 ≥ 89% on the 29 held-out questions whose PDFs are committed (measured 28/29 when the gate was added), so a change that quietly degrades retrieval fails the build.
 
 **Limitations of the evaluation:** 47–50 questions per set, so CIs span about ±10 points; held-out labels are machine-validated but not yet human-reviewed; two held-out PDFs (`ML111.pdf`, `ML222.pdf`) are not in the repository, so 18 held-out questions cannot be reproduced from a clone.
 
