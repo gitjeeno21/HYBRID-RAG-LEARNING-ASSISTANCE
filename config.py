@@ -71,6 +71,12 @@ def _env_flag(name: str, default: bool) -> bool:
 RETRIEVAL_CANDIDATES = int(os.getenv("RAG_CANDIDATES", "10"))
 # Re-score the first RERANK_POOL fused results with a cross-encoder.
 RERANK_ENABLED = _env_flag("RAG_RERANK", False)
+# The LLM support check behind the confidence label. Off by default after
+# calibration (eval/ANSWER_QUALITY_k5_stage4.md): it returned SUPPORTED for
+# 43 of 43 answers, including the 4 the judge found unsupported sentences in,
+# while costing about half of every answer's tokens. APP_SUPPORT_CHECK=1
+# turns it back on.
+SUPPORT_CHECK_ENABLED = _env_flag("APP_SUPPORT_CHECK", False)
 RERANK_POOL = int(os.getenv("RAG_RERANK_POOL", "10"))
 # Measured at k=5 (eval/RETRIEVAL_COMPARISON.md): MiniLM gains on held-out but
 # loses on dev; BGE-reranker-base does not lose on dev but gains one held-out

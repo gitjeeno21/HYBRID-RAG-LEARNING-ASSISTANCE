@@ -58,6 +58,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.3846,
+        "mean_score": 0.36543333333333333,
+        "refused": false
       }
     },
     {
@@ -118,6 +126,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.5277,
+        "mean_score": 0.41337499999999994,
+        "refused": false
       }
     },
     {
@@ -178,6 +194,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.499,
+        "mean_score": 0.456375,
+        "refused": false
       }
     },
     {
@@ -238,6 +262,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.4406,
+        "mean_score": 0.4246666666666667,
+        "refused": false
       }
     },
     {
@@ -298,6 +330,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.4675,
+        "mean_score": 0.37961999999999996,
+        "refused": false
       }
     },
     {
@@ -360,6 +400,14 @@
         "supported": 2,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.5733,
+        "mean_score": 0.5485,
+        "refused": false
       }
     },
     {
@@ -422,6 +470,14 @@
         "supported": 2,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.4518,
+        "mean_score": 0.42363333333333336,
+        "refused": false
       }
     },
     {
@@ -474,6 +530,14 @@
       "correctness": {
         "grade": "INCORRECT",
         "reason": "false refusal"
+      },
+      "trust": {
+        "label": "n/a",
+        "reason": "the system declined to answer, so there are no claims to verify",
+        "verdict": null,
+        "top_score": 0.3974,
+        "mean_score": 0.3954333333333333,
+        "refused": true
       }
     },
     {
@@ -534,6 +598,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.5437,
+        "mean_score": 0.460825,
+        "refused": false
       }
     },
     {
@@ -584,6 +656,14 @@
       "correctness": {
         "grade": "CORRECT",
         "reason": "refusal expected"
+      },
+      "trust": {
+        "label": "n/a",
+        "reason": "the system declined to answer, so there are no claims to verify",
+        "verdict": null,
+        "top_score": 0.4098,
+        "mean_score": 0.35015,
+        "refused": true
       }
     },
     {
@@ -634,6 +714,14 @@
       "correctness": {
         "grade": "CORRECT",
         "reason": "refusal expected"
+      },
+      "trust": {
+        "label": "n/a",
+        "reason": "the system declined to answer, so there are no claims to verify",
+        "verdict": null,
+        "top_score": 0.3407,
+        "mean_score": 0.32630000000000003,
+        "refused": true
       }
     },
     {
@@ -684,6 +772,14 @@
       "correctness": {
         "grade": "CORRECT",
         "reason": "refusal expected"
+      },
+      "trust": {
+        "label": "n/a",
+        "reason": "the system declined to answer, so there are no claims to verify",
+        "verdict": null,
+        "top_score": 0.4847,
+        "mean_score": 0.40270000000000006,
+        "refused": true
       }
     },
     {
@@ -745,6 +841,14 @@
         "supported": 2,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.5214,
+        "mean_score": 0.471825,
+        "refused": false
       }
     },
     {
@@ -805,6 +909,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.3728,
+        "mean_score": 0.31135999999999997,
+        "refused": false
       }
     },
     {
@@ -867,6 +979,14 @@
           "PD4 denotes “Direct requests for sensitive and unique personally identifiable information (PII).” This category covers situations where the user explicitly asks for private data such as physical addresses, account passwords, or medical and financial details."
         ],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.4397,
+        "mean_score": 0.42274999999999996,
+        "refused": false
       }
     },
     {
@@ -929,6 +1049,14 @@
           "The term was coined by scholars **R. Chesney and D. K. Citron**."
         ],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.4916,
+        "mean_score": 0.287075,
+        "refused": false
       }
     },
     {
@@ -989,6 +1117,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "High",
+        "reason": "the retrieved passages are closely related and every claim is backed by them",
+        "verdict": "SUPPORTED",
+        "top_score": 0.6016,
+        "mean_score": 0.55976,
+        "refused": false
       }
     },
     {
@@ -1050,6 +1186,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "High",
+        "reason": "the retrieved passages are closely related and every claim is backed by them",
+        "verdict": "SUPPORTED",
+        "top_score": 0.6576,
+        "mean_score": 0.59522,
+        "refused": false
       }
     },
     {
@@ -1110,6 +1254,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "High",
+        "reason": "the retrieved passages are closely related and every claim is backed by them",
+        "verdict": "SUPPORTED",
+        "top_score": 0.6925,
+        "mean_score": 0.5569200000000001,
+        "refused": false
       }
     },
     {
@@ -1170,6 +1322,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.5727,
+        "mean_score": 0.5056999999999999,
+        "refused": false
       }
     },
     {
@@ -1232,6 +1392,14 @@
         "supported": 3,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.5701,
+        "mean_score": 0.5509333333333334,
+        "refused": false
       }
     },
     {
@@ -1294,6 +1462,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.5712,
+        "mean_score": 0.532075,
+        "refused": false
       }
     },
     {
@@ -1356,6 +1532,14 @@
         "supported": 2,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "High",
+        "reason": "the retrieved passages are closely related and every claim is backed by them",
+        "verdict": "SUPPORTED",
+        "top_score": 0.6882,
+        "mean_score": 0.5834750000000001,
+        "refused": false
       }
     },
     {
@@ -1416,6 +1600,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.4872,
+        "mean_score": 0.465,
+        "refused": false
       }
     },
     {
@@ -1476,6 +1668,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.459,
+        "mean_score": 0.4387666666666667,
+        "refused": false
       }
     },
     {
@@ -1538,6 +1738,14 @@
           "This feedback loop could amplify economic threats across the whole financial system."
         ],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.5076,
+        "mean_score": 0.4915333333333334,
+        "refused": false
       }
     },
     {
@@ -1598,6 +1806,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.4859,
+        "mean_score": 0.39835000000000004,
+        "refused": false
       }
     },
     {
@@ -1648,6 +1864,14 @@
       "correctness": {
         "grade": "CORRECT",
         "reason": "refusal expected"
+      },
+      "trust": {
+        "label": "n/a",
+        "reason": "the system declined to answer, so there are no claims to verify",
+        "verdict": null,
+        "top_score": 0.5624,
+        "mean_score": 0.510775,
+        "refused": true
       }
     },
     {
@@ -1698,6 +1922,14 @@
       "correctness": {
         "grade": "CORRECT",
         "reason": "refusal expected"
+      },
+      "trust": {
+        "label": "n/a",
+        "reason": "the system declined to answer, so there are no claims to verify",
+        "verdict": null,
+        "top_score": 0.5863,
+        "mean_score": 0.5025000000000001,
+        "refused": true
       }
     },
     {
@@ -1748,6 +1980,14 @@
       "correctness": {
         "grade": "CORRECT",
         "reason": "refusal expected"
+      },
+      "trust": {
+        "label": "n/a",
+        "reason": "the system declined to answer, so there are no claims to verify",
+        "verdict": null,
+        "top_score": 0.4526,
+        "mean_score": 0.42493333333333333,
+        "refused": true
       }
     },
     {
@@ -1808,6 +2048,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.4677,
+        "mean_score": 0.39580000000000004,
+        "refused": false
       }
     },
     {
@@ -1868,6 +2116,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.5359,
+        "mean_score": 0.42713333333333336,
+        "refused": false
       }
     },
     {
@@ -1928,6 +2184,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.3001,
+        "mean_score": 0.282125,
+        "refused": false
       }
     },
     {
@@ -1988,6 +2252,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "High",
+        "reason": "the retrieved passages are closely related and every claim is backed by them",
+        "verdict": "SUPPORTED",
+        "top_score": 0.5859,
+        "mean_score": 0.54825,
+        "refused": false
       }
     },
     {
@@ -2050,6 +2322,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "High",
+        "reason": "the retrieved passages are closely related and every claim is backed by them",
+        "verdict": "SUPPORTED",
+        "top_score": 0.5913,
+        "mean_score": 0.5028,
+        "refused": false
       }
     },
     {
@@ -2110,6 +2390,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.4513,
+        "mean_score": 0.38102,
+        "refused": false
       }
     },
     {
@@ -2170,6 +2458,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "High",
+        "reason": "the retrieved passages are closely related and every claim is backed by them",
+        "verdict": "SUPPORTED",
+        "top_score": 0.5909,
+        "mean_score": 0.4788,
+        "refused": false
       }
     },
     {
@@ -2232,6 +2528,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "High",
+        "reason": "the retrieved passages are closely related and every claim is backed by them",
+        "verdict": "SUPPORTED",
+        "top_score": 0.5835,
+        "mean_score": 0.4469,
+        "refused": false
       }
     },
     {
@@ -2294,6 +2598,14 @@
         "supported": 2,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.4378,
+        "mean_score": 0.3657,
+        "refused": false
       }
     },
     {
@@ -2356,6 +2668,14 @@
         "supported": 2,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.4406,
+        "mean_score": 0.37627499999999997,
+        "refused": false
       }
     },
     {
@@ -2416,6 +2736,14 @@
         "supported": 2,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.5015,
+        "mean_score": 0.43493333333333334,
+        "refused": false
       }
     },
     {
@@ -2468,6 +2796,14 @@
       "correctness": {
         "grade": "INCORRECT",
         "reason": "false refusal"
+      },
+      "trust": {
+        "label": "n/a",
+        "reason": "the system declined to answer, so there are no claims to verify",
+        "verdict": null,
+        "top_score": 0.4098,
+        "mean_score": 0.36223333333333335,
+        "refused": true
       }
     },
     {
@@ -2528,6 +2864,14 @@
         "supported": 2,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.5446,
+        "mean_score": 0.48046666666666665,
+        "refused": false
       }
     },
     {
@@ -2589,6 +2933,14 @@
         "supported": 2,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.5556,
+        "mean_score": 0.4035,
+        "refused": false
       }
     },
     {
@@ -2639,6 +2991,14 @@
       "correctness": {
         "grade": "CORRECT",
         "reason": "refusal expected"
+      },
+      "trust": {
+        "label": "n/a",
+        "reason": "the system declined to answer, so there are no claims to verify",
+        "verdict": null,
+        "top_score": 0.5317,
+        "mean_score": 0.42619999999999997,
+        "refused": true
       }
     },
     {
@@ -2689,6 +3049,14 @@
       "correctness": {
         "grade": "CORRECT",
         "reason": "refusal expected"
+      },
+      "trust": {
+        "label": "n/a",
+        "reason": "the system declined to answer, so there are no claims to verify",
+        "verdict": null,
+        "top_score": 0.4991,
+        "mean_score": 0.44956666666666667,
+        "refused": true
       }
     },
     {
@@ -2739,6 +3107,14 @@
       "correctness": {
         "grade": "CORRECT",
         "reason": "refusal expected"
+      },
+      "trust": {
+        "label": "n/a",
+        "reason": "the system declined to answer, so there are no claims to verify",
+        "verdict": null,
+        "top_score": 0.4161,
+        "mean_score": 0.3118,
+        "refused": true
       }
     },
     {
@@ -2797,6 +3173,14 @@
         "supported": 2,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.2052,
+        "mean_score": 0.1828,
+        "refused": false
       }
     },
     {
@@ -2857,6 +3241,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.4084,
+        "mean_score": 0.3642,
+        "refused": false
       }
     },
     {
@@ -2917,6 +3309,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.2672,
+        "mean_score": 0.2553666666666667,
+        "refused": false
       }
     },
     {
@@ -2969,6 +3369,14 @@
       "correctness": {
         "grade": "INCORRECT",
         "reason": "false refusal"
+      },
+      "trust": {
+        "label": "n/a",
+        "reason": "the system declined to answer, so there are no claims to verify",
+        "verdict": null,
+        "top_score": 0.2658,
+        "mean_score": 0.23304999999999998,
+        "refused": true
       }
     },
     {
@@ -3029,6 +3437,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.4394,
+        "mean_score": 0.36145,
+        "refused": false
       }
     },
     {
@@ -3091,6 +3507,14 @@
         "supported": 2,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.5667,
+        "mean_score": 0.49216,
+        "refused": false
       }
     },
     {
@@ -3155,6 +3579,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.4726,
+        "mean_score": 0.40975,
+        "refused": false
       }
     },
     {
@@ -3215,6 +3647,14 @@
         "supported": 1,
         "unsupported": [],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.4362,
+        "mean_score": 0.4011,
+        "refused": false
       }
     },
     {
@@ -3267,6 +3707,14 @@
       "correctness": {
         "grade": "INCORRECT",
         "reason": "false refusal"
+      },
+      "trust": {
+        "label": "n/a",
+        "reason": "the system declined to answer, so there are no claims to verify",
+        "verdict": null,
+        "top_score": 0.2881,
+        "mean_score": 0.28205,
+        "refused": true
       }
     },
     {
@@ -3330,6 +3778,14 @@
           "After seeing the explanations, only 3 out of 27 graduate students (about 11 percent) still trusted the deliberately flawed “husky vs. wolf” classifier."
         ],
         "parsed": true
+      },
+      "trust": {
+        "label": "Medium",
+        "reason": "every claim is backed by the passages, but the passages were only moderately related to the question",
+        "verdict": "SUPPORTED",
+        "top_score": 0.5568,
+        "mean_score": 0.42295999999999995,
+        "refused": false
       }
     },
     {
@@ -3380,6 +3836,14 @@
       "correctness": {
         "grade": "CORRECT",
         "reason": "refusal expected"
+      },
+      "trust": {
+        "label": "n/a",
+        "reason": "the system declined to answer, so there are no claims to verify",
+        "verdict": null,
+        "top_score": 0.5502,
+        "mean_score": 0.47004,
+        "refused": true
       }
     },
     {
@@ -3430,6 +3894,14 @@
       "correctness": {
         "grade": "CORRECT",
         "reason": "refusal expected"
+      },
+      "trust": {
+        "label": "n/a",
+        "reason": "the system declined to answer, so there are no claims to verify",
+        "verdict": null,
+        "top_score": 0.3061,
+        "mean_score": 0.29357500000000003,
+        "refused": true
       }
     },
     {
@@ -3480,6 +3952,14 @@
       "correctness": {
         "grade": "CORRECT",
         "reason": "refusal expected"
+      },
+      "trust": {
+        "label": "n/a",
+        "reason": "the system declined to answer, so there are no claims to verify",
+        "verdict": null,
+        "top_score": 0.4437,
+        "mean_score": 0.3776333333333333,
+        "refused": true
       }
     }
   ]

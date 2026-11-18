@@ -47,7 +47,7 @@ Layered, and each layer is measured:
 
 1. **Grounded prompt:** answer only from the context. When it holds none of the answer, reply with one fixed refusal sentence; when it holds part, answer that part and name the gap. The fixed sentence makes refusals machine-detectable.
 2. **Citation validation, deterministic:** every `file, p. X` the answer cites must be one of the retrieved pages. Violations are flagged in the UI.
-3. **Support check:** one extra LLM call grades the answer SUPPORTED / PARTIAL / UNSUPPORTED against the passages, combined with retrieval strength into a confidence label. I report honestly that it is *not shown to be calibrated*, and it costs half the tokens of each answer.
+3. **An LLM support check I measured, then switched off.** One extra LLM call graded each answer SUPPORTED / PARTIAL / UNSUPPORTED, combined with retrieval similarity into a High / Medium / Low label. Calibration on the held-out set ([report](eval/ANSWER_QUALITY_k5_stage4.md)): it returned SUPPORTED for **43 of 43** answers, including the 4 in which the independent judge found unsupported sentences, and the High/Medium split came from similarity alone, which didn't predict correctness either. It cost about half of every answer's tokens. So it's now opt-in (`APP_SUPPORT_CHECK=1`). The UI no longer claims a confidence it can't back up; it shows the deterministic signal instead: "Citations verified", or a warning naming any cited page that wasn't retrieved. That roughly doubles answers per minute on the free tier.
 4. **What I chose not to build:** a retrieval-score abstention gate. No score separates unanswerable questions (held-out AUC 0.61–0.72), and the prompt already refuses 13/13, so a gate could only add false refusals ([ABSTENTION_SIGNALS.md](eval/ABSTENTION_SIGNALS.md)).
 
 **Measured effect** on the held-out set, with the same models before and after ([ANSWER_QUALITY_k5_stage4.md](eval/ANSWER_QUALITY_k5_stage4.md)):
@@ -107,7 +107,7 @@ Every push runs the full test suite and a **retrieval regression gate** in CI ([
 - **Small evaluation sets** (47 and 50 questions): only large effects are detectable. Held-out labels are machine-validated but not yet human-reviewed.
 - **Two held-out PDFs (`ML111.pdf`, `ML222.pdf`) are not in the repository**, so 18 held-out questions cannot be reproduced from a clone.
 - **The held-out set has been looked at many times now.** Further decisions should use a fresh set.
-- **The confidence label is not shown to be calibrated,** and its grounding check uses the same model family that wrote the answer.
+- **No calibrated answer-level confidence.** The LLM self-check didn't discriminate (43/43 SUPPORTED), so it's off by default. A useful confidence signal would need a stronger or independent verifier, measured the same way.
 - **Local deployment:** no email verification or password reset, no HTTPS of its own (it needs a reverse proxy), and SQLite plus in-memory login throttling assume a single server process.
 - **Startup:** the embedding model takes about 9 s to load. It now loads in the background as the server starts, and parsed PDF text is cached on disk, so the first request after a restart went from 17 s to 0.18 s (measured). BM25 indexes are kept in memory for the 16 most recently active users.
 - **Upload is synchronous:** indexing runs in the server's thread pool (it no longer blocks other requests), but the upload request waits for it. A background job queue with progress reporting would be the next step for large files.

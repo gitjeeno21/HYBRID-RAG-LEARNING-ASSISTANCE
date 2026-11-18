@@ -9,7 +9,14 @@ the answer. A
 correct with probability X". Treat the label as a prompt to look closer, never
 as evidence.
 
-MEASURED (Phase 4, eval/ANSWER_QUALITY_k5.md, held-out v2, top-k 5): all 38
+CALIBRATED (Stage 4, eval/ANSWER_QUALITY_k5_stage4.md): the support check
+returned SUPPORTED for 43 of 43 answered held-out questions, including the 4
+in which the judge model found unsupported sentences, so it does not
+discriminate. It is therefore OFF in the app by default
+(config.SUPPORT_CHECK_ENABLED, env APP_SUPPORT_CHECK=1 to enable); assess()
+then returns label "unchecked" without an LLM call.
+
+EARLIER (Phase 4, eval/ANSWER_QUALITY_k5.md, held-out v2, top-k 5): all 38
 answered questions were correct, labelled High 8 and Medium 30, never Low.
 Both labels were 100% correct, so on this set the label does NOT separate
 right from wrong answers. The retrieval-strength cut-off (0.40) put 30 correct
@@ -255,7 +262,7 @@ def is_refusal(answer: str) -> bool:
     return _REFUSAL_MARKER in (answer or "").lower()
 
 
-def assess(question: str, answer: str, chunks: list, ask=None) -> dict:
+def assess(question: str, answer: str, chunks: list, ask=None, check: bool = True) -> dict:
     """Return {"label", "reason", "verdict", "top_score", "mean_score", "refused"}.
 
     WHY a dict and not a bare string: main.py stores the whole result in
@@ -280,6 +287,19 @@ def assess(question: str, answer: str, chunks: list, ask=None) -> dict:
             "top_score": strength["top"],
             "mean_score": strength["mean"],
             "refused": True,
+        }
+
+    if not check:
+        # The LLM check is switched off (config.SUPPORT_CHECK_ENABLED). No label
+        # is claimed: retrieval similarity alone did not predict correctness in
+        # calibration, so it is not presented as confidence.
+        return {
+            "label": "unchecked",
+            "reason": "the grounding check is turned off; citations are still verified",
+            "verdict": None,
+            "top_score": strength["top"],
+            "mean_score": strength["mean"],
+            "refused": False,
         }
 
     # Retrieved context is rebuilt from the same chunk dicts the UI shows, so

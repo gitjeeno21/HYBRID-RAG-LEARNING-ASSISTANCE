@@ -64,7 +64,8 @@ class ApiTests(unittest.TestCase):
         return response, [json.loads(line) for line in response.text.splitlines() if line.strip()]
 
     def test_stream_sends_meta_tokens_done_then_the_trust_label(self) -> None:
-        response, events = self._stream(return_value=iter(["Hel", "lo (a.pdf, p. 1)"]))
+        with patch("main.SUPPORT_CHECK_ENABLED", True):
+            response, events = self._stream(return_value=iter(["Hel", "lo (a.pdf, p. 1)"]))
         self.assertEqual(response.status_code, 200)
         self.assertEqual([event["type"] for event in events], ["meta", "token", "token", "done", "trust"])
         self.assertEqual(events[0]["context"][0]["citation"], "a.pdf, p. 1")
@@ -75,6 +76,30 @@ class ApiTests(unittest.TestCase):
         self.assertNotIn("support_check", done["trace"]["timings_ms"])
         self.assertEqual(trust["trust"]["label"], "High")
         self.assertIn("support_check", trust["trace"]["timings_ms"])
+
+    def test_with_the_check_off_done_is_final_and_no_label_is_claimed(self) -> None:
+        calls = []
+
+        def real_assess(question, answer, chunks, ask=None, check=True):
+            calls.append(check)
+            from trust import assess
+            return assess(question, answer, chunks, ask=ask, check=check)
+
+        with patch("main.SUPPORT_CHECK_ENABLED", False), patch("main.assess", side_effect=real_assess):
+            retrieved = [{"filename": "a.pdf", "citation": "a.pdf, p. 1", "text": "t", "score": 0.5}]
+            with (
+                patch("main.list_pdf_names", return_value=["a.pdf"]),
+                patch("main.rewrite_followup", side_effect=lambda q, h: q),
+                patch("main.retrieve_for_api", return_value=retrieved),
+                patch("main.call_llm", side_effect=AssertionError("no support-check LLM call")),
+                patch("main.call_llm_stream", return_value=iter(["Answer (a.pdf, p. 1)"])),
+            ):
+                response = self.client.post("/api/chat/stream", json={"query": "q"})
+        events = [json.loads(line) for line in response.text.splitlines() if line.strip()]
+        done = next(event for event in events if event["type"] == "done")
+        self.assertEqual(calls, [False])
+        self.assertEqual(done["trust"]["label"], "unchecked")
+        self.assertTrue(done["citation_check"]["verified"])
 
     def test_stream_reports_provider_error_in_band(self) -> None:
         def failing(*_, **__):

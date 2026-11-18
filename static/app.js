@@ -689,6 +689,9 @@ function scrollToBottom() {
 }
 
 function trustBadge(trust = {}) {
+  // No confidence is claimed when the grounding check is off; the citation
+  // badge (verified or not) carries the deterministic signal instead.
+  if (trust?.label === "unchecked") return "";
   if (trust?.label === "pending") {
     return `<span class="badge badge-neutral" title="Checking that every claim is supported by the passages.">Checking support…</span>`;
   }
@@ -702,7 +705,12 @@ function trustBadge(trust = {}) {
 /** Warn when the answer cites a page that was not among the retrieved passages. */
 function citationWarning(check) {
   const bad = check?.not_in_retrieved || [];
-  if (!bad.length) return "";
+  if (!bad.length) {
+    const cited = check?.cited || [];
+    return cited.length
+      ? ` <span class="badge badge-high" title="Every page this answer cites (${escapeHtml(cited.join("; "))}) is among the passages it was given.">Citations verified</span>`
+      : "";
+  }
   const list = bad.join("; ");
   return ` <span class="badge badge-low" title="The answer cites ${escapeHtml(list)}, which was not among the passages it was given. Check that claim against the PDF.">${bad.length} unverified citation${bad.length === 1 ? "" : "s"}</span>`;
 }

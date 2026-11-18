@@ -151,6 +151,7 @@ All off by default; each was measured before being left off (see `eval/RETRIEVAL
 | --- | --- |
 | `RAG_TOP_K` | Passages sent to the model per search (default 5) |
 | `RAG_RERANK=1` | Rerank the fused top 10 with a cross-encoder (~0.5 s per query on CPU) |
+| `APP_SUPPORT_CHECK=1` | Re-enable the LLM support check and its High/Medium/Low label (off by default: it did not discriminate in calibration and doubles tokens per answer) |
 | `RAG_RERANKER_MODEL` | Cross-encoder to use, e.g. `BAAI/bge-reranker-base` (~3 s per query on CPU, 1.1 GB download) |
 | `RAG_CANDIDATES` | Candidates each retriever contributes before fusion (default 10) |
 | `RAG_CROSS_PAGE=1` | Let chunks cross page breaks (then rebuild every library: stop the server, `python manage.py reindex --all`) |

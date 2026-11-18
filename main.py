@@ -37,6 +37,7 @@ from config import (
     LLM_MODEL,
     PROMPT_TEMPLATE,
     RERANK_ENABLED,
+    SUPPORT_CHECK_ENABLED,
     TOP_K,
     citation,
     source_filename,
@@ -815,7 +816,7 @@ def _assess(query: str, answer: str, retrieved: list[dict[str, Any]], trace: dic
     """Run the trust check, recording its time and tokens in the trace."""
     usage: dict[str, int] = {}
     started = time.perf_counter()
-    result = assess(query, answer, retrieved,
+    result = assess(query, answer, retrieved, check=SUPPORT_CHECK_ENABLED,
                     ask=lambda prompt: call_llm(prompt, temperature=0.0, label="trust", usage=usage))
     trace["timings_ms"]["support_check"] = _ms(started)
     if usage:
@@ -966,13 +967,19 @@ def chat_stream(request: ChatRequest, http: Request) -> StreamingResponse:
         # The answer is complete: say so now. The support check (an extra LLM
         # call, 0.5 s normally and up to ~15 s when rate-limited, measured)
         # follows as its own event instead of holding the answer back.
-        yield line({
-            "type": "done", "answer": answer,
-            "trust": {"label": "pending", "reason": "the support check is running"},
-            "citation_check": check_citations(answer, retrieved, list_pdf_names(ws)),
-            "trace": _finish_trace(trace, request_started),
-        })
+        citation_check = check_citations(answer, retrieved, list_pdf_names(ws))
+        if SUPPORT_CHECK_ENABLED:
+            yield line({
+                "type": "done", "answer": answer,
+                "trust": {"label": "pending", "reason": "the support check is running"},
+                "citation_check": citation_check,
+                "trace": _finish_trace(trace, request_started),
+            })
         trust = _assess(standalone_query, answer, retrieved, trace)
+        if not SUPPORT_CHECK_ENABLED:   # no LLM call: the label is final at once
+            yield line({"type": "done", "answer": answer, "trust": trust,
+                        "citation_check": citation_check,
+                        "trace": _finish_trace(trace, request_started)})
         finished = _finish_trace(trace, request_started)
         quota.record(user_id, finished["tokens"]["total"])
         yield line({"type": "trust", "trust": trust, "trace": finished})

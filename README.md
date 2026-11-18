@@ -8,7 +8,7 @@ Evidence-grounded question answering, quizzes and paper comparison over your own
 
 ## What it does
 
-- **Chat:** search all papers or pick several; with two or more selected, the answer covers each paper separately, saying when one doesn't address the question. Answers come from hybrid retrieval (BM25 + dense embeddings, fused with Reciprocal Rank Fusion), with clickable page citations, the retrieved passages, a citation check, a confidence label, and a **pipeline trace** (time and tokens per step). Answers stream in. Follow-up questions ("how does *it* compare…") are rewritten into standalone searches.
+- **Chat:** search all papers or pick several; with two or more selected, the answer covers each paper separately, saying when one doesn't address the question. Answers come from hybrid retrieval (BM25 + dense embeddings, fused with Reciprocal Rank Fusion), with clickable page citations, the retrieved passages, a deterministic citation check ("Citations verified" or a warning), and a **pipeline trace** (time and tokens per step). Answers stream in. Follow-up questions ("how does *it* compare…") are rewritten into standalone searches.
 - **Quiz:** questions generated from one paper, each citing a retrieved passage. Multiple-choice and true/false answers are graded against the answer key; free-text answers are graded by the LLM against the same passages.
 - **Compare:** two papers answered from *isolated* evidence, so passages from one can never leak into the other's answer.
 - **Inspect:** a retrieval debugger (every candidate's dense rank, cosine, BM25 rank and score, RRF score, and which passages reach the model) plus a dashboard of the recorded benchmark.
@@ -44,7 +44,9 @@ Answers, held-out set, the app's own model and prompt, judged by a second model 
 
 The three newly correct answers are exactly the questions whose answer chunk an old de-duplication bug used to drop. With 47 questions the confidence intervals overlap (81% [68–90] vs 87% [75–94]), so the paired 3-better / 0-worse count is the stronger evidence.
 
-A chat answer takes about 1.8 s end to end (measured: retrieval 29 ms, first token 1.2 s, support check 0.5 s) and about 5,300 tokens, half of them for the grounding check. The answer is marked done as soon as it finishes streaming; the confidence label follows in a separate event, so a slow or rate-limited check never holds the answer back. On Groq's free tier (about 8k tokens per minute for this model), a second question within the same minute waits for the rate limit.
+A chat answer takes about 1.3 s end to end (measured: retrieval 29 ms, first token 1.2 s) and about 2,700 tokens.
+
+**The LLM "confidence" check is off by default, because measurement showed it didn't work.** It graded 43 of 43 held-out answers as SUPPORTED, including the 4 the independent judge found unsupported sentences in, while doubling each answer's tokens (5,300 instead of about 2,700). The UI now shows what is actually verified, whether every cited page was among the retrieved passages. `APP_SUPPORT_CHECK=1` turns the check back on; it then runs after the answer has finished streaming, so it never holds the answer back.
 
 ## Quick start (Windows / PowerShell)
 
@@ -132,7 +134,7 @@ python eval/run_eval.py --questions eval/dev_questions_multipage.json --top-k 5
 python -m unittest discover -p "test_*.py"
 ```
 
-156 tests, all offline (no API key needed). LLM calls are replaced by fakes. The isolation tests use real PDFs, embeddings and Chroma; the rest use in-memory fakes.
+157 tests, all offline (no API key needed). LLM calls are replaced by fakes. The isolation tests use real PDFs, embeddings and Chroma; the rest use in-memory fakes.
 
 ## Project layout
 
@@ -147,7 +149,7 @@ python -m unittest discover -p "test_*.py"
 | `config.py` | Paths, models, chunking, top-k, `RAG_*` switches, the answer prompt |
 | `ingest.py`, `upload.py`, `library.py` | Shared chunking; safe upload, rename and delete |
 | `mailer.py` | Verification and reset codes by email (EmailJS, server-side) |
-| `citations.py`, `trust.py` | Citation validation; confidence label |
+| `citations.py`, `trust.py` | Citation validation; optional LLM support check (off by default, see Results) |
 | `quiz.py`, `compare.py` | Grounded quiz and two-paper comparison |
 | `static/` | Vanilla JS frontend, no build step |
 | `eval/` | Benchmarks, question sets, reports |

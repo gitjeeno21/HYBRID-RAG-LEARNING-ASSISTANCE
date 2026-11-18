@@ -45,8 +45,18 @@ CORRECT 41/47 (87%, CI 75%–94%); PARTIAL 2; INCORRECT 4; unparsed 0.
 
 ## Calibration of the confidence label
 
-**Not measured in this run:** the trust stage has not been run for these answers (`python eval/answer_eval.py --tag <tag> --stages trust`).
+Answerable questions only. A well-calibrated label is correct more often at High than at Medium, and at Medium than at Low.
 
+| Label | Answers | Correct | Correct or partial |
+|---|---|---|---|
+| High | 8 | 8/8 (100%, CI 68%–100%) | 8/8 (100%, CI 68%–100%) |
+| Medium | 35 | 33/35 (94%, CI 81%–98%) | 35/35 (100%, CI 90%–100%) |
+| Low | 0 | – | – |
+| n/a | 4 | 0/4 (0%, CI 0%–49%) | 0/4 (0%, CI 0%–49%) |
+
+**Verdict: the label is not shown to be calibrated on this set.** Labels used: High 8, Medium 35; correctness by label: High 100%, Medium 94%. 2 labelled answer(s) were not correct, and the labels do not rank them below the correct ones; it must not be presented as an accuracy estimate.
+
+Labels on unanswerable questions the system wrongly answered: {'Medium': 1}.
 
 ## Sentences the judge found unsupported
 
@@ -57,5 +67,5 @@ CORRECT 41/47 (87%, CI 75%–94%); PARTIAL 2; INCORRECT 4; unparsed 0.
 | v2_26 | This feedback loop could amplify economic threats across the whole financial system. |
 | v2_57 | After seeing the explanations, only 3 out of 27 graduate students (about 11 percent) still trusted the deliberately flawed “husky vs. wolf” classifier. |
 
-Groq tokens for all cached calls behind these results: {'openai/gpt-oss-120b': 291726, 'openai/gpt-oss-20b': 243940}; spent by this run: 0.
+Groq tokens for all cached calls behind these results: {'openai/gpt-oss-120b': 374986, 'openai/gpt-oss-20b': 243940}; spent by this run: {'openai/gpt-oss-120b': 83260}.
 
