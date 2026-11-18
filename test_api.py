@@ -63,13 +63,18 @@ class ApiTests(unittest.TestCase):
             response = self.client.post("/api/chat/stream", json={"query": "hello"})
         return response, [json.loads(line) for line in response.text.splitlines() if line.strip()]
 
-    def test_stream_sends_meta_tokens_then_done(self) -> None:
+    def test_stream_sends_meta_tokens_done_then_the_trust_label(self) -> None:
         response, events = self._stream(return_value=iter(["Hel", "lo (a.pdf, p. 1)"]))
         self.assertEqual(response.status_code, 200)
-        self.assertEqual([event["type"] for event in events], ["meta", "token", "token", "done"])
+        self.assertEqual([event["type"] for event in events], ["meta", "token", "token", "done", "trust"])
         self.assertEqual(events[0]["context"][0]["citation"], "a.pdf, p. 1")
-        self.assertEqual(events[-1]["answer"], "Hello (a.pdf, p. 1)")
-        self.assertEqual(events[-1]["trust"]["label"], "High")
+        done, trust = events[-2], events[-1]
+        self.assertEqual(done["answer"], "Hello (a.pdf, p. 1)")
+        # The answer is final before the support check runs; the label follows.
+        self.assertEqual(done["trust"]["label"], "pending")
+        self.assertNotIn("support_check", done["trace"]["timings_ms"])
+        self.assertEqual(trust["trust"]["label"], "High")
+        self.assertIn("support_check", trust["trace"]["timings_ms"])
 
     def test_stream_reports_provider_error_in_band(self) -> None:
         def failing(*_, **__):

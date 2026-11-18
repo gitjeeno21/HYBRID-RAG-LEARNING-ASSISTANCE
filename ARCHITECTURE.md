@@ -106,7 +106,7 @@ Quiz and Compare reuse the same hybrid retrieval with a per-paper metadata filte
 | GET | `/api/health` | The user's index readiness, paper/chunk counts, whether an API key is set |
 | GET | `/api/settings` | Live top-k, models, chunking |
 | POST | `/api/chat` | Answer with passages, citation check, confidence label, `trace` |
-| POST | `/api/chat/stream` | Same, as NDJSON events: `meta` → `token`* → `done` (or `error`) |
+| POST | `/api/chat/stream` | Same, as NDJSON events: `meta` → `token`* → `done` (the answer, final) → `trust` (confidence label, after the support check); `error` instead on failure |
 | POST | `/api/retrieval/inspect` | Retrieval only, no LLM: every candidate with dense/BM25 rank and score, RRF score, what is sent |
 | GET | `/api/eval/summary` | Recorded benchmark results (never computed on the fly) for the dashboard |
 | POST | `/api/quiz/generate`, `/api/quiz/grade` | Grounded quiz generation and grading |

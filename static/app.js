@@ -601,6 +601,7 @@ async function sendChat(query, existingTurn = null) {
   renderTurn(turn);
   scrollToBottom();
   state.busy = true;
+  state.activeTurn = turn;   // the request that currently owns "busy"
   updateSendButton();
   try {
     const payload = { query, papers: turn.papers, history: historyBefore(turn), top_k: state.settings.topK || undefined };
@@ -623,6 +624,15 @@ async function sendChat(query, existingTurn = null) {
         cancelAnimationFrame(frame);
         Object.assign(turn.data, { answer: event.answer, trust: event.trust, citation_check: event.citation_check, trace: event.trace });
         turn.status = "done";
+        // The answer is final; the confidence label arrives in a later
+        // "trust" event, so show the answer and free the input right away.
+        if (state.activeTurn === turn) { state.busy = false; state.activeTurn = null; }
+        updateSendButton();
+        renderTurn(turn);
+      } else if (event.type === "trust") {
+        Object.assign(turn.data, { trust: event.trust, trace: event.trace });
+        renderTurn(turn);
+        persistChat();
       } else if (event.type === "error") {
         throw new Error(event.detail);
       }
@@ -632,7 +642,9 @@ async function sendChat(query, existingTurn = null) {
     turn.status = "error";
     turn.error = error.message;
   } finally {
-    state.busy = false;
+    // A newer question may have started while this one's label was pending;
+    // only the request that owns "busy" may release it.
+    if (state.activeTurn === turn) { state.busy = false; state.activeTurn = null; }
     updateSendButton();
   }
   renderTurn(turn);
@@ -677,6 +689,9 @@ function scrollToBottom() {
 }
 
 function trustBadge(trust = {}) {
+  if (trust?.label === "pending") {
+    return `<span class="badge badge-neutral" title="Checking that every claim is supported by the passages.">Checking support…</span>`;
+  }
   const label = trust.label || "n/a";
   const cls = { High: "badge-high", Medium: "badge-medium", Low: "badge-low" }[label] || "badge-neutral";
   const text = label === "n/a" ? "No answer found" : `${label} confidence`;
