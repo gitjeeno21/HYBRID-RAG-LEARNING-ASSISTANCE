@@ -1,0 +1,4637 @@
+{
+  "generated_at": "2026-11-18T04:04:48+00:00",
+  "git_commit": "5e5e6ae",
+  "parents": 368,
+  "children": 1376,
+  "child_size": 400,
+  "child_overlap": 50,
+  "top_k": 5,
+  "sets": {
+    "dev": {
+      "n_questions": 56,
+      "n_answerable_scored": 50,
+      "n_unanswerable_skipped": 6,
+      "configs": {
+        "dense": {
+          "config": {
+            "name": "dense",
+            "method": "dense",
+            "top_k": 5,
+            "candidates_per_method": 10,
+            "rrf_k": 60,
+            "rerank_pool": 0,
+            "reranker": "cross-encoder/ms-marco-MiniLM-L-6-v2"
+          },
+          "hit@5": {
+            "count": 33.0,
+            "n": 50,
+            "mean": 0.66,
+            "ci95": [
+              0.52,
+              0.78
+            ]
+          },
+          "mrr@10": {
+            "count": 28.3135,
+            "n": 50,
+            "mean": 0.5663,
+            "ci95": [
+              0.4451,
+              0.6862
+            ]
+          },
+          "precision@5": {
+            "count": 10.2,
+            "n": 50,
+            "mean": 0.204,
+            "ci95": [
+              0.152,
+              0.26
+            ]
+          },
+          "recall@5": {
+            "count": 33.0,
+            "n": 50,
+            "mean": 0.66,
+            "ci95": [
+              0.52,
+              0.78
+            ]
+          },
+          "ndcg@5": {
+            "count": 18.4231,
+            "n": 50,
+            "mean": 0.3685,
+            "ci95": [
+              0.2782,
+              0.4605
+            ]
+          },
+          "near_page_hit": {
+            "count": 40.0,
+            "n": 50,
+            "mean": 0.8,
+            "ci95": [
+              0.68,
+              0.9
+            ]
+          },
+          "by_type": {
+            "legacy_conceptual": {
+              "hits": 16,
+              "n": 29,
+              "mrr": 0.4591
+            },
+            "legacy_factual": {
+              "hits": 5,
+              "n": 6,
+              "mrr": 0.75
+            },
+            "legacy_numeric": {
+              "hits": 12,
+              "n": 15,
+              "mrr": 0.7
+            }
+          },
+          "seconds": 0.97,
+          "latency_ms": {
+            "dense_ms": {
+              "p50": 14.5,
+              "p95": 22.9
+            },
+            "total_ms": {
+              "p50": 14.5,
+              "p95": 22.9
+            }
+          },
+          "vs_baseline": {
+            "hit": {
+              "delta": -0.18,
+              "ci95": [
+                -0.2805,
+                -0.08
+              ],
+              "better_on": 0,
+              "worse_on": 9
+            },
+            "rr": {
+              "delta": -0.0866,
+              "ci95": [
+                -0.1527,
+                -0.0134
+              ],
+              "better_on": 5,
+              "worse_on": 21
+            },
+            "precision": {
+              "delta": -0.06,
+              "ci95": [
+                -0.092,
+                -0.028
+              ],
+              "better_on": 3,
+              "worse_on": 17
+            },
+            "recall": {
+              "delta": -0.18,
+              "ci95": [
+                -0.3,
+                -0.08
+              ],
+              "better_on": 0,
+              "worse_on": 9
+            },
+            "ndcg": {
+              "delta": -0.089,
+              "ci95": [
+                -0.1427,
+                -0.0376
+              ],
+              "better_on": 9,
+              "worse_on": 21
+            }
+          }
+        },
+        "dense_s2b": {
+          "config": {
+            "name": "dense_s2b",
+            "method": "dense_s2b",
+            "top_k": 5,
+            "candidates_per_method": 10,
+            "rrf_k": 60,
+            "rerank_pool": 0,
+            "reranker": "cross-encoder/ms-marco-MiniLM-L-6-v2"
+          },
+          "hit@5": {
+            "count": 38.0,
+            "n": 50,
+            "mean": 0.76,
+            "ci95": [
+              0.64,
+              0.88
+            ]
+          },
+          "mrr@10": {
+            "count": 28.6706,
+            "n": 50,
+            "mean": 0.5734,
+            "ci95": [
+              0.464,
+              0.6839
+            ]
+          },
+          "precision@5": {
+            "count": 11.8,
+            "n": 50,
+            "mean": 0.236,
+            "ci95": [
+              0.184,
+              0.288
+            ]
+          },
+          "recall@5": {
+            "count": 38.0,
+            "n": 50,
+            "mean": 0.76,
+            "ci95": [
+              0.64,
+              0.88
+            ]
+          },
+          "ndcg@5": {
+            "count": 20.0456,
+            "n": 50,
+            "mean": 0.4009,
+            "ci95": [
+              0.3211,
+              0.4813
+            ]
+          },
+          "near_page_hit": {
+            "count": 44.0,
+            "n": 50,
+            "mean": 0.88,
+            "ci95": [
+              0.78,
+              0.96
+            ]
+          },
+          "by_type": {
+            "legacy_conceptual": {
+              "hits": 20,
+              "n": 29,
+              "mrr": 0.4883
+            },
+            "legacy_factual": {
+              "hits": 6,
+              "n": 6,
+              "mrr": 0.6722
+            },
+            "legacy_numeric": {
+              "hits": 12,
+              "n": 15,
+              "mrr": 0.6985
+            }
+          },
+          "seconds": 1.42,
+          "latency_ms": {
+            "dense_ms": {
+              "p50": 30.0,
+              "p95": 33.9
+            },
+            "total_ms": {
+              "p50": 30.0,
+              "p95": 33.9
+            }
+          },
+          "vs_baseline": {
+            "hit": {
+              "delta": -0.08,
+              "ci95": [
+                -0.2,
+                0.04
+              ],
+              "better_on": 3,
+              "worse_on": 7
+            },
+            "rr": {
+              "delta": -0.0794,
+              "ci95": [
+                -0.1727,
+                0.0167
+              ],
+              "better_on": 9,
+              "worse_on": 18
+            },
+            "precision": {
+              "delta": -0.028,
+              "ci95": [
+                -0.072,
+                0.012
+              ],
+              "better_on": 8,
+              "worse_on": 11
+            },
+            "recall": {
+              "delta": -0.08,
+              "ci95": [
+                -0.2,
+                0.04
+              ],
+              "better_on": 3,
+              "worse_on": 7
+            },
+            "ndcg": {
+              "delta": -0.0565,
+              "ci95": [
+                -0.1261,
+                0.0084
+              ],
+              "better_on": 14,
+              "worse_on": 19
+            }
+          }
+        },
+        "hybrid_rrf60": {
+          "config": {
+            "name": "hybrid_rrf60",
+            "method": "hybrid",
+            "top_k": 5,
+            "candidates_per_method": 10,
+            "rrf_k": 60,
+            "rerank_pool": 0,
+            "reranker": "cross-encoder/ms-marco-MiniLM-L-6-v2"
+          },
+          "hit@5": {
+            "count": 42.0,
+            "n": 50,
+            "mean": 0.84,
+            "ci95": [
+              0.74,
+              0.94
+            ]
+          },
+          "mrr@10": {
+            "count": 32.6429,
+            "n": 50,
+            "mean": 0.6529,
+            "ci95": [
+              0.546,
+              0.7573
+            ]
+          },
+          "precision@5": {
+            "count": 13.2,
+            "n": 50,
+            "mean": 0.264,
+            "ci95": [
+              0.216,
+              0.316
+            ]
+          },
+          "recall@5": {
+            "count": 42.0,
+            "n": 50,
+            "mean": 0.84,
+            "ci95": [
+              0.74,
+              0.94
+            ]
+          },
+          "ndcg@5": {
+            "count": 22.8728,
+            "n": 50,
+            "mean": 0.4575,
+            "ci95": [
+              0.3755,
+              0.5375
+            ]
+          },
+          "near_page_hit": {
+            "count": 45.0,
+            "n": 50,
+            "mean": 0.9,
+            "ci95": [
+              0.82,
+              0.98
+            ]
+          },
+          "by_type": {
+            "legacy_conceptual": {
+              "hits": 23,
+              "n": 29,
+              "mrr": 0.6181
+            },
+            "legacy_factual": {
+              "hits": 5,
+              "n": 6,
+              "mrr": 0.7222
+            },
+            "legacy_numeric": {
+              "hits": 14,
+              "n": 15,
+              "mrr": 0.6922
+            }
+          },
+          "seconds": 0.02,
+          "latency_ms": {
+            "dense_ms": {
+              "p50": 12.6,
+              "p95": 13.4
+            },
+            "bm25_ms": {
+              "p50": 1.8,
+              "p95": 2.3
+            },
+            "fusion_ms": {
+              "p50": 0.0,
+              "p95": 0.0
+            },
+            "total_ms": {
+              "p50": 14.4,
+              "p95": 15.6
+            }
+          }
+        },
+        "hybrid_s2b": {
+          "config": {
+            "name": "hybrid_s2b",
+            "method": "hybrid_s2b",
+            "top_k": 5,
+            "candidates_per_method": 10,
+            "rrf_k": 60,
+            "rerank_pool": 0,
+            "reranker": "cross-encoder/ms-marco-MiniLM-L-6-v2"
+          },
+          "hit@5": {
+            "count": 42.0,
+            "n": 50,
+            "mean": 0.84,
+            "ci95": [
+              0.74,
+              0.94
+            ]
+          },
+          "mrr@10": {
+            "count": 32.6202,
+            "n": 50,
+            "mean": 0.6524,
+            "ci95": [
+              0.5449,
+              0.7581
+            ]
+          },
+          "precision@5": {
+            "count": 12.8,
+            "n": 50,
+            "mean": 0.256,
+            "ci95": [
+              0.208,
+              0.308
+            ]
+          },
+          "recall@5": {
+            "count": 42.0,
+            "n": 50,
+            "mean": 0.84,
+            "ci95": [
+              0.74,
+              0.94
+            ]
+          },
+          "ndcg@5": {
+            "count": 22.7005,
+            "n": 50,
+            "mean": 0.454,
+            "ci95": [
+              0.3736,
+              0.5332
+            ]
+          },
+          "near_page_hit": {
+            "count": 47.0,
+            "n": 50,
+            "mean": 0.94,
+            "ci95": [
+              0.86,
+              1.0
+            ]
+          },
+          "by_type": {
+            "legacy_conceptual": {
+              "hits": 22,
+              "n": 29,
+              "mrr": 0.586
+            },
+            "legacy_factual": {
+              "hits": 6,
+              "n": 6,
+              "mrr": 0.7417
+            },
+            "legacy_numeric": {
+              "hits": 14,
+              "n": 15,
+              "mrr": 0.7451
+            }
+          },
+          "seconds": 0.02,
+          "latency_ms": {
+            "dense_ms": {
+              "p50": 29.4,
+              "p95": 32.6
+            },
+            "bm25_ms": {
+              "p50": 2.0,
+              "p95": 2.9
+            },
+            "fusion_ms": {
+              "p50": 0.0,
+              "p95": 0.0
+            },
+            "total_ms": {
+              "p50": 31.6,
+              "p95": 35.1
+            }
+          },
+          "vs_baseline": {
+            "hit": {
+              "delta": 0.0,
+              "ci95": [
+                -0.1,
+                0.1
+              ],
+              "better_on": 3,
+              "worse_on": 3
+            },
+            "rr": {
+              "delta": -0.0005,
+              "ci95": [
+                -0.0659,
+                0.0616
+              ],
+              "better_on": 10,
+              "worse_on": 8
+            },
+            "precision": {
+              "delta": -0.008,
+              "ci95": [
+                -0.044,
+                0.024
+              ],
+              "better_on": 7,
+              "worse_on": 7
+            },
+            "recall": {
+              "delta": 0.0,
+              "ci95": [
+                -0.1,
+                0.1
+              ],
+              "better_on": 3,
+              "worse_on": 3
+            },
+            "ndcg": {
+              "delta": -0.0034,
+              "ci95": [
+                -0.0601,
+                0.0494
+              ],
+              "better_on": 19,
+              "worse_on": 12
+            }
+          }
+        }
+      },
+      "per_question": {
+        "q01": {
+          "type": "legacy_numeric",
+          "file": "source_doc.pdf",
+          "page": [
+            1,
+            8
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "1": 15,
+              "8": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "1": 2,
+              "8": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "1": 6,
+              "8": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "1": 3,
+              "8": 1
+            },
+            "hit": true
+          }
+        },
+        "q02": {
+          "type": "legacy_numeric",
+          "file": "source_doc.pdf",
+          "page": [
+            5
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "5": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "5": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "5": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "5": 1
+            },
+            "hit": true
+          }
+        },
+        "q03": {
+          "type": "legacy_numeric",
+          "file": "source_doc.pdf",
+          "page": [
+            8
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "8": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "8": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "8": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "8": 1
+            },
+            "hit": true
+          }
+        },
+        "q04": {
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            5
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "5": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "5": 2
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "5": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "5": 1
+            },
+            "hit": true
+          }
+        },
+        "q05": {
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            4
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1
+            },
+            "hit": true
+          }
+        },
+        "q06": {
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            6
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "6": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "6": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "6": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "6": 1
+            },
+            "hit": true
+          }
+        },
+        "q07": {
+          "type": "legacy_numeric",
+          "file": "source_doc.pdf",
+          "page": [
+            7
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          }
+        },
+        "q08": {
+          "type": "legacy_factual",
+          "file": "source_doc.pdf",
+          "page": [
+            7
+          ],
+          "dense": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "7": 2
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "7": 3
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          }
+        },
+        "q09": {
+          "type": "legacy_numeric",
+          "file": "source_doc.pdf",
+          "page": [
+            5
+          ],
+          "dense": {
+            "first_gold_rank": 4,
+            "gold_page_ranks": {
+              "5": 4
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 6,
+            "gold_page_ranks": {
+              "5": 6
+            },
+            "hit": false
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "5": 2
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "5": 2
+            },
+            "hit": true
+          }
+        },
+        "q10": {
+          "type": "legacy_numeric",
+          "file": "source_doc.pdf",
+          "page": [
+            10
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "10": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "10": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "10": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "10": 1
+            },
+            "hit": true
+          }
+        },
+        "q11": {
+          "type": "legacy_numeric",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            1
+          ],
+          "dense": {
+            "first_gold_rank": 16,
+            "gold_page_ranks": {
+              "1": 16
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 5,
+            "gold_page_ranks": {
+              "1": 5
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 10,
+            "gold_page_ranks": {
+              "1": 10
+            },
+            "hit": false
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 5,
+            "gold_page_ranks": {
+              "1": 5
+            },
+            "hit": true
+          }
+        },
+        "q12": {
+          "type": "legacy_numeric",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            7
+          ],
+          "dense": {
+            "first_gold_rank": 4,
+            "gold_page_ranks": {
+              "7": 4
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "7": 2
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          }
+        },
+        "q13": {
+          "type": "legacy_numeric",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            7
+          ],
+          "dense": {
+            "first_gold_rank": 35,
+            "gold_page_ranks": {
+              "7": 35
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 21,
+            "gold_page_ranks": {
+              "7": 21
+            },
+            "hit": false
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 5,
+            "gold_page_ranks": {
+              "7": 5
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 7,
+            "gold_page_ranks": {
+              "7": 7
+            },
+            "hit": false
+          }
+        },
+        "q14": {
+          "type": "legacy_factual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            7
+          ],
+          "dense": {
+            "first_gold_rank": 12,
+            "gold_page_ranks": {
+              "7": 12
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 5,
+            "gold_page_ranks": {
+              "7": 5
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 13,
+            "gold_page_ranks": {
+              "7": 13
+            },
+            "hit": false
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 5,
+            "gold_page_ranks": {
+              "7": 5
+            },
+            "hit": true
+          }
+        },
+        "q15": {
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            2
+          ],
+          "dense": {
+            "first_gold_rank": 6,
+            "gold_page_ranks": {
+              "2": 6
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 10,
+            "gold_page_ranks": {
+              "2": 10
+            },
+            "hit": false
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "2": 2
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "2": 3
+            },
+            "hit": true
+          }
+        },
+        "q16": {
+          "type": "legacy_numeric",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            7
+          ],
+          "dense": {
+            "first_gold_rank": 15,
+            "gold_page_ranks": {
+              "7": 15
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 9,
+            "gold_page_ranks": {
+              "7": 9
+            },
+            "hit": false
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 4,
+            "gold_page_ranks": {
+              "7": 4
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "7": 2
+            },
+            "hit": true
+          }
+        },
+        "q17": {
+          "type": "legacy_numeric",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            1
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "1": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "1": 2
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "1": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "1": 1
+            },
+            "hit": true
+          }
+        },
+        "q18": {
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            2,
+            42
+          ],
+          "dense": {
+            "first_gold_rank": 13,
+            "gold_page_ranks": {
+              "2": 13,
+              "42": 22
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 6,
+            "gold_page_ranks": {
+              "2": 6,
+              "42": 9
+            },
+            "hit": false
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "2": 3,
+              "42": 6
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 4,
+            "gold_page_ranks": {
+              "2": 6,
+              "42": 4
+            },
+            "hit": true
+          }
+        },
+        "q19": {
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            2
+          ],
+          "dense": {
+            "first_gold_rank": 5,
+            "gold_page_ranks": {
+              "2": 5
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "2": 3
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "2": 2
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "2": 2
+            },
+            "hit": true
+          }
+        },
+        "q20": {
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            2
+          ],
+          "dense": {
+            "first_gold_rank": 28,
+            "gold_page_ranks": {
+              "2": 28
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 11,
+            "gold_page_ranks": {
+              "2": 11
+            },
+            "hit": false
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 7,
+            "gold_page_ranks": {
+              "2": 7
+            },
+            "hit": false
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 7,
+            "gold_page_ranks": {
+              "2": 7
+            },
+            "hit": false
+          }
+        },
+        "q21": {
+          "type": "legacy_factual",
+          "file": "source_doc.pdf",
+          "page": [
+            3
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1
+            },
+            "hit": true
+          }
+        },
+        "q22": {
+          "type": "legacy_numeric",
+          "file": "source_doc.pdf",
+          "page": [
+            7
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          }
+        },
+        "q23": {
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            6
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "6": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "6": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "6": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "6": 1
+            },
+            "hit": true
+          }
+        },
+        "q24": {
+          "type": "legacy_numeric",
+          "file": "source_doc.pdf",
+          "page": [
+            8
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "8": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "8": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "8": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "8": 1
+            },
+            "hit": true
+          }
+        },
+        "q25": {
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            8
+          ],
+          "dense": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "8": 2
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "8": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "8": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "8": 1
+            },
+            "hit": true
+          }
+        },
+        "q26": {
+          "type": "legacy_numeric",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            5,
+            30
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "5": 1,
+              "30": 2
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "5": 2,
+              "30": 5
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "5": 2,
+              "30": 3
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "5": 2,
+              "30": 5
+            },
+            "hit": true
+          }
+        },
+        "q27": {
+          "type": "legacy_numeric",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            5,
+            30
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "5": 1,
+              "30": 6
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "5": 3,
+              "30": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "5": 3,
+              "30": 6
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "5": 4,
+              "30": 3
+            },
+            "hit": true
+          }
+        },
+        "q28": {
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            4
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1
+            },
+            "hit": true
+          }
+        },
+        "q29": {
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            4
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1
+            },
+            "hit": true
+          }
+        },
+        "q30": {
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            2
+          ],
+          "dense": {
+            "first_gold_rank": 7,
+            "gold_page_ranks": {
+              "2": 7
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 14,
+            "gold_page_ranks": {
+              "2": 14
+            },
+            "hit": false
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "2": 2
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 7,
+            "gold_page_ranks": {
+              "2": 7
+            },
+            "hit": false
+          }
+        },
+        "q31": {
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            6
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "6": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "6": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "6": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "6": 1
+            },
+            "hit": true
+          }
+        },
+        "q32": {
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            3
+          ],
+          "dense": {
+            "first_gold_rank": 10,
+            "gold_page_ranks": {
+              "3": 10
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 11,
+            "gold_page_ranks": {
+              "3": 11
+            },
+            "hit": false
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 13,
+            "gold_page_ranks": {
+              "3": 13
+            },
+            "hit": false
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 12,
+            "gold_page_ranks": {
+              "3": 12
+            },
+            "hit": false
+          }
+        },
+        "q33": {
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            6
+          ],
+          "dense": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "6": 2
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 6,
+            "gold_page_ranks": {
+              "6": 6
+            },
+            "hit": false
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "6": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 8,
+            "gold_page_ranks": {
+              "6": 8
+            },
+            "hit": false
+          }
+        },
+        "q34": {
+          "type": "legacy_factual",
+          "file": "source_doc.pdf",
+          "page": [
+            3
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1
+            },
+            "hit": true
+          }
+        },
+        "q35": {
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            5
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "5": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "5": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "5": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "5": 1
+            },
+            "hit": true
+          }
+        },
+        "q36": {
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            6
+          ],
+          "dense": {
+            "first_gold_rank": 10,
+            "gold_page_ranks": {
+              "6": 10
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "6": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 4,
+            "gold_page_ranks": {
+              "6": 4
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "6": 3
+            },
+            "hit": true
+          }
+        },
+        "q37": {
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            3
+          ],
+          "dense": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "3": 2
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 4,
+            "gold_page_ranks": {
+              "3": 4
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "3": 3
+            },
+            "hit": true
+          }
+        },
+        "q38": {
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            6
+          ],
+          "dense": {
+            "first_gold_rank": 4,
+            "gold_page_ranks": {
+              "6": 4
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "6": 2
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "6": 2
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "6": 1
+            },
+            "hit": true
+          }
+        },
+        "q39": {
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            4
+          ],
+          "dense": {
+            "first_gold_rank": 10,
+            "gold_page_ranks": {
+              "4": 10
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 7,
+            "gold_page_ranks": {
+              "4": 7
+            },
+            "hit": false
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 18,
+            "gold_page_ranks": {
+              "4": 18
+            },
+            "hit": false
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 12,
+            "gold_page_ranks": {
+              "4": 12
+            },
+            "hit": false
+          }
+        },
+        "q40": {
+          "type": "legacy_factual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            5,
+            30
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "5": 3,
+              "30": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "5": 2,
+              "30": 4
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "5": 7,
+              "30": 3
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 4,
+            "gold_page_ranks": {
+              "5": 6,
+              "30": 4
+            },
+            "hit": true
+          }
+        },
+        "q41": {
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            2
+          ],
+          "dense": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "2": 2
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "2": 2
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "2": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "2": 1
+            },
+            "hit": true
+          }
+        },
+        "q42": {
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            6,
+            7
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "6": 1,
+              "7": 2
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "6": 2,
+              "7": 4
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "6": 2,
+              "7": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "6": 1,
+              "7": 2
+            },
+            "hit": true
+          }
+        },
+        "q43": {
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            9
+          ],
+          "dense": {
+            "first_gold_rank": 18,
+            "gold_page_ranks": {
+              "9": 18
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 4,
+            "gold_page_ranks": {
+              "9": 4
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 6,
+            "gold_page_ranks": {
+              "9": 6
+            },
+            "hit": false
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "9": 3
+            },
+            "hit": true
+          }
+        },
+        "q44": {
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            13
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "13": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 4,
+            "gold_page_ranks": {
+              "13": 4
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "13": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "13": 2
+            },
+            "hit": true
+          }
+        },
+        "q45": {
+          "type": "legacy_conceptual",
+          "file": "source_doc.pdf",
+          "page": [
+            14
+          ],
+          "dense": {
+            "first_gold_rank": 9,
+            "gold_page_ranks": {
+              "14": 9
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 4,
+            "gold_page_ranks": {
+              "14": 4
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "14": 2
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "14": 1
+            },
+            "hit": true
+          }
+        },
+        "q46": {
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            10
+          ],
+          "dense": {
+            "first_gold_rank": null,
+            "gold_page_ranks": {
+              "10": null
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 107,
+            "gold_page_ranks": {
+              "10": 107
+            },
+            "hit": false
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": null,
+            "gold_page_ranks": {
+              "10": null
+            },
+            "hit": false
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": null,
+            "gold_page_ranks": {
+              "10": null
+            },
+            "hit": false
+          }
+        },
+        "q47": {
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            11
+          ],
+          "dense": {
+            "first_gold_rank": 25,
+            "gold_page_ranks": {
+              "11": 25
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 62,
+            "gold_page_ranks": {
+              "11": 62
+            },
+            "hit": false
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": null,
+            "gold_page_ranks": {
+              "11": null
+            },
+            "hit": false
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": null,
+            "gold_page_ranks": {
+              "11": null
+            },
+            "hit": false
+          }
+        },
+        "q48": {
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            14
+          ],
+          "dense": {
+            "first_gold_rank": 7,
+            "gold_page_ranks": {
+              "14": 7
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 4,
+            "gold_page_ranks": {
+              "14": 4
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "14": 3
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "14": 2
+            },
+            "hit": true
+          }
+        },
+        "q49": {
+          "type": "legacy_conceptual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            8
+          ],
+          "dense": {
+            "first_gold_rank": 12,
+            "gold_page_ranks": {
+              "8": 12
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "8": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 5,
+            "gold_page_ranks": {
+              "8": 5
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "8": 2
+            },
+            "hit": true
+          }
+        },
+        "q50": {
+          "type": "legacy_factual",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            12
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "12": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "12": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "12": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "12": 1
+            },
+            "hit": true
+          }
+        }
+      },
+      "evidence_in_context": {
+        "dense": [
+          0,
+          0
+        ],
+        "dense_s2b": [
+          0,
+          0
+        ],
+        "hybrid_rrf60": [
+          0,
+          0
+        ],
+        "hybrid_s2b": [
+          0,
+          0
+        ]
+      }
+    },
+    "test": {
+      "n_questions": 60,
+      "n_answerable_scored": 47,
+      "n_unanswerable_skipped": 13,
+      "configs": {
+        "dense": {
+          "config": {
+            "name": "dense",
+            "method": "dense",
+            "top_k": 5,
+            "candidates_per_method": 10,
+            "rrf_k": 60,
+            "rerank_pool": 0,
+            "reranker": "cross-encoder/ms-marco-MiniLM-L-6-v2"
+          },
+          "hit@5": {
+            "count": 40.0,
+            "n": 47,
+            "mean": 0.8511,
+            "ci95": [
+              0.7447,
+              0.9362
+            ]
+          },
+          "mrr@10": {
+            "count": 30.844,
+            "n": 47,
+            "mean": 0.6563,
+            "ci95": [
+              0.5509,
+              0.7548
+            ]
+          },
+          "precision@5": {
+            "count": 11.6,
+            "n": 47,
+            "mean": 0.2468,
+            "ci95": [
+              0.2043,
+              0.2936
+            ]
+          },
+          "recall@5": {
+            "count": 37.0,
+            "n": 47,
+            "mean": 0.7872,
+            "ci95": [
+              0.6809,
+              0.883
+            ]
+          },
+          "ndcg@5": {
+            "count": 18.3249,
+            "n": 47,
+            "mean": 0.3899,
+            "ci95": [
+              0.3168,
+              0.4647
+            ]
+          },
+          "near_page_hit": {
+            "count": 44.0,
+            "n": 47,
+            "mean": 0.9362,
+            "ci95": [
+              0.8511,
+              1.0
+            ]
+          },
+          "by_type": {
+            "exact_term": {
+              "hits": 9,
+              "n": 12,
+              "mrr": 0.5766
+            },
+            "lookup": {
+              "hits": 9,
+              "n": 12,
+              "mrr": 0.5882
+            },
+            "multi_hop": {
+              "hits": 10,
+              "n": 10,
+              "mrr": 0.75,
+              "all_pages_hits": 4
+            },
+            "paraphrase": {
+              "hits": 12,
+              "n": 13,
+              "mrr": 0.7205
+            }
+          },
+          "seconds": 0.99,
+          "latency_ms": {
+            "dense_ms": {
+              "p50": 14.2,
+              "p95": 18.3
+            },
+            "total_ms": {
+              "p50": 14.2,
+              "p95": 18.3
+            }
+          },
+          "vs_baseline": {
+            "hit": {
+              "delta": -0.0638,
+              "ci95": [
+                -0.1702,
+                0.0426
+              ],
+              "better_on": 2,
+              "worse_on": 5
+            },
+            "rr": {
+              "delta": -0.0936,
+              "ci95": [
+                -0.1915,
+                0.0057
+              ],
+              "better_on": 9,
+              "worse_on": 17
+            },
+            "precision": {
+              "delta": -0.0638,
+              "ci95": [
+                -0.1064,
+                -0.0255
+              ],
+              "better_on": 2,
+              "worse_on": 13
+            },
+            "recall": {
+              "delta": -0.0957,
+              "ci95": [
+                -0.2021,
+                0.0106
+              ],
+              "better_on": 2,
+              "worse_on": 9
+            },
+            "ndcg": {
+              "delta": -0.0831,
+              "ci95": [
+                -0.1397,
+                -0.0293
+              ],
+              "better_on": 10,
+              "worse_on": 28
+            }
+          }
+        },
+        "dense_s2b": {
+          "config": {
+            "name": "dense_s2b",
+            "method": "dense_s2b",
+            "top_k": 5,
+            "candidates_per_method": 10,
+            "rrf_k": 60,
+            "rerank_pool": 0,
+            "reranker": "cross-encoder/ms-marco-MiniLM-L-6-v2"
+          },
+          "hit@5": {
+            "count": 42.0,
+            "n": 47,
+            "mean": 0.8936,
+            "ci95": [
+              0.8085,
+              0.9787
+            ]
+          },
+          "mrr@10": {
+            "count": 32.8706,
+            "n": 47,
+            "mean": 0.6994,
+            "ci95": [
+              0.5935,
+              0.8032
+            ]
+          },
+          "precision@5": {
+            "count": 13.0,
+            "n": 47,
+            "mean": 0.2766,
+            "ci95": [
+              0.234,
+              0.3191
+            ]
+          },
+          "recall@5": {
+            "count": 38.5,
+            "n": 47,
+            "mean": 0.8191,
+            "ci95": [
+              0.7234,
+              0.9043
+            ]
+          },
+          "ndcg@5": {
+            "count": 19.9668,
+            "n": 47,
+            "mean": 0.4248,
+            "ci95": [
+              0.352,
+              0.4985
+            ]
+          },
+          "near_page_hit": {
+            "count": 45.0,
+            "n": 47,
+            "mean": 0.9574,
+            "ci95": [
+              0.8936,
+              1.0
+            ]
+          },
+          "by_type": {
+            "exact_term": {
+              "hits": 10,
+              "n": 12,
+              "mrr": 0.6875
+            },
+            "lookup": {
+              "hits": 12,
+              "n": 12,
+              "mrr": 0.6972
+            },
+            "multi_hop": {
+              "hits": 10,
+              "n": 10,
+              "mrr": 0.7833,
+              "all_pages_hits": 4
+            },
+            "paraphrase": {
+              "hits": 10,
+              "n": 13,
+              "mrr": 0.6477
+            }
+          },
+          "seconds": 1.3,
+          "latency_ms": {
+            "dense_ms": {
+              "p50": 28.3,
+              "p95": 32.7
+            },
+            "total_ms": {
+              "p50": 28.3,
+              "p95": 32.7
+            }
+          },
+          "vs_baseline": {
+            "hit": {
+              "delta": -0.0213,
+              "ci95": [
+                -0.1277,
+                0.0851
+              ],
+              "better_on": 3,
+              "worse_on": 4
+            },
+            "rr": {
+              "delta": -0.0505,
+              "ci95": [
+                -0.1639,
+                0.0665
+              ],
+              "better_on": 9,
+              "worse_on": 14
+            },
+            "precision": {
+              "delta": -0.034,
+              "ci95": [
+                -0.0851,
+                0.0128
+              ],
+              "better_on": 8,
+              "worse_on": 14
+            },
+            "recall": {
+              "delta": -0.0638,
+              "ci95": [
+                -0.1809,
+                0.0532
+              ],
+              "better_on": 3,
+              "worse_on": 8
+            },
+            "ndcg": {
+              "delta": -0.0482,
+              "ci95": [
+                -0.1212,
+                0.0215
+              ],
+              "better_on": 15,
+              "worse_on": 22
+            }
+          }
+        },
+        "hybrid_rrf60": {
+          "config": {
+            "name": "hybrid_rrf60",
+            "method": "hybrid",
+            "top_k": 5,
+            "candidates_per_method": 10,
+            "rrf_k": 60,
+            "rerank_pool": 0,
+            "reranker": "cross-encoder/ms-marco-MiniLM-L-6-v2"
+          },
+          "hit@5": {
+            "count": 43.0,
+            "n": 47,
+            "mean": 0.9149,
+            "ci95": [
+              0.8298,
+              0.9787
+            ]
+          },
+          "mrr@10": {
+            "count": 35.2429,
+            "n": 47,
+            "mean": 0.7498,
+            "ci95": [
+              0.6504,
+              0.843
+            ]
+          },
+          "precision@5": {
+            "count": 14.6,
+            "n": 47,
+            "mean": 0.3106,
+            "ci95": [
+              0.2638,
+              0.3574
+            ]
+          },
+          "recall@5": {
+            "count": 41.5,
+            "n": 47,
+            "mean": 0.883,
+            "ci95": [
+              0.7979,
+              0.9574
+            ]
+          },
+          "ndcg@5": {
+            "count": 22.2302,
+            "n": 47,
+            "mean": 0.473,
+            "ci95": [
+              0.4077,
+              0.5369
+            ]
+          },
+          "near_page_hit": {
+            "count": 44.0,
+            "n": 47,
+            "mean": 0.9362,
+            "ci95": [
+              0.8511,
+              1.0
+            ]
+          },
+          "by_type": {
+            "exact_term": {
+              "hits": 12,
+              "n": 12,
+              "mrr": 0.7014
+            },
+            "lookup": {
+              "hits": 11,
+              "n": 12,
+              "mrr": 0.7917
+            },
+            "multi_hop": {
+              "hits": 10,
+              "n": 10,
+              "mrr": 0.9333,
+              "all_pages_hits": 8
+            },
+            "paraphrase": {
+              "hits": 10,
+              "n": 13,
+              "mrr": 0.6148
+            }
+          },
+          "seconds": 0.02,
+          "latency_ms": {
+            "dense_ms": {
+              "p50": 13.7,
+              "p95": 18.7
+            },
+            "bm25_ms": {
+              "p50": 2.1,
+              "p95": 3.5
+            },
+            "fusion_ms": {
+              "p50": 0.0,
+              "p95": 0.0
+            },
+            "total_ms": {
+              "p50": 15.8,
+              "p95": 21.5
+            }
+          }
+        },
+        "hybrid_s2b": {
+          "config": {
+            "name": "hybrid_s2b",
+            "method": "hybrid_s2b",
+            "top_k": 5,
+            "candidates_per_method": 10,
+            "rrf_k": 60,
+            "rerank_pool": 0,
+            "reranker": "cross-encoder/ms-marco-MiniLM-L-6-v2"
+          },
+          "hit@5": {
+            "count": 42.0,
+            "n": 47,
+            "mean": 0.8936,
+            "ci95": [
+              0.8085,
+              0.9787
+            ]
+          },
+          "mrr@10": {
+            "count": 34.5095,
+            "n": 47,
+            "mean": 0.7342,
+            "ci95": [
+              0.6369,
+              0.8293
+            ]
+          },
+          "precision@5": {
+            "count": 14.0,
+            "n": 47,
+            "mean": 0.2979,
+            "ci95": [
+              0.2468,
+              0.3447
+            ]
+          },
+          "recall@5": {
+            "count": 40.0,
+            "n": 47,
+            "mean": 0.8511,
+            "ci95": [
+              0.7553,
+              0.9362
+            ]
+          },
+          "ndcg@5": {
+            "count": 21.582,
+            "n": 47,
+            "mean": 0.4592,
+            "ci95": [
+              0.3905,
+              0.5253
+            ]
+          },
+          "near_page_hit": {
+            "count": 43.0,
+            "n": 47,
+            "mean": 0.9149,
+            "ci95": [
+              0.8298,
+              0.9787
+            ]
+          },
+          "by_type": {
+            "exact_term": {
+              "hits": 12,
+              "n": 12,
+              "mrr": 0.75
+            },
+            "lookup": {
+              "hits": 11,
+              "n": 12,
+              "mrr": 0.7619
+            },
+            "multi_hop": {
+              "hits": 10,
+              "n": 10,
+              "mrr": 0.9333,
+              "all_pages_hits": 6
+            },
+            "paraphrase": {
+              "hits": 9,
+              "n": 13,
+              "mrr": 0.541
+            }
+          },
+          "seconds": 0.03,
+          "latency_ms": {
+            "dense_ms": {
+              "p50": 26.8,
+              "p95": 33.7
+            },
+            "bm25_ms": {
+              "p50": 2.1,
+              "p95": 3.1
+            },
+            "fusion_ms": {
+              "p50": 0.0,
+              "p95": 0.0
+            },
+            "total_ms": {
+              "p50": 29.5,
+              "p95": 36.1
+            }
+          },
+          "vs_baseline": {
+            "hit": {
+              "delta": -0.0213,
+              "ci95": [
+                -0.0638,
+                0.0
+              ],
+              "better_on": 0,
+              "worse_on": 1
+            },
+            "rr": {
+              "delta": -0.0156,
+              "ci95": [
+                -0.0897,
+                0.0541
+              ],
+              "better_on": 7,
+              "worse_on": 5
+            },
+            "precision": {
+              "delta": -0.0128,
+              "ci95": [
+                -0.0426,
+                0.0213
+              ],
+              "better_on": 6,
+              "worse_on": 9
+            },
+            "recall": {
+              "delta": -0.0319,
+              "ci95": [
+                -0.0957,
+                0.0213
+              ],
+              "better_on": 1,
+              "worse_on": 3
+            },
+            "ndcg": {
+              "delta": -0.0138,
+              "ci95": [
+                -0.0608,
+                0.0325
+              ],
+              "better_on": 9,
+              "worse_on": 12
+            }
+          }
+        }
+      },
+      "per_question": {
+        "v2_01": {
+          "type": "exact_term",
+          "file": "source_doc.pdf",
+          "page": [
+            8
+          ],
+          "dense": {
+            "first_gold_rank": 10,
+            "gold_page_ranks": {
+              "8": 10
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "8": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "8": 3
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "8": 1
+            },
+            "hit": true
+          }
+        },
+        "v2_02": {
+          "type": "exact_term",
+          "file": "source_doc.pdf",
+          "page": [
+            9
+          ],
+          "dense": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "9": 2
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 4,
+            "gold_page_ranks": {
+              "9": 4
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "9": 3
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "9": 2
+            },
+            "hit": true
+          }
+        },
+        "v2_03": {
+          "type": "exact_term",
+          "file": "source_doc.pdf",
+          "page": [
+            10
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "10": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "10": 2
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "10": 2
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "10": 2
+            },
+            "hit": true
+          }
+        },
+        "v2_04": {
+          "type": "lookup",
+          "file": "source_doc.pdf",
+          "page": [
+            8
+          ],
+          "dense": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "8": 2
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 4,
+            "gold_page_ranks": {
+              "8": 4
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "8": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "8": 2
+            },
+            "hit": true
+          }
+        },
+        "v2_05": {
+          "type": "lookup",
+          "file": "source_doc.pdf",
+          "page": [
+            7
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          }
+        },
+        "v2_06": {
+          "type": "multi_hop",
+          "file": "source_doc.pdf",
+          "page": [
+            8,
+            10
+          ],
+          "dense": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "8": 17,
+              "10": 2
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "8": 2,
+              "10": 4
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "8": 4,
+              "10": 3
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "8": 3,
+              "10": 4
+            },
+            "hit": true
+          }
+        },
+        "v2_07": {
+          "type": "multi_hop",
+          "file": "source_doc.pdf",
+          "page": [
+            7,
+            8
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 8,
+              "8": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 6,
+              "8": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 3,
+              "8": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 2,
+              "8": 1
+            },
+            "hit": true
+          }
+        },
+        "v2_08": {
+          "type": "paraphrase",
+          "file": "source_doc.pdf",
+          "page": [
+            8
+          ],
+          "dense": {
+            "first_gold_rank": 38,
+            "gold_page_ranks": {
+              "8": 38
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 12,
+            "gold_page_ranks": {
+              "8": 12
+            },
+            "hit": false
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": null,
+            "gold_page_ranks": {
+              "8": null
+            },
+            "hit": false
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": null,
+            "gold_page_ranks": {
+              "8": null
+            },
+            "hit": false
+          }
+        },
+        "v2_09": {
+          "type": "paraphrase",
+          "file": "source_doc.pdf",
+          "page": [
+            5
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "5": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "5": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 4,
+            "gold_page_ranks": {
+              "5": 4
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "5": 2
+            },
+            "hit": true
+          }
+        },
+        "v2_13": {
+          "type": "exact_term",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            54,
+            96
+          ],
+          "dense": {
+            "first_gold_rank": 7,
+            "gold_page_ranks": {
+              "54": 7,
+              "96": 25
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "54": 1,
+              "96": 20
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 4,
+            "gold_page_ranks": {
+              "54": 4,
+              "96": 7
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "54": 1,
+              "96": 4
+            },
+            "hit": true
+          }
+        },
+        "v2_14": {
+          "type": "exact_term",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            56
+          ],
+          "dense": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "56": 3
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 11,
+            "gold_page_ranks": {
+              "56": 11
+            },
+            "hit": false
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "56": 2
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 4,
+            "gold_page_ranks": {
+              "56": 4
+            },
+            "hit": true
+          }
+        },
+        "v2_15": {
+          "type": "exact_term",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            82
+          ],
+          "dense": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "82": 2
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "82": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "82": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "82": 1
+            },
+            "hit": true
+          }
+        },
+        "v2_16": {
+          "type": "exact_term",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            51
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "51": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "51": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "51": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "51": 1
+            },
+            "hit": true
+          }
+        },
+        "v2_17": {
+          "type": "lookup",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            25
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "25": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "25": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "25": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "25": 1
+            },
+            "hit": true
+          }
+        },
+        "v2_18": {
+          "type": "lookup",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            45
+          ],
+          "dense": {
+            "first_gold_rank": 10,
+            "gold_page_ranks": {
+              "45": 10
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "45": 3
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "45": 2
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "45": 2
+            },
+            "hit": true
+          }
+        },
+        "v2_19": {
+          "type": "lookup",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            52
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "52": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "52": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "52": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "52": 1
+            },
+            "hit": true
+          }
+        },
+        "v2_20": {
+          "type": "lookup",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            53
+          ],
+          "dense": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "53": 2
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "53": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "53": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "53": 1
+            },
+            "hit": true
+          }
+        },
+        "v2_21": {
+          "type": "multi_hop",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            5,
+            25,
+            30
+          ],
+          "dense": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "5": 20,
+              "25": 2,
+              "30": 32
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "5": 28,
+              "25": 3,
+              "30": 80
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "5": 12,
+              "25": 1,
+              "30": 6
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "5": 12,
+              "25": 1,
+              "30": 6
+            },
+            "hit": true
+          }
+        },
+        "v2_22": {
+          "type": "multi_hop",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            56,
+            57,
+            99
+          ],
+          "dense": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "56": 2,
+              "57": 27,
+              "99": 45
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "56": 1,
+              "57": 13,
+              "99": 39
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "56": 1,
+              "57": 14,
+              "99": null
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "56": 1,
+              "57": 14,
+              "99": null
+            },
+            "hit": true
+          }
+        },
+        "v2_23": {
+          "type": "multi_hop",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            46,
+            64
+          ],
+          "dense": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "46": 3,
+              "64": 2
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "46": 1,
+              "64": 6
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "46": 1,
+              "64": 2
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "46": 1,
+              "64": 2
+            },
+            "hit": true
+          }
+        },
+        "v2_24": {
+          "type": "paraphrase",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            55
+          ],
+          "dense": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "55": 2
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "55": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "55": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "55": 1
+            },
+            "hit": true
+          }
+        },
+        "v2_25": {
+          "type": "paraphrase",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            29
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "29": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "29": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "29": 2
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "29": 2
+            },
+            "hit": true
+          }
+        },
+        "v2_26": {
+          "type": "paraphrase",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            58
+          ],
+          "dense": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "58": 3
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 9,
+            "gold_page_ranks": {
+              "58": 9
+            },
+            "hit": false
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "58": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "58": 1
+            },
+            "hit": true
+          }
+        },
+        "v2_27": {
+          "type": "paraphrase",
+          "file": "gpt4_technical_report.pdf",
+          "page": [
+            59
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "59": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "59": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "59": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "59": 1
+            },
+            "hit": true
+          }
+        },
+        "v2_31": {
+          "type": "exact_term",
+          "file": "ML111.pdf",
+          "page": [
+            4
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1
+            },
+            "hit": true
+          }
+        },
+        "v2_32": {
+          "type": "exact_term",
+          "file": "ML111.pdf",
+          "page": [
+            7
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          }
+        },
+        "v2_33": {
+          "type": "exact_term",
+          "file": "90-Day ML Engineer Roadmap.pdf",
+          "page": [
+            2
+          ],
+          "dense": {
+            "first_gold_rank": 5,
+            "gold_page_ranks": {
+              "2": 5
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "2": 2
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "2": 2
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "2": 2
+            },
+            "hit": true
+          }
+        },
+        "v2_34": {
+          "type": "lookup",
+          "file": "ML111.pdf",
+          "page": [
+            2
+          ],
+          "dense": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "2": 3
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 5,
+            "gold_page_ranks": {
+              "2": 5
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "2": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "2": 1
+            },
+            "hit": true
+          }
+        },
+        "v2_35": {
+          "type": "lookup",
+          "file": "ML111.pdf",
+          "page": [
+            4
+          ],
+          "dense": {
+            "first_gold_rank": 8,
+            "gold_page_ranks": {
+              "4": 8
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 4,
+            "gold_page_ranks": {
+              "4": 4
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "4": 2
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "4": 2
+            },
+            "hit": true
+          }
+        },
+        "v2_36": {
+          "type": "lookup",
+          "file": "90-Day ML Engineer Roadmap.pdf",
+          "page": [
+            2
+          ],
+          "dense": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "2": 2
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "2": 3
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "2": 2
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "2": 2
+            },
+            "hit": true
+          }
+        },
+        "v2_37": {
+          "type": "lookup",
+          "file": "90-Day ML Engineer Roadmap.pdf",
+          "page": [
+            3
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1
+            },
+            "hit": true
+          }
+        },
+        "v2_38": {
+          "type": "multi_hop",
+          "file": "ML111.pdf",
+          "page": [
+            3,
+            6
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1,
+              "6": 19
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "3": 2,
+              "6": 12
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1,
+              "6": 5
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1,
+              "6": 6
+            },
+            "hit": true
+          }
+        },
+        "v2_39": {
+          "type": "multi_hop",
+          "file": "ML111.pdf",
+          "page": [
+            2,
+            4
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "2": 18,
+              "4": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "2": 23,
+              "4": 2
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "2": 4,
+              "4": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "2": 6,
+              "4": 1
+            },
+            "hit": true
+          }
+        },
+        "v2_40": {
+          "type": "multi_hop",
+          "file": "90-Day ML Engineer Roadmap.pdf",
+          "page": [
+            3,
+            4
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1,
+              "4": 2
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1,
+              "4": 2
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1,
+              "4": 2
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1,
+              "4": 2
+            },
+            "hit": true
+          }
+        },
+        "v2_41": {
+          "type": "paraphrase",
+          "file": "ML111.pdf",
+          "page": [
+            7
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 7,
+            "gold_page_ranks": {
+              "7": 7
+            },
+            "hit": false
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "7": 2
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 13,
+            "gold_page_ranks": {
+              "7": 13
+            },
+            "hit": false
+          }
+        },
+        "v2_42": {
+          "type": "paraphrase",
+          "file": "ML111.pdf",
+          "page": [
+            7
+          ],
+          "dense": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "7": 3
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "7": 3
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 7,
+            "gold_page_ranks": {
+              "7": 7
+            },
+            "hit": false
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 6,
+            "gold_page_ranks": {
+              "7": 6
+            },
+            "hit": false
+          }
+        },
+        "v2_43": {
+          "type": "paraphrase",
+          "file": "ML111.pdf",
+          "page": [
+            3
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "3": 2
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 5,
+            "gold_page_ranks": {
+              "3": 5
+            },
+            "hit": true
+          }
+        },
+        "v2_44": {
+          "type": "paraphrase",
+          "file": "90-Day ML Engineer Roadmap.pdf",
+          "page": [
+            3
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "3": 2
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "3": 2
+            },
+            "hit": true
+          }
+        },
+        "v2_49": {
+          "type": "exact_term",
+          "file": "ML222.pdf",
+          "page": [
+            4
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1
+            },
+            "hit": true
+          }
+        },
+        "v2_50": {
+          "type": "exact_term",
+          "file": "ML222.pdf",
+          "page": [
+            6
+          ],
+          "dense": {
+            "first_gold_rank": 7,
+            "gold_page_ranks": {
+              "6": 7
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 12,
+            "gold_page_ranks": {
+              "6": 12
+            },
+            "hit": false
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "6": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 4,
+            "gold_page_ranks": {
+              "6": 4
+            },
+            "hit": true
+          }
+        },
+        "v2_51": {
+          "type": "lookup",
+          "file": "ML222.pdf",
+          "page": [
+            3
+          ],
+          "dense": {
+            "first_gold_rank": 44,
+            "gold_page_ranks": {
+              "3": 44
+            },
+            "hit": false
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "3": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": null,
+            "gold_page_ranks": {
+              "3": null
+            },
+            "hit": false
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 7,
+            "gold_page_ranks": {
+              "3": 7
+            },
+            "hit": false
+          }
+        },
+        "v2_52": {
+          "type": "lookup",
+          "file": "ML222.pdf",
+          "page": [
+            7
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "7": 1
+            },
+            "hit": true
+          }
+        },
+        "v2_53": {
+          "type": "multi_hop",
+          "file": "ML222.pdf",
+          "page": [
+            4,
+            5
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1,
+              "5": 2
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 2,
+              "5": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1,
+              "5": 2
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 2,
+              "5": 1
+            },
+            "hit": true
+          }
+        },
+        "v2_54": {
+          "type": "multi_hop",
+          "file": "ML222.pdf",
+          "page": [
+            4,
+            7
+          ],
+          "dense": {
+            "first_gold_rank": 2,
+            "gold_page_ranks": {
+              "4": 4,
+              "7": 2
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1,
+              "7": 2
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 3,
+              "7": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "4": 1,
+              "7": 2
+            },
+            "hit": true
+          }
+        },
+        "v2_55": {
+          "type": "paraphrase",
+          "file": "ML222.pdf",
+          "page": [
+            8
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "8": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "8": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "8": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "8": 1
+            },
+            "hit": true
+          }
+        },
+        "v2_56": {
+          "type": "paraphrase",
+          "file": "ML222.pdf",
+          "page": [
+            3
+          ],
+          "dense": {
+            "first_gold_rank": 5,
+            "gold_page_ranks": {
+              "3": 5
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 3,
+            "gold_page_ranks": {
+              "3": 3
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 10,
+            "gold_page_ranks": {
+              "3": 10
+            },
+            "hit": false
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 6,
+            "gold_page_ranks": {
+              "3": 6
+            },
+            "hit": false
+          }
+        },
+        "v2_57": {
+          "type": "paraphrase",
+          "file": "ML222.pdf",
+          "page": [
+            9
+          ],
+          "dense": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "9": 1
+            },
+            "hit": true
+          },
+          "dense_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "9": 1
+            },
+            "hit": true
+          },
+          "hybrid_rrf60": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "9": 1
+            },
+            "hit": true
+          },
+          "hybrid_s2b": {
+            "first_gold_rank": 1,
+            "gold_page_ranks": {
+              "9": 1
+            },
+            "hit": true
+          }
+        }
+      },
+      "evidence_in_context": {
+        "dense": [
+          32,
+          47
+        ],
+        "dense_s2b": [
+          33,
+          47
+        ],
+        "hybrid_rrf60": [
+          41,
+          47
+        ],
+        "hybrid_s2b": [
+          38,
+          47
+        ]
+      }
+    }
+  }
+}
