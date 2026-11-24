@@ -1,0 +1,22 @@
+I ran three commands in PowerShell, from the project folder `c:\Users\ASUS\Downloads\autonomous-rag-agent`:
+
+1. **Checked the setup.** I listed the project files, read the README and looked at [run_api.bat](run_api.bat). I also confirmed that `GROQ_API_KEY` is set in `.env` without printing its value.
+
+2. **Started the server** in the background, using the project's own Python. This is the same command [run_api.bat](run_api.bat) runs:
+   ```powershell
+   .\venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8000 --loop asyncio
+   ```
+
+3. **Waited for it to come up.** I polled `http://127.0.0.1:8000/` every 2 seconds until it returned HTTP 200, then checked the log, which said "Application startup complete."
+
+To start it yourself next time, either of these does the same thing:
+```powershell
+.\run_api.bat
+```
+or
+```powershell
+.\venv\Scripts\Activate.ps1
+python -m uvicorn main:app --port 8000
+```
+
+I didn't need to install anything, because `venv` and `.env` were already there. On a fresh machine you'd first run the setup steps in the README: create the venv, run `pip install -r requirements.txt`, and copy `.env.example` to `.env` with your key.
